@@ -1,0 +1,21 @@
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Streamlit
+.streamlit/
+.streamlit/cache/
+.streamlit/secrets.toml
+
+# Environments
+.env
+.venv/
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
