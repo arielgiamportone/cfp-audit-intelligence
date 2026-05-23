@@ -1,7 +1,12 @@
 # Python caches
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
+*.egg-info/
+dist/
+build/
 
 # Streamlit
 .streamlit/
@@ -11,11 +16,32 @@ __pycache__/
 # Environments
 .env
 .venv/
+venv/
 
 # IDE/editor files
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Data generada (PDFs, textos, vectores)
+data/raw/
+data/processed/text/
+data/processed/json/
+data/knowledge_base/
+data/reports/
+logs/
+
+# Mantener estructura de directorios
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/knowledge_base/.gitkeep
+!data/reports/.gitkeep
+!logs/.gitkeep
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

@@ -1,131 +1,210 @@
-# 🐟 CFP Actas Scraper
+# 🐟 CFP Audit Intelligence Platform
 
-Una aplicación web desarrollada con Streamlit para facilitar la descarga de actas públicas del Consejo Federal Pesquero (CFP) de Argentina.
+**Plataforma de Auditoría Inteligente del Consejo Federal Pesquero de Argentina**
 
-## 🚀 Características
-
-- **Interfaz intuitiva**: Selección fácil de años y actas
-- **Descarga individual**: Descarga actas específicas en formato PDF
-- **Descarga masiva**: Descarga todas las actas de un año en un archivo ZIP
-- **Filtros inteligentes**: Separa actas principales de anexos
-- **Cache optimizado**: Mejora el rendimiento evitando consultas repetidas
-- **Barra de progreso**: Seguimiento visual del progreso de descarga
-- **Responsive**: Funciona en dispositivos móviles y desktop
-
-## 📋 Requisitos
-
-- Python 3.8 o superior
-- Conexión a internet para acceder al sitio del CFP
-
-## 🛠️ Instalación
-
-1. **Clona o descarga los archivos del proyecto**
-
-2. **Instala las dependencias:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Ejecuta la aplicación:**
-   ```bash
-   streamlit run cfp_scraper.py
-   ```
-
-4. **Abre tu navegador** en la dirección que muestra Streamlit (generalmente `http://localhost:8501`)
-
-## 📖 Uso
-
-### Selección de Año
-1. En la barra lateral izquierda, selecciona el año de interés
-2. La aplicación cargará automáticamente todas las actas disponibles para ese año
-
-### Filtros
-- **Incluir anexos**: Muestra/oculta documentos anexos
-- **Incluir actas principales**: Muestra/oculta actas principales
-
-### Descarga Individual
-1. Busca el acta que necesitas en la lista
-2. Haz clic en "⬇️ Descargar" junto al acta deseada
-3. Espera a que se complete la descarga
-4. Haz clic en "💾 Guardar" para descargar el archivo
-
-### Descarga Masiva
-1. Configura los filtros según tus necesidades
-2. Haz clic en "⬇️ Descargar todas las actas seleccionadas"
-3. Confirma la descarga si hay más de 10 archivos
-4. Espera a que se genere el archivo ZIP
-5. Descarga el archivo ZIP con todas las actas
-
-## 🔧 Funcionalidades Técnicas
-
-### Web Scraping
-- Utiliza `requests` y `BeautifulSoup` para extraer datos del sitio oficial del CFP
-- Maneja errores de conexión y timeouts
-- Respeta la estructura del sitio web oficial
-
-### Cache Inteligente
-- Cache de 1 hora para listas de años y actas
-- Botón de actualización manual para forzar la recarga de datos
-- Mejora significativamente el rendimiento
-
-### Gestión de Archivos
-- Descarga streaming para archivos grandes
-- Compresión ZIP para descargas masivas
-- Nombres de archivo preservados del sitio original
-
-## 🌐 Fuente de Datos
-
-Los datos se obtienen directamente del sitio oficial del Consejo Federal Pesquero:
-- **URL base**: https://cfp.gob.ar
-- **Sección de actas**: https://cfp.gob.ar/actas-cfp
-- **Años disponibles**: 1998 - 2025 (según disponibilidad)
-
-## ⚠️ Consideraciones
-
-- **Uso responsable**: La aplicación incluye pausas entre descargas para no sobrecargar el servidor
-- **Documentos públicos**: Todas las actas son documentos de acceso público
-- **Conexión requerida**: Necesitas conexión a internet para acceder a los datos
-- **Límites de descarga**: Para descargas masivas de más de 10 archivos, se solicita confirmación
-
-## 🐛 Solución de Problemas
-
-### Error de conexión
-- Verifica tu conexión a internet
-- Comprueba que el sitio del CFP esté disponible
-- Usa el botón "🔄 Actualizar datos" para reintentar
-
-### Descarga lenta
-- Las descargas dependen de la velocidad de tu conexión
-- El servidor del CFP puede tener limitaciones de velocidad
-- Para archivos grandes, ten paciencia
-
-### Archivo no encontrado
-- Algunos enlaces pueden estar rotos en el sitio original
-- Intenta acceder directamente al sitio del CFP para verificar
-
-## 📝 Estructura del Proyecto
-
-```
-CFP_Actas/
-├── cfp_scraper.py          # Aplicación principal de Streamlit
-├── requirements.txt        # Dependencias de Python
-├── README.md              # Este archivo
-├── cfpweb_actas1.html     # Archivo de ejemplo (página principal)
-├── cfp_actas_2024.html    # Archivo de ejemplo (actas 2024)
-└── cfp_actas_1998.html    # Archivo de ejemplo (actas 1998)
-```
-
-## 🤝 Contribuciones
-
-Si encuentras errores o tienes sugerencias de mejora:
-1. Reporta el problema describiendo los pasos para reproducirlo
-2. Incluye capturas de pantalla si es relevante
-3. Menciona tu sistema operativo y versión de Python
-
-## 📄 Licencia
-
-Este proyecto es de uso libre para fines educativos y de investigación. Los documentos descargados son propiedad del Consejo Federal Pesquero de Argentina.
+> I+D+I Pesquera de vanguardia: extracción, procesamiento y análisis con IA de las actas públicas del CFP para auditar la toma de decisiones sobre los recursos pesqueros y acuícolas argentinos.
 
 ---
 
-**Desarrollado para facilitar el acceso a documentos públicos del sector pesquero argentino** 🇦🇷
+## 🎯 Objetivo
+
+Construir una **knowledge base** completa del Consejo Federal Pesquero (1998–presente) y aplicar analítica avanzada + IA para:
+
+1. **Auditar** la toma de decisiones históricas sobre recursos pesqueros y acuícolas
+2. **Detectar patrones** que atenten contra la sostenibilidad de la pesca argentina
+3. **Identificar** decisiones subjetivas, contrarias a normas o intereses nacionales
+4. **Generar evidencia** técnica reproducible y trazable para el debate público y la política pesquera
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CFP AUDIT INTELLIGENCE                        │
+├──────────────┬──────────────┬──────────────┬────────────────────┤
+│  ADQUISICIÓN │ PROCESAMIENTO│  KNOWLEDGE   │     AUDITORÍA      │
+│              │              │    BASE      │       + IA         │
+│  • Scraper   │  • PDF→Text  │  • ChromaDB  │  • Claude API      │
+│  • Bulk DL   │  • OCR       │  • SQLite    │  • Patrones        │
+│  • Catálogo  │  • NER       │  • Grafo     │  • Sostenibilidad  │
+│  • Versiones │  • Parsing   │  • Embeddings│  • Anomalías       │
+└──────────────┴──────────────┴──────────────┴────────────────────┘
+                                    │
+                    ┌───────────────▼────────────────┐
+                    │      DASHBOARD STREAMLIT        │
+                    │  Adquisición │ KB │ Audit │ Reports│
+                    └─────────────────────────────────┘
+```
+
+## 📦 Módulos Principales
+
+| Módulo | Descripción |
+|--------|-------------|
+| `src/acquisition/` | Scraping masivo y descarga de PDFs del CFP |
+| `src/processing/` | Extracción de texto, OCR, parsing estructurado y NER |
+| `src/knowledge_base/` | Base vectorial, grafo de relaciones y catálogo SQLite |
+| `src/analysis/` | Motor de auditoría con IA (Claude API), detección de patrones |
+| `src/dashboard/` | Interfaz Streamlit multipágina |
+| `scripts/` | Pipelines automatizados end-to-end |
+| `notebooks/` | Análisis exploratorio y metodología |
+
+---
+
+## 🔬 Capacidades de Análisis
+
+### Detección de Patrones
+- **Cuotas vs. recomendaciones científicas**: ¿Se otorgaron cuotas superiores a lo recomendado?
+- **Beneficiarios recurrentes**: Empresas o actores favorecidos sistemáticamente
+- **Patrones de votación**: Decisiones unánimes vs. disenso, quórum mínimo
+- **Evolución temporal**: Tendencias en las decisiones a lo largo de 25+ años
+- **Especie bajo presión**: Merluza, langostino, calamar, abadejo y otras especies clave
+
+### Auditoría de Sostenibilidad
+- Comparación con capturas máximas sostenibles (CMS) históricas
+- Detección de moratorias evadidas o incumplidas
+- Análisis de vedas y áreas protegidas: ¿se respetan?
+- Impacto de las decisiones en el stock pesquero
+
+### Análisis con IA (Claude API)
+- Resumen automático de cada acta
+- Clasificación de resoluciones por categoría y urgencia
+- Detección de lenguaje evasivo o ambiguo en resoluciones críticas
+- Identificación de contradicciones con normativa vigente (Ley 24.922)
+- Análisis de conflictos de interés potenciales
+
+---
+
+## 🚀 Inicio Rápido
+
+### 1. Instalación
+
+```bash
+# Clonar y preparar entorno
+git clone https://github.com/arielgiamportone/cfp-actas-scraper.git
+cd cfp-actas-scraper
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+
+pip install -r requirements.txt
+```
+
+### 2. Configuración
+
+```bash
+cp .env.example .env
+# Editar .env con tu ANTHROPIC_API_KEY
+```
+
+### 3. Pipeline completo (recomendado)
+
+```bash
+# Descargar todas las actas, procesar y construir KB
+python scripts/run_full_pipeline.py --years 1998-2025
+
+# Solo descargar PDFs
+python scripts/run_full_pipeline.py --step download
+
+# Solo procesar PDFs ya descargados
+python scripts/run_full_pipeline.py --step process
+
+# Solo construir knowledge base
+python scripts/run_full_pipeline.py --step knowledge_base
+
+# Solo correr análisis de auditoría
+python scripts/run_full_pipeline.py --step audit
+```
+
+### 4. Dashboard interactivo
+
+```bash
+streamlit run src/dashboard/app.py
+```
+
+### 5. Make targets
+
+```bash
+make download      # Descargar todas las actas
+make process       # Procesar PDFs
+make build-kb      # Construir knowledge base
+make audit         # Correr auditoría completa
+make dashboard     # Lanzar dashboard
+make pipeline      # Pipeline end-to-end
+```
+
+---
+
+## 📊 Estructura de Datos
+
+### Catálogo SQLite (`data/processed/catalog.db`)
+```sql
+actas(id, year, numero, fecha, url, pdf_path, text_path, processed, hash)
+resoluciones(id, acta_id, numero, tipo, texto, votos_favor, votos_contra, abstenciones)
+entidades(id, tipo, nombre, normalized)  -- empresas, especies, personas, lugares
+menciones(resolucion_id, entidad_id, contexto)
+```
+
+### Knowledge Base Vectorial (`data/knowledge_base/`)
+- Embeddings de resoluciones individuales
+- Embeddings de actas completas
+- Índice semántico para búsqueda por similitud
+
+---
+
+## 🧭 Roadmap
+
+### Fase 1: Adquisición (Semanas 1-2) ✅
+- [x] Scraper base (Streamlit)
+- [ ] Scraper batch CLI para todas las actas
+- [ ] Descarga masiva con retry y deduplicación
+- [ ] Catálogo SQLite de metadatos
+
+### Fase 2: Procesamiento (Semanas 3-4)
+- [ ] Extracción de texto PDF (pdfplumber + PyMuPDF)
+- [ ] OCR para PDFs escaneados (Tesseract)
+- [ ] Parser de estructura: actas → resoluciones
+- [ ] NER: especies, empresas, personas, normativa
+
+### Fase 3: Knowledge Base (Semanas 5-6)
+- [ ] Embeddings con sentence-transformers
+- [ ] Vector store ChromaDB
+- [ ] Grafo de relaciones (NetworkX → Neo4j)
+- [ ] API de búsqueda semántica
+
+### Fase 4: Análisis IA (Semanas 7-9)
+- [ ] Integración Claude API con prompt caching
+- [ ] Clasificador de resoluciones
+- [ ] Detector de patrones anómalos
+- [ ] Análisis de sostenibilidad por especie/año
+
+### Fase 5: Dashboard y Reportes (Semanas 10-12)
+- [ ] Dashboard multipágina Streamlit
+- [ ] Visualizaciones interactivas (Plotly)
+- [ ] Generador de reportes PDF
+- [ ] Sistema de alertas configurables
+
+---
+
+## ⚖️ Marco Legal y Ético
+
+Este proyecto trabaja exclusivamente con **documentos públicos** del Consejo Federal Pesquero, organismo colegiado creado por la **Ley Federal de Pesca N° 24.922**. Su objetivo es fortalecer la transparencia y el control ciudadano sobre el manejo de un recurso natural estratégico de Argentina.
+
+- Fuente: [cfp.gob.ar](https://cfp.gob.ar/actas-cfp)
+- Todos los documentos son de acceso público
+- El análisis es descriptivo y no constituye acusación legal
+- Metodología reproducible y código abierto
+
+---
+
+## 🤝 Contribuciones
+
+Este es un proyecto de **I+D+I pesquera abierta**. Contribuciones bienvenidas:
+- Mejoras al pipeline de procesamiento
+- Algoritmos de detección de patrones
+- Visualizaciones de datos
+- Validación de resultados por expertos pesqueros
+
+---
+
+**🇦🇷 Por la soberanía y sostenibilidad de los recursos pesqueros argentinos**

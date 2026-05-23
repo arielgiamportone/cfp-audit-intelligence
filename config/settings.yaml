@@ -1,0 +1,97 @@
+cfp:
+  base_url: "https://cfp.gob.ar"
+  actas_url: "https://cfp.gob.ar/actas-cfp"
+  years_start: 1998
+  ssl_verify: false
+
+scraping:
+  delay_seconds: 1.5
+  max_retries: 3
+  timeout: 30
+  chunk_size: 8192
+
+processing:
+  ocr_language: "spa"
+  min_text_length: 100      # Umbral para activar OCR si PDF tiene poco texto
+  supported_encodings: ["utf-8", "latin-1", "cp1252"]
+
+embeddings:
+  model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  batch_size: 32
+  chunk_size: 512            # Tokens por chunk para indexar
+  chunk_overlap: 64
+
+knowledge_base:
+  collection_name: "cfp_actas"
+  distance_metric: "cosine"
+
+analysis:
+  # Especies de alto valor estratégico y monitoreo prioritario
+  priority_species:
+    - "merluza hubbsi"
+    - "merluza de cola"
+    - "merluza negra"
+    - "langostino"
+    - "calamar illex"
+    - "calamar loligo"
+    - "abadejo"
+    - "polaca"
+    - "vieira patagonica"
+    - "centolla"
+    - "corvina rubia"
+    - "corvina negra"
+    - "salmon de mar"
+    - "pejerrey"
+    - "anchoita"
+    - "caballa"
+
+  # Tipos de resolución para clasificar
+  resolution_types:
+    - "cuota_captura"
+    - "habilitacion_buque"
+    - "permiso_pesca"
+    - "veda"
+    - "area_protegida"
+    - "investigacion"
+    - "convenio_internacional"
+    - "normativa"
+    - "reglamento"
+    - "sancion"
+    - "concesion"
+
+  # Indicadores de alerta para análisis
+  alert_indicators:
+    - "cuota superior a recomendación INIDEP"
+    - "aprobación con quórum mínimo"
+    - "modificación de veda existente"
+    - "habilitación de zona protegida"
+    - "decisión sin informe técnico"
+    - "reversión de decisión anterior"
+    - "beneficiario recurrente"
+
+audit:
+  # Umbrales para scoring de riesgo (0-100)
+  risk_thresholds:
+    low: 30
+    medium: 60
+    high: 80
+    critical: 90
+
+  # Palabras clave para detección de conflictos de interés
+  conflict_keywords:
+    - "abstención"
+    - "excusación"
+    - "conflicto de interés"
+    - "vinculación"
+    - "participación accionaria"
+
+llm:
+  default_model: "claude-sonnet-4-6"
+  audit_model: "claude-opus-4-7"
+  max_tokens: 4096
+  temperature: 0.1           # Baja temperatura para análisis factual
+  use_prompt_caching: true
+
+logging:
+  level: "INFO"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {module} | {message}"
