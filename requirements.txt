@@ -1,6 +1,57 @@
-streamlit>=1.28.0
+# ── Core web & scraping ──────────────────────────────────────────
+streamlit>=1.32.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
-pandas>=2.0.0
 lxml>=4.9.0
 urllib3>=2.0.0
+httpx>=0.27.0
+
+# ── Data & storage ────────────────────────────────────────────────
+pandas>=2.1.0
+numpy>=1.26.0
+SQLAlchemy>=2.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# ── PDF processing ────────────────────────────────────────────────
+pdfplumber>=0.10.0
+PyMuPDF>=1.23.0          # fitz
+pypdf>=3.17.0
+pytesseract>=0.3.10      # OCR wrapper (needs tesseract-ocr installed)
+Pillow>=10.0.0            # Image processing for OCR
+
+# ── NLP & embeddings ──────────────────────────────────────────────
+spacy>=3.7.0
+sentence-transformers>=2.3.0
+transformers>=4.36.0
+torch>=2.1.0              # CPU version sufficient for embeddings
+
+# ── Vector database ───────────────────────────────────────────────
+chromadb>=0.4.22
+
+# ── Graph analysis ────────────────────────────────────────────────
+networkx>=3.2.0
+pyvis>=0.3.2              # Interactive graph visualization
+
+# ── AI / LLM ─────────────────────────────────────────────────────
+anthropic>=0.28.0         # Claude API with prompt caching
+
+# ── Visualization ─────────────────────────────────────────────────
+plotly>=5.18.0
+altair>=5.2.0
+wordcloud>=1.9.0
+
+# ── Report generation ─────────────────────────────────────────────
+reportlab>=4.0.0
+jinja2>=3.1.0
+
+# ── Utilities ─────────────────────────────────────────────────────
+tqdm>=4.66.0
+click>=8.1.0
+rich>=13.7.0
+loguru>=0.7.0
+tenacity>=8.2.0           # Retry logic
+PyYAML>=6.0.0
+python-dateutil>=2.8.0
+hashlib-compat>=1.0.0
