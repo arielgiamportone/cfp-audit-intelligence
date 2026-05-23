@@ -42,5 +42,10 @@ logs/
 !data/reports/.gitkeep
 !logs/.gitkeep
 
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
 # Jupyter checkpoints
 .ipynb_checkpoints/
