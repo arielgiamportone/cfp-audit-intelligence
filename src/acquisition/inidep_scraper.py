@@ -266,7 +266,8 @@ SEED_DATA: list[dict] = [
 
 def _extract_especie(titulo: str) -> Optional[str]:
     titulo_l = titulo.lower()
-    for esp in ESPECIES_INTERES:
+    # Ordenar de mayor a menor longitud para que "merluza negra" gane sobre "merluza"
+    for esp in sorted(ESPECIES_INTERES, key=len, reverse=True):
         if esp in titulo_l:
             return esp
     return None
@@ -290,10 +291,11 @@ def _normalize_especie(especie: str) -> str:
 
 
 def _extract_zona(titulo: str) -> Optional[str]:
-    if "sur de 41" in titulo.lower() or "sur 41" in titulo.lower():
+    t = titulo.lower()
+    if "sur de 41" in t or "sur 41" in t:
         return "Sur 41°S"
-    if "norte de 41" in titulo.lower() or "norte 41" in titulo.lower():
+    if "norte de 41" in t or "norte 41" in t or ("norte" in t and "41" in t):
         return "Norte 41°S"
-    if "patagón" in titulo.lower():
+    if "patagón" in t:
         return "Patagonia"
     return None
