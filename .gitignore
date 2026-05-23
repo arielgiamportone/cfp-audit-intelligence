@@ -28,10 +28,9 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Data generada (PDFs, textos, vectores)
+# Data generada (PDFs, textos, vectores, base de datos)
 data/raw/
-data/processed/text/
-data/processed/json/
+data/processed/
 data/knowledge_base/
 data/reports/
 logs/
