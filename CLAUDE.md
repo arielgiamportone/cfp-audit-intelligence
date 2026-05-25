@@ -4,7 +4,7 @@
 
 Plataforma de **auditoría inteligente** de las actas públicas del Consejo Federal Pesquero (CFP) de Argentina. Extrae, procesa y analiza con IA 25+ años de decisiones sobre recursos pesqueros para detectar patrones que atenten contra la sostenibilidad y los intereses nacionales.
 
-**Repositorio**: `arielgiamportone/cfp-actas-scraper`  
+**Repositorio**: `arielgiamportone/cfp-audit-intelligence`  
 **Branch de desarrollo**: `claude/cfp-fisheries-audit-project-lLMib`  
 **Versión actual**: v0.2
 

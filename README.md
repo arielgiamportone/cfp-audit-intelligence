@@ -5,6 +5,8 @@
 > I+D+I Pesquera de vanguardia: extracción, procesamiento y análisis con IA de 25+ años de actas públicas del CFP para auditar la toma de decisiones sobre los recursos pesqueros y acuícolas argentinos.
 
 [![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
@@ -66,6 +68,7 @@ Construir una **knowledge base** completa del Consejo Federal Pesquero (1998–p
 ```bash
 git clone https://github.com/arielgiamportone/cfp-audit-intelligence.git
 cd cfp-audit-intelligence
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
