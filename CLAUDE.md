@@ -79,11 +79,9 @@ menciones(id, resolucion_id, entidad_id, contexto)
 analisis_sesiones(id, acta_id, tipo_analisis, resultado, modelo_ia)
 ```
 
-## Próximas Tareas Prioritarias
+## Notas de implementación
 
-1. **NER especializado**: Entrenar/afinar modelo spacy para entidades pesqueras argentinas
-2. **Comparador INIDEP**: Integrar datos de recomendaciones INIDEP vs. cuotas otorgadas
-3. **Timeline interactivo**: Visualización Plotly de decisiones por especie y año
-4. **Alertas automáticas**: Sistema de alertas configurables por especie/empresa/tipo
-5. **Reporte PDF**: Generación de informe ejecutivo con reportlab
-6. **API REST**: FastAPI para consumo programático de la KB y análisis
+- El parser (`document_parser.py`) extrae dos tipos: resoluciones formales (patrón "Número de Registro CFP X/YYYY") y decisiones del cuerpo (patrón "se decide [por unanimidad]..."). Las decisiones informales usan numeración `D1`, `D2`, etc.
+- Los IDs en ChromaDB usan `{acta_stem}_{numero}` para evitar colisiones entre actas del mismo año.
+- Streamlit se ejecuta con Python 3.10 (`C:\Users\Ariel\AppData\Local\Programs\Python\Python310\`). Instalar dependencias con ese Python: `"C:/Users/Ariel/AppData/Local/Programs/Python/Python310/python.exe" -m pip install ...`
+- `catalog.db` está en `.gitignore` — no se versiona.
