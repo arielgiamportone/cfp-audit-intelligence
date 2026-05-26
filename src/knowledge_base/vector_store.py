@@ -191,7 +191,9 @@ class CFPVectorStore:
                 year = data.get("year", 0)
 
                 for res in data.get("resoluciones", []):
-                    doc_id = f"{year}_{res['numero']}"
+                    # Incluir stem del acta para evitar colisiones entre actas del mismo año
+                    acta_stem = Path(acta_filename).stem[:40].replace(" ", "_")
+                    doc_id = f"{acta_stem}_{res['numero']}"
                     texto = res.get("texto", "").strip()
                     if not texto:
                         continue

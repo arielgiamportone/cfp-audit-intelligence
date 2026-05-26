@@ -3,8 +3,15 @@ Parser de documentos del CFP: extrae estructura de actas en resoluciones individ
 
 Las actas del CFP tienen formato semi-estructurado:
   - Encabezado: fecha, lugar, miembros presentes, quórum
-  - Cuerpo: resoluciones numeradas (Res. N° XXX/YYYY)
+  - Cuerpo: resoluciones formales ("Número de Registro CFP X/YYYY") y
+            decisiones del cuerpo ("se decide por unanimidad...")
   - Pie: firma de los miembros
+
+Estrategia de extracción:
+  1. Resoluciones formales: buscar "Número de Registro CFP X/YYYY" y extraer
+     el proyecto de resolución previo (hasta 3000 chars atrás).
+  2. Decisiones del cuerpo: buscar "se decide [por unanimidad]" y extraer
+     el contexto circundante como unidad de conocimiento.
 """
 import json
 import re
@@ -18,8 +25,22 @@ from loguru import logger
 
 # ── Patrones regex para parsing ───────────────────────────────────────────────
 
-RE_RESOLUCION = re.compile(
-    r"(?:RESOLUCI[OÓ]N|Resoluci[oó]n|RES\.?)\s+N[°º\.]\s*(\d+)\s*/\s*(\d{4})",
+# Resoluciones formales con número de registro oficial
+RE_NUMERO_REGISTRO = re.compile(
+    r"[Nn]úmero\s+de\s+[Rr]egistro\s+CFP\s+(\d+)/(\d{4})",
+)
+
+# Inicio de proyecto de resolución formal
+RE_INICIO_PROYECTO = re.compile(
+    r"(?:se\s+da\s+tratamiento\s+a\s+un\s+proyecto|"
+    r"trat[aó]\s+(?:el\s+)?proyecto\s+de\s+resolución|"
+    r"proyecto\s+de\s+resolución\s+a\s+través)",
+    re.IGNORECASE,
+)
+
+# Decisiones del cuerpo del acta (sin número formal)
+RE_SE_DECIDE = re.compile(
+    r"(?:se\s+decide|Se\s+decide)(?:\s+por\s+unanimidad|\s+instruir|\s+requerir|\s+comunicar)?",
     re.IGNORECASE,
 )
 
@@ -132,8 +153,12 @@ def extract_empresas(texto: str) -> list[str]:
 
 
 def parse_acta(text: str, filename: str) -> Acta:
-    """Parsea el texto completo de un acta y retorna estructura Acta."""
-    # Inferir año del nombre de archivo si es posible
+    """Parsea el texto completo de un acta y retorna estructura Acta.
+
+    Extrae dos tipos de contenido:
+    - Resoluciones formales: bloques con "Número de Registro CFP X/YYYY"
+    - Decisiones del cuerpo: frases "se decide [por unanimidad]..."
+    """
     year_match = re.search(r"(\d{4})", filename)
     year = int(year_match.group(1)) if year_match else 0
 
@@ -146,31 +171,33 @@ def parse_acta(text: str, filename: str) -> Acta:
         miembros_presentes=_extract_miembros(text),
     )
 
-    # Dividir texto en bloques por resolución
-    splits = RE_RESOLUCION.split(text)
-    # splits: [pre, numero, anio, texto, numero, anio, texto, ...]
+    # ── 1. Resoluciones formales (con número de registro oficial) ─────────────
+    seen_registros: set[str] = set()
+    for m in RE_NUMERO_REGISTRO.finditer(text):
+        numero = m.group(1)
+        res_year = int(m.group(2))
+        key = f"{numero}/{res_year}"
+        if key in seen_registros:
+            continue
+        seen_registros.add(key)
 
-    if len(splits) < 4:
-        logger.debug(f"  {filename}: no se encontraron resoluciones estructuradas")
-        return acta
-
-    # El primer elemento es texto previo (encabezado)
-    for i in range(1, len(splits) - 2, 3):
-        numero = splits[i]
-        res_year = int(splits[i + 1])
-        texto_res = splits[i + 2] if i + 2 < len(splits) else ""
+        # Buscar inicio del proyecto de resolución (hasta 3000 chars atrás)
+        lookback_start = max(0, m.start() - 3000)
+        preceding = text[lookback_start:m.end()]
+        proyecto_m = list(RE_INICIO_PROYECTO.finditer(preceding))
+        if proyecto_m:
+            texto_res = preceding[proyecto_m[-1].start():]
+        else:
+            texto_res = text[max(0, m.start() - 1500):m.end()]
 
         votos_f, votos_c = _extract_votos(texto_res)
-        especies = list({m.group(0).lower() for m in RE_ESPECIE.finditer(texto_res)})
-        cuotas = [
-            float(m.group(1).replace(".", "").replace(",", "."))
-            for m in RE_CUOTA.finditer(texto_res)
-        ]
+        especies = list({em.group(0).lower() for em in RE_ESPECIE.finditer(texto_res)})
+        cuotas = _parse_cuotas(texto_res)
 
-        res = Resolucion(
+        acta.resoluciones.append(Resolucion(
             numero=numero,
             year=res_year,
-            texto=texto_res[:2000],  # Limitar a 2000 chars por resolución
+            texto=texto_res[:2000],
             fecha_acta=acta.fecha,
             tipo=classify_resolucion(texto_res),
             votos_favor=votos_f,
@@ -178,11 +205,71 @@ def parse_acta(text: str, filename: str) -> Acta:
             especies_mencionadas=especies,
             cuotas_toneladas=cuotas,
             empresas_mencionadas=extract_empresas(texto_res),
-        )
-        acta.resoluciones.append(res)
+        ))
 
-    logger.debug(f"  {filename}: {len(acta.resoluciones)} resoluciones extraídas")
+    # ── 2. Decisiones del cuerpo (sin número formal) ─────────────────────────
+    # Posiciones de resoluciones formales para evitar solapamiento
+    formal_positions = {
+        (max(0, m.start() - 3000), m.end())
+        for m in RE_NUMERO_REGISTRO.finditer(text)
+    }
+
+    decision_count = 0
+    for m in RE_SE_DECIDE.finditer(text):
+        # Saltar si está dentro de un bloque de resolución formal
+        in_formal = any(start <= m.start() <= end for start, end in formal_positions)
+        if in_formal:
+            continue
+
+        # Extraer contexto: 300 chars antes + hasta el final del párrafo (~600 chars)
+        ctx_start = max(0, m.start() - 300)
+        # Avanzar hasta el final del párrafo (doble newline o 600 chars)
+        rest = text[m.start():]
+        para_end = re.search(r"\n\n|\Z", rest, re.DOTALL)
+        ctx_end = m.start() + (para_end.start() if para_end else min(600, len(rest)))
+        ctx_end = min(ctx_end, m.start() + 600)
+
+        texto_res = text[ctx_start:ctx_end].strip()
+        if len(texto_res) < 50:
+            continue
+
+        decision_count += 1
+        votos_f, votos_c = _extract_votos(texto_res)
+        especies = list({em.group(0).lower() for em in RE_ESPECIE.finditer(texto_res)})
+        cuotas = _parse_cuotas(texto_res)
+
+        acta.resoluciones.append(Resolucion(
+            numero=f"D{decision_count}",
+            year=year,
+            texto=texto_res[:2000],
+            fecha_acta=acta.fecha,
+            tipo=classify_resolucion(texto_res),
+            votos_favor=votos_f,
+            votos_contra=votos_c,
+            especies_mencionadas=especies,
+            cuotas_toneladas=cuotas,
+            empresas_mencionadas=extract_empresas(texto_res),
+        ))
+
+    n_formal = len(seen_registros)
+    n_informal = decision_count
+    if acta.resoluciones:
+        logger.debug(
+            f"  {filename}: {n_formal} resoluciones formales + {n_informal} decisiones"
+        )
+    else:
+        logger.debug(f"  {filename}: sin resoluciones ni decisiones detectadas")
     return acta
+
+
+def _parse_cuotas(texto: str) -> list[float]:
+    result = []
+    for m in RE_CUOTA.finditer(texto):
+        try:
+            result.append(float(m.group(1).replace(".", "").replace(",", ".")))
+        except ValueError:
+            pass
+    return result
 
 
 def _extract_quorum(text: str) -> Optional[int]:
