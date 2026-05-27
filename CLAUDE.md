@@ -85,3 +85,4 @@ analisis_sesiones(id, acta_id, tipo_analisis, resultado, modelo_ia)
 - Los IDs en ChromaDB usan `{acta_stem}_{numero}` para evitar colisiones entre actas del mismo año.
 - Streamlit se ejecuta con Python 3.10 (`C:\Users\Ariel\AppData\Local\Programs\Python\Python310\`). Instalar dependencias con ese Python: `"C:/Users/Ariel/AppData/Local/Programs/Python/Python310/python.exe" -m pip install ...`
 - `catalog.db` está en `.gitignore` — no se versiona.
+- El notebook `notebooks/eda_kb.ipynb` requiere `pio.renderers.default = 'notebook'` para renderizar gráficos Plotly inline en VS Code sin abrir el browser. Si los gráficos no aparecen, reiniciar el kernel (la caché de módulos puede tener `nbformat=None` de un arranque previo).
