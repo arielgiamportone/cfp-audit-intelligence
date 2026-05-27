@@ -183,6 +183,7 @@ class CFPVectorStore:
             self.delete_collection()
 
         ids, texts, metas = [], [], []
+        seen_ids: set[str] = set()
 
         for json_path in sorted(json_dir.rglob("*.json")):
             try:
@@ -190,13 +191,21 @@ class CFPVectorStore:
                 acta_filename = data.get("filename", json_path.stem)
                 year = data.get("year", 0)
 
-                for res in data.get("resoluciones", []):
-                    # Incluir stem del acta para evitar colisiones entre actas del mismo año
-                    acta_stem = Path(acta_filename).stem[:40].replace(" ", "_")
-                    doc_id = f"{acta_stem}_{res['numero']}"
+                # Path relativo al json_dir garantiza unicidad global (incluye año/subdir)
+                rel = json_path.relative_to(json_dir)
+                acta_key = str(rel.with_suffix("")).replace("\\", "/").replace(" ", "_")[:60]
+
+                for i, res in enumerate(data.get("resoluciones", [])):
                     texto = res.get("texto", "").strip()
                     if not texto:
                         continue
+
+                    base_id = f"{acta_key}_{res['numero']}"
+                    # Resolver colisiones residuales con índice secuencial
+                    doc_id = base_id
+                    if doc_id in seen_ids:
+                        doc_id = f"{base_id}_{i}"
+                    seen_ids.add(doc_id)
 
                     ids.append(doc_id)
                     texts.append(texto)
