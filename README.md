@@ -17,7 +17,7 @@ Construir una **knowledge base** completa del Consejo Federal Pesquero y aplicar
 
 ---
 
-## Estado actual (v0.2)
+## Estado actual (v0.3)
 
 | Etapa | Estado |
 |-------|--------|
@@ -26,9 +26,11 @@ Construir una **knowledge base** completa del Consejo Federal Pesquero y aplicar
 | Parser de resoluciones y decisiones | ✅ Funcional |
 | Knowledge base vectorial (ChromaDB) | ✅ Funcional |
 | Dashboard Streamlit multipágina | ✅ Funcional |
+| EDA notebook (`notebooks/eda_kb.ipynb`) | ✅ Funcional |
 | Auditoría IA (Claude API) | Requiere `ANTHROPIC_API_KEY` |
 
-Probado con el año 2024: 32 actas → 215 resoluciones/decisiones indexadas.
+**Corpus completo procesado**: 1.185 actas (1998–2024) → ~7.700 resoluciones/decisiones indexadas.
+Gráficos renderizados inline en VS Code con `plotly` (`pio.renderers.default = 'notebook'`).
 
 ---
 
@@ -107,9 +109,11 @@ Trabaja exclusivamente con **documentos públicos** del Consejo Federal Pesquero
 
 ## Roadmap
 
-- [ ] Ampliar KB a todos los años disponibles (1998–2024)
+- [x] Ampliar KB a todos los años disponibles (1998–2024)
+- [x] EDA exploratorio del corpus completo (notebook `eda_kb.ipynb`)
 - [ ] NER especializado para entidades pesqueras argentinas
 - [ ] Comparador INIDEP: recomendaciones científicas vs. cuotas otorgadas
+- [ ] Activar auditoría IA masiva sobre corpus 1998–2024 (requiere `ANTHROPIC_API_KEY`)
 - [ ] Timeline interactivo por especie y año (Plotly)
 - [ ] Reporte PDF ejecutivo (reportlab)
 - [ ] API REST (FastAPI)
