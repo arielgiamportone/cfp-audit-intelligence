@@ -6,6 +6,8 @@ ESPECIE_PESCA, EMPRESA_PESCA, ZONA_PESCA, CUOTA_PESCA, NORMATIVA_CFP, BUQUE_PESC
 """
 import pytest
 
+spacy = pytest.importorskip("spacy", reason="spacy no instalado — omitiendo tests NER")
+
 from src.processing.ner_pesquero import (
     FisheriesNER,
     ResultadoNER,
