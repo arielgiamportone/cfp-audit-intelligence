@@ -28,11 +28,9 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Data generada (PDFs, textos, vectores)
+# Data generada (PDFs, textos, vectores, base de datos)
 data/raw/
-data/processed/text/
-data/processed/json/
-data/processed/catalog.db
+data/processed/
 data/knowledge_base/
 data/reports/
 logs/
@@ -43,6 +41,11 @@ logs/
 !data/knowledge_base/.gitkeep
 !data/reports/.gitkeep
 !logs/.gitkeep
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/

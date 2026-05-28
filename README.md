@@ -2,121 +2,192 @@
 
 **Plataforma de Auditoría Inteligente del Consejo Federal Pesquero de Argentina**
 
-> Extracción, procesamiento y análisis con IA de las actas públicas del CFP para auditar la toma de decisiones sobre los recursos pesqueros y acuícolas argentinos (1998–presente).
+> I+D+I Pesquera de vanguardia: extracción, procesamiento y análisis con IA de 25+ años de actas públicas del CFP para auditar la toma de decisiones sobre los recursos pesqueros y acuícolas argentinos.
+
+[![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
 ## Objetivo
 
-Construir una **knowledge base** completa del Consejo Federal Pesquero y aplicar analítica avanzada + IA para:
+Construir una **knowledge base** completa del Consejo Federal Pesquero (1998–presente) y aplicar analítica avanzada + IA para:
 
-1. **Auditar** la toma de decisiones históricas sobre recursos pesqueros
+1. **Auditar** la toma de decisiones históricas sobre recursos pesqueros y acuícolas
 2. **Detectar patrones** que atenten contra la sostenibilidad de la pesca argentina
-3. **Identificar** decisiones contrarias a normas o recomendaciones científicas (INIDEP)
-4. **Generar evidencia** técnica reproducible y trazable para el debate público
+3. **Contrastar** cuotas aprobadas por el CFP con recomendaciones científicas del INIDEP (Ley 24.922, Art. 9)
+4. **Generar evidencia** técnica reproducible y trazable para el debate público y la política pesquera
 
 ---
 
-## Estado actual (v0.3)
-
-| Etapa | Estado |
-|-------|--------|
-| Descarga masiva de PDFs (cfp.gob.ar) | ✅ Funcional |
-| Extracción de texto (PDF + OCR fallback) | ✅ Funcional |
-| Parser de resoluciones y decisiones | ✅ Funcional |
-| Knowledge base vectorial (ChromaDB) | ✅ Funcional |
-| Dashboard Streamlit multipágina | ✅ Funcional |
-| EDA notebook (`notebooks/eda_kb.ipynb`) | ✅ Funcional |
-| Auditoría IA (Claude API) | Requiere `ANTHROPIC_API_KEY` |
-
-**Corpus completo procesado**: 1.185 actas (1998–2024) → ~7.700 resoluciones/decisiones indexadas.
-Gráficos renderizados inline en VS Code con `plotly` (`pio.renderers.default = 'notebook'`).
-
----
-
-## Arquitectura del pipeline
+## Arquitectura
 
 ```
-Etapa 1: Adquisición  →  Etapa 2: Procesamiento  →  Etapa 3: KB  →  Etapa 4: Auditoría
-src/acquisition/          src/processing/             src/knowledge_base/  src/analysis/
-  batch_scraper.py          pdf_extractor.py            vector_store.py      audit_engine.py
-  catalog_manager.py        document_parser.py                               pattern_detector.py
-       ↓                         ↓                          ↓
-  data/raw/*.pdf         data/processed/text/        data/knowledge_base/
-  catalog.db             data/processed/json/        (ChromaDB vectores)
+┌─────────────────────────────────────────────────────────────────┐
+│                    CFP AUDIT INTELLIGENCE                        │
+├──────────────┬──────────────┬──────────────┬────────────────────┤
+│  ADQUISICIÓN │ PROCESAMIENTO│  KNOWLEDGE   │     AUDITORÍA      │
+│              │              │    BASE      │       + IA         │
+│  • Scraper   │  • PDF→Text  │  • ChromaDB  │  • Claude API      │
+│  • Bulk DL   │  • OCR       │  • SQLite    │  • Patrones        │
+│  • Catálogo  │  • NER       │  • Grafo     │  • Sostenibilidad  │
+│  • INIDEP    │  • Parsing   │  • Embeddings│  • Anomalías       │
+└──────────────┴──────────────┴──────────────┴────────────────────┘
+                                    │
+                    ┌───────────────▼────────────────┐
+                    │      DASHBOARD STREAMLIT        │
+                    │  Adquisición │ KB │ Audit │ INIDEP│
+                    └─────────────────────────────────┘
 ```
-
-El parser extrae dos tipos de contenido:
-- **Resoluciones formales**: bloques con "Número de Registro CFP X/YYYY" y el proyecto previo
-- **Decisiones del cuerpo**: frases "se decide [por unanimidad]..." con contexto circundante
 
 ---
 
-## Instalación
+## Módulos
+
+| Módulo | Descripción |
+|--------|-------------|
+| `src/acquisition/batch_scraper.py` | Scraping masivo y descarga de PDFs del CFP |
+| `src/acquisition/catalog_manager.py` | Catálogo SQLite con trazabilidad completa del pipeline |
+| `src/acquisition/inidep_scraper.py` | Scraper del repositorio Mar Abierto del INIDEP |
+| `src/processing/pdf_extractor.py` | Extracción en cascada: pdfplumber → PyMuPDF → OCR |
+| `src/processing/document_parser.py` | Parser estructural de actas (decisiones, agenda, entidades) |
+| `src/knowledge_base/vector_store.py` | ChromaDB con embeddings multilingües |
+| `src/analysis/audit_engine.py` | Motor de auditoría con Claude API + prompt caching |
+| `src/analysis/pattern_detector.py` | Detección estadística de patrones (HHI, votaciones, reversiones) |
+| `src/analysis/inidep_comparator.py` | Comparador CFP vs. INIDEP: cuotas vs. CBA recomendada |
+| `src/dashboard/` | Interfaz Streamlit multipágina (5 páginas) |
+| `scripts/run_full_pipeline.py` | Pipeline CLI end-to-end |
+
+---
+
+## Inicio Rápido
+
+### Instalación
 
 ```bash
 git clone https://github.com/arielgiamportone/cfp-audit-intelligence.git
 cd cfp-audit-intelligence
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-# Editar .env — solo ANTHROPIC_API_KEY es necesaria para la etapa de auditoría
 ```
 
----
-
-## Uso
+### Configuración
 
 ```bash
-# Pipeline completo (1998–2025)
+cp .env.example .env
+# Completar ANTHROPIC_API_KEY en .env
+```
+
+### Pipeline
+
+```bash
+# End-to-end: descarga → procesa → KB → auditoría
 python scripts/run_full_pipeline.py --years 1998-2025
 
-# Por etapas
-python scripts/run_full_pipeline.py --step download --years 2024
+# Pasos individuales
+python scripts/run_full_pipeline.py --step download --years 2020-2025
 python scripts/run_full_pipeline.py --step process
 python scripts/run_full_pipeline.py --step knowledge_base
-python scripts/run_full_pipeline.py --step audit --limit 50   # requiere API key
+python scripts/run_full_pipeline.py --step audit --limit 50
+```
 
-# Dashboard
+### Dashboard
+
+```bash
 streamlit run src/dashboard/app.py
+```
 
-# Make targets
-make download | make process | make build-kb | make audit | make dashboard | make pipeline
+### Tests
+
+```bash
+make test
+# o directamente:
+python -m pytest tests/ -v --cov=src
 ```
 
 ---
 
-## Estructura de datos
+## Comparador CFP vs. INIDEP
 
-### Catálogo SQLite (`data/processed/catalog.db`)
-```
-actas            — metadatos, estado en pipeline, hash del archivo
-resoluciones     — resoluciones parseadas con score de riesgo
-entidades        — especies, empresas, personas, lugares
-menciones        — relaciones resolución↔entidad con contexto
-analisis_sesiones — resultados de auditoría IA por acta
-```
+Módulo central de auditoría científica. Cruza las cuotas aprobadas por el CFP contra la Captura Biológicamente Aceptable (CBA) recomendada por el INIDEP, en cumplimiento de la **Ley 24.922, Art. 9**.
 
-### Knowledge Base Vectorial (`data/knowledge_base/`)
-Embeddings con `paraphrase-multilingual-MiniLM-L12-v2`. Búsqueda semántica con filtros por año, tipo de resolución y especie.
+Sistema de alertas:
+
+| Nivel | Criterio | Riesgo |
+|-------|----------|--------|
+| Verde | CMP ≤ 100% CBA | Dentro del límite científico |
+| Amarillo | CMP 101–115% CBA | Monitorear |
+| Rojo | CMP 116–130% CBA | Sobreasignación significativa |
+| Crítico | CMP > 130% CBA | Riesgo crítico de sostenibilidad |
+
+Datos semilla verificados disponibles para: merluza (ITO 36-37/2024), centolla (ITO 31/2025), abadejo, polaca, langostino.
 
 ---
 
-## Marco legal y ético
+## Modelo de Datos (SQLite `catalog.db`)
 
-Trabaja exclusivamente con **documentos públicos** del Consejo Federal Pesquero, organismo creado por la **Ley Federal de Pesca N° 24.922**. Fuente: [cfp.gob.ar/actas-cfp](https://cfp.gob.ar/actas-cfp). El análisis es descriptivo y no constituye acusación legal.
+```sql
+actas(id, year, nombre, url, filename, local_path, file_hash,
+      download_status, text_extracted, text_path, embedded, analyzed)
+
+resoluciones(id, acta_id, numero, tipo, fecha, texto_completo,
+             votos_favor, votos_contra, quorum, riesgo_score, analisis_ia)
+
+entidades(id, tipo, nombre, nombre_norm)
+  -- tipo: especie | empresa | persona | lugar | normativa | buque
+
+menciones(id, resolucion_id, entidad_id, contexto, sentimiento)
+
+analisis_sesiones(id, acta_id, tipo_analisis, resultado_json, modelo_ia, tokens_usados)
+
+inidep_evaluaciones(id, especie, especie_code, zona, year,
+                    cba_recomendada_tn, estado_stock, numero_ito)
+
+cfp_cuotas(id, especie, especie_code, zona, year, cmp_aprobada_tn, acta_referencia)
+
+comparacion_cfp_inidep(id, especie, zona, year, cba_inidep_tn, cmp_cfp_tn,
+                       diferencia_tn, ratio_sobreasignacion, nivel_alerta)
+```
 
 ---
 
 ## Roadmap
 
-- [x] Ampliar KB a todos los años disponibles (1998–2024)
-- [x] EDA exploratorio del corpus completo (notebook `eda_kb.ipynb`)
-- [ ] NER especializado para entidades pesqueras argentinas
-- [ ] Comparador INIDEP: recomendaciones científicas vs. cuotas otorgadas
-- [ ] Activar auditoría IA masiva sobre corpus 1998–2024 (requiere `ANTHROPIC_API_KEY`)
-- [ ] Timeline interactivo por especie y año (Plotly)
-- [ ] Reporte PDF ejecutivo (reportlab)
+### Sprint 1 — Core pipeline (completado)
+- [x] Scraper batch con retry y catálogo SQLite
+- [x] Extracción PDF en cascada (pdfplumber → PyMuPDF → OCR)
+- [x] Parser estructural de actas (formato real CFP: minutas narrativas)
+- [x] Knowledge base vectorial (ChromaDB + sentence-transformers)
+- [x] Motor de auditoría IA (Claude API + prompt caching)
+- [x] Detector de patrones estadísticos (HHI, votaciones)
+- [x] Dashboard Streamlit 5 páginas
+- [x] **Comparador CFP vs. INIDEP** — alertas por sobreasignación de cuotas
+- [x] **Tests del pipeline core** — 114 tests, CI GitHub Actions
+
+### Sprint 2 — Análisis avanzado (en curso)
+- [ ] NER pesquero especializado (spaCy fine-tuning)
+- [ ] Timeline interactivo por especie (1998–2025)
+- [ ] Grafo de relaciones empresas–decisiones–miembros
+- [ ] Sistema de alertas configurables
+- [ ] Scraping completo de 492 ITOs INIDEP (Mar Abierto)
+
+### Sprint 3 — Producción
 - [ ] API REST (FastAPI)
+- [ ] Reporte PDF ejecutivo automático
+- [ ] Integración FAO FIRMS + CONICET
+- [ ] Docker + CI/CD completo
+
+---
+
+## Marco Legal y Ético
+
+Trabaja exclusivamente con **documentos públicos** del CFP, organismo colegiado creado por la **Ley Federal de Pesca N° 24.922**.
+
+- Fuente primaria: [cfp.gob.ar/actas-cfp](https://cfp.gob.ar/actas-cfp)
+- Fuente científica: [marabierto.inidep.edu.ar](https://marabierto.inidep.edu.ar)
+- El análisis es **descriptivo** — no constituye acusación legal
+- Metodología reproducible y código abierto
 
 ---
 
