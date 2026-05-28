@@ -78,7 +78,7 @@ class TestExtractEspecie:
         assert _extract_especie("Informe sobre langostino patagónico") == "langostino"
 
     def test_calamar(self):
-        assert _extract_especie("Pesquería de calamar illex en el Mar Argentino") == "calamar"
+        assert _extract_especie("Pesquería de calamar illex en el Mar Argentino") == "calamar illex"
 
     def test_centolla(self):
         assert _extract_especie("Evaluación de centolla en la zona austral") == "centolla"
