@@ -74,13 +74,19 @@ def step_process(raw_dir: Path, processed_dir: Path, db_path: Path) -> None:
     logger.success(f"Parseados {count} documentos")
 
     # Marcar procesados en catálogo
-    for json_path in sorted(json_dir.rglob("*.json")):
+    marked = 0
+    for acta in catalog.get_pending("process"):
+        acta_id = acta["id"]
+        local_path = Path(acta["local_path"])
         try:
-            data = json.loads(json_path.read_text(encoding="utf-8"))
-            url_pattern = data.get("filename", "")
-            # Actualizar estado por filename (aproximación)
-        except Exception:
+            rel = local_path.relative_to(raw_dir)
+            text_path = text_dir / rel.with_suffix(".txt")
+            if text_path.exists():
+                catalog.mark_processed(acta_id, text_path)
+                marked += 1
+        except (ValueError, Exception):
             pass
+    logger.info(f"Marcadas {marked} actas como procesadas en catálogo")
 
     logger.success("Procesamiento completado")
 
