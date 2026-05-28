@@ -26,7 +26,7 @@ def mock_search_response():
     """Respuesta DSpace API simulada con 2 items."""
     return {
         "_embedded": {
-            "searchresults": {
+            "searchResult": {
                 "page": {
                     "totalElements": 492,
                     "totalPages": 10,
@@ -193,7 +193,7 @@ class TestMetadataHelpers:
 
 class TestParseSearchResult:
     def test_parsea_item_merluza(self, scraper, mock_search_response):
-        items = mock_search_response["_embedded"]["searchresults"]["_embedded"]["objects"]
+        items = mock_search_response["_embedded"]["searchResult"]["_embedded"]["objects"]
         rec = scraper._parse_search_result(items[0])
         assert rec is not None
         assert rec.uuid == "aaa-111"
@@ -205,7 +205,7 @@ class TestParseSearchResult:
         assert len(rec.autores) == 2
 
     def test_parsea_item_calamar(self, scraper, mock_search_response):
-        items = mock_search_response["_embedded"]["searchresults"]["_embedded"]["objects"]
+        items = mock_search_response["_embedded"]["searchResult"]["_embedded"]["objects"]
         rec = scraper._parse_search_result(items[1])
         assert rec is not None
         assert rec.especie_norm == "calamar_illex"
@@ -222,7 +222,7 @@ class TestScrapeAllMetadata:
         # Simular 2 páginas: primera con 2 items, segunda vacía (fin de paginación)
         empty_response = {
             "_embedded": {
-                "searchresults": {
+                "searchResult": {
                     "page": {"totalElements": 2, "totalPages": 1, "size": 50, "number": 0},
                     "_embedded": {"objects": []},
                 }
@@ -231,13 +231,13 @@ class TestScrapeAllMetadata:
 
         with patch.object(scraper, "_get_json", return_value=mock_search_response):
             # Con totalPages=10 pero items vacíos después de la primera, solo la primera
-            mock_search_response["_embedded"]["searchresults"]["page"]["totalPages"] = 1
+            mock_search_response["_embedded"]["searchResult"]["page"]["totalPages"] = 1
             records = scraper.scrape_all_metadata()
 
         assert len(records) == 2
 
     def test_limite_max_items(self, scraper, mock_search_response):
-        mock_search_response["_embedded"]["searchresults"]["page"]["totalPages"] = 1
+        mock_search_response["_embedded"]["searchResult"]["page"]["totalPages"] = 1
         with patch.object(scraper, "_get_json", return_value=mock_search_response):
             records = scraper.scrape_all_metadata(max_items=1)
         assert len(records) == 1
@@ -245,7 +245,7 @@ class TestScrapeAllMetadata:
     def test_get_total_itos(self, scraper, mock_search_response):
         single_item_resp = {
             "_embedded": {
-                "searchresults": {
+                "searchResult": {
                     "page": {"totalElements": 492, "totalPages": 10},
                     "_embedded": {"objects": []},
                 }
