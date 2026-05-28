@@ -1,73 +1,74 @@
 """
-Parser de documentos del CFP: extrae estructura de actas en resoluciones individuales.
+Parser de actas del CFP: extrae estructura real de las minutas de sesión.
 
-Las actas del CFP tienen formato semi-estructurado:
-  - Encabezado: fecha, lugar, miembros presentes, quórum
-  - Cuerpo: resoluciones formales ("Número de Registro CFP X/YYYY") y
-            decisiones del cuerpo ("se decide por unanimidad...")
-  - Pie: firma de los miembros
-
-Estrategia de extracción:
-  1. Resoluciones formales: buscar "Número de Registro CFP X/YYYY" y extraer
-     el proyecto de resolución previo (hasta 3000 chars atrás).
-  2. Decisiones del cuerpo: buscar "se decide [por unanimidad]" y extraer
-     el contexto circundante como unidad de conocimiento.
+Formato real del CFP:
+  - Orden del Día numerado (1., 1.1., 1.1.1., ...)
+  - Cada punto tiene: descripción del tema → contexto → DECISIÓN
+  - Decisiones: "se decide por unanimidad...", "se aprueba...", "se acuerda..."
+  - Referencias a Resoluciones CFP previas (N° X/YYYY)
+  - CITC = Cuotas Individuales Transferibles de Captura
 """
 import json
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
 from loguru import logger
 
 
-# ── Patrones regex para parsing ───────────────────────────────────────────────
-
-# Resoluciones formales con número de registro oficial
-RE_NUMERO_REGISTRO = re.compile(
-    r"[Nn]úmero\s+de\s+[Rr]egistro\s+CFP\s+(\d+)/(\d{4})",
-)
-
-# Inicio de proyecto de resolución formal
-RE_INICIO_PROYECTO = re.compile(
-    r"(?:se\s+da\s+tratamiento\s+a\s+un\s+proyecto|"
-    r"trat[aó]\s+(?:el\s+)?proyecto\s+de\s+resolución|"
-    r"proyecto\s+de\s+resolución\s+a\s+través)",
-    re.IGNORECASE,
-)
-
-# Decisiones del cuerpo del acta (sin número formal)
-RE_SE_DECIDE = re.compile(
-    r"(?:se\s+decide|Se\s+decide)(?:\s+por\s+unanimidad|\s+instruir|\s+requerir|\s+comunicar)?",
-    re.IGNORECASE,
-)
+# ── Patrones regex ajustados al formato real del CFP ─────────────────────────
 
 RE_FECHA = re.compile(
-    r"(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|"
-    r"septiembre|octubre|noviembre|diciembre)\s+de\s+(\d{4})",
+    r"A los (\d{1,2}) días del mes de "
+    r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|"
+    r"septiembre|octubre|noviembre|diciembre) de (\d{4})",
     re.IGNORECASE,
 )
 
-RE_QUORUM = re.compile(r"qu[oó]rum\s*(?:de)?\s*(\d+)", re.IGNORECASE)
-
-RE_VOTOS = re.compile(
-    r"(\d+)\s+voto[s]?\s+(?:a\s+favor|en\s+favor|afirmativo[s]?)"
-    r"(?:.*?(\d+)\s+(?:en\s+contra|negativo[s]?))?",
+RE_QUORUM = re.compile(
+    r"quórum\s+de\s+([A-ZÁÉÍÓÚÜÑ]+)\s*\((\d+)\)",
     re.IGNORECASE,
+)
+
+RE_DECISION = re.compile(
+    r"se decide\s+(?:por\s+)?(?:unanimidad|mayoría)[,\s]*(.{10,600}?)(?=\n\n|\nA continuación|\nSe instruye|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+RE_APRUEBA = re.compile(
+    r"se (?:aprueba|acuerda|resuelve|autoriza|instruye|establece)\s+(?:por unanimidad\s+)?(.{10,500}?)(?=\n\n|\Z)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+RE_AGENDA_ITEM = re.compile(
+    r"^(\d+(?:\.\d+)*)\.\s+(.+?)(?=\n\d+(?:\.\d+)*\.|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+RE_EMPRESA = re.compile(
+    r"\b([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\s\-\.]{2,50}?\s*(?:S\.A\.|S\.R\.L\.|SRL|SA|S\.A\.C\.I\.|LTDA\.|COOP\.))",
 )
 
 RE_ESPECIE = re.compile(
-    r"\b(merluza(?:\s+(?:hubbsi|de\s+cola|negra))?|langostino|calamar"
-    r"|abadejo|polaca|corvina|anchoita|caballa|salmon|pejerrey|centolla"
-    r"|vieira|mariscos?|moluscos?)\b",
+    r"\b(merluza(?:\s+(?:común|hubbsi|de cola|negra|austral))?|"
+    r"langostino|calamar(?:\s+(?:illex|loligo))?|abadejo|polaca|"
+    r"corvina(?:\s+(?:rubia|negra))?|anchoíta|anchoita|caballa|"
+    r"salmón(?:\s+de\s+mar)?|salmon|pejerrey|centolla|vieira|"
+    r"mariscos?|moluscos?|merluza hubbsi)\b",
     re.IGNORECASE,
 )
 
-RE_CUOTA = re.compile(
-    r"(\d[\d\.,]*)\s*(?:toneladas?|tn\.?|t\.?)(?:\s*métricas?)?",
+RE_TONELADAS = re.compile(
+    r"([\d\.]+(?:,\d+)?)\s*(?:toneladas?|tn\.?|t\.?)(?:\s*métricas?)?",
     re.IGNORECASE,
+)
+
+RE_CITC = re.compile(r"\bCITC\b")
+
+RE_MIEMBRO = re.compile(
+    r"(?:Representante|Presidente|Secretario|Director)\s+(?:del?|de la)?\s*"
+    r"(?:CFP|Provincia|PODER EJECUTIVO|MINISTERIO|INIDEP|Autoridad).*?[,\n]"
 )
 
 MESES = {
@@ -78,31 +79,32 @@ MESES = {
 
 
 @dataclass
-class Resolucion:
-    numero: str
-    year: int
+class Decision:
+    """Una decisión tomada en la sesión del CFP."""
     texto: str
-    fecha_acta: Optional[str] = None
-    tipo: Optional[str] = None
-    votos_favor: Optional[int] = None
-    votos_contra: Optional[int] = None
-    abstenciones: Optional[int] = None
-    quorum: Optional[int] = None
+    tipo: str                               # unanimidad | mayoria | aprobacion | otro
+    agenda_punto: Optional[str] = None      # "1.1.3" etc.
+    tema: Optional[str] = None              # descripción del punto de agenda
     especies_mencionadas: list[str] = field(default_factory=list)
-    cuotas_toneladas: list[float] = field(default_factory=list)
     empresas_mencionadas: list[str] = field(default_factory=list)
+    toneladas: list[float] = field(default_factory=list)
+    tiene_citc: bool = False
+    referencias_res_cfp: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Acta:
     filename: str
     year: int
+    numero: Optional[str] = None           # "34" de "ACTA CFP N° 34/2025"
     fecha: Optional[str] = None
     lugar: Optional[str] = None
     quorum: Optional[int] = None
     texto_completo: str = ""
-    resoluciones: list[Resolucion] = field(default_factory=list)
     miembros_presentes: list[str] = field(default_factory=list)
+    decisiones: list[Decision] = field(default_factory=list)
+    # Alias para compatibilidad con el resto del sistema
+    resoluciones: list[Decision] = field(default_factory=list)
 
 
 def parse_fecha(text: str) -> Optional[str]:
@@ -115,194 +117,167 @@ def parse_fecha(text: str) -> Optional[str]:
     return None
 
 
-def classify_resolucion(texto: str) -> str:
-    """Clasifica el tipo de resolución según palabras clave."""
-    texto_l = texto.lower()
-    if any(k in texto_l for k in ["cuota", "captura máxima", "tonelada"]):
+def parse_numero_acta(text: str) -> Optional[str]:
+    m = re.search(r"ACTA\s+CFP\s+N[°º]\s*(\d+)/(\d{4})", text[:500])
+    if m:
+        return m.group(1)
+    return None
+
+
+def parse_quorum(text: str) -> Optional[int]:
+    m = RE_QUORUM.search(text[:2000])
+    if m:
+        return int(m.group(2))
+    return None
+
+
+def parse_miembros(text: str) -> list[str]:
+    """Extrae miembros presentes del encabezado."""
+    presentes_match = re.search(
+        r"Se encuentran presentes:(.+?)(?:También se encuentran|Con un quórum|\Z)",
+        text[:3000],
+        re.DOTALL | re.IGNORECASE,
+    )
+    miembros = []
+    if presentes_match:
+        bloque = presentes_match.group(1)
+        # Extraer nombres con cargo (patrones: "el Lic. Juan García," o "la Dra. María López,")
+        for frag in re.split(r",\s*(?:el |la |los |las )", bloque):
+            frag = frag.strip()
+            if 10 < len(frag) < 120:
+                miembros.append(frag)
+    return miembros[:15]
+
+
+def classify_decision(texto: str) -> str:
+    """Clasifica el tipo de decisión."""
+    tl = texto.lower()
+    if "unanimidad" in tl:
+        return "unanimidad"
+    if "mayoría" in tl or "mayoria" in tl:
+        return "mayoria"
+    if "aprueba" in tl or "aprob" in tl:
+        return "aprobacion"
+    if "citc" in tl or "cuota" in tl or "captura máxima" in tl:
         return "cuota_captura"
-    if any(k in texto_l for k in ["veda", "suspender", "suspensión"]):
+    if "veda" in tl or "prohibi" in tl:
         return "veda"
-    if any(k in texto_l for k in ["habilitación", "permiso de pesca", "matricula"]):
+    if "permiso" in tl or "habilitación" in tl or "buque" in tl:
         return "habilitacion_buque"
-    if any(k in texto_l for k in ["área protegida", "zona de veda", "reserva"]):
-        return "area_protegida"
-    if any(k in texto_l for k in ["convenio", "acuerdo internacional", "tratado"]):
-        return "convenio_internacional"
-    if any(k in texto_l for k in ["investigación", "inidep", "científic"]):
-        return "investigacion"
-    if any(k in texto_l for k in ["sanción", "infracción", "multa"]):
-        return "sancion"
-    if any(k in texto_l for k in ["reglamento", "reglamentación", "resolución conjunta"]):
-        return "reglamento"
     return "otro"
 
 
-def extract_empresas(texto: str) -> list[str]:
-    """Extrae nombres de empresas (heurística basada en patrones comunes del sector)."""
-    empresas = []
-    # S.A., S.R.L., S.A.C.I., Ltda., etc.
-    pattern = re.compile(
-        r"\b([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñA-ZÁÉÍÓÚÜÑ\s\-\.]{2,40}?"
-        r"(?:S\.A\.|S\.R\.L\.|S\.A\.C\.I\.|Ltda\.|SRL|SA))\b"
-    )
-    for m in pattern.finditer(texto):
-        name = m.group(1).strip()
-        if len(name) > 5:
-            empresas.append(name)
-    return list(set(empresas))
+def extract_referencias_cfp(text: str) -> list[str]:
+    """Extrae referencias a Resoluciones/Actas CFP previas."""
+    return list(set(re.findall(
+        r"(?:Resolución|Acta)\s+CFP\s+N[°º]\s*[\d/]+",
+        text, re.IGNORECASE
+    )))[:10]
 
 
-def parse_acta(text: str, filename: str) -> Acta:
-    """Parsea el texto completo de un acta y retorna estructura Acta.
-
-    Extrae dos tipos de contenido:
-    - Resoluciones formales: bloques con "Número de Registro CFP X/YYYY"
-    - Decisiones del cuerpo: frases "se decide [por unanimidad]..."
-    """
-    year_match = re.search(r"(\d{4})", filename)
-    year = int(year_match.group(1)) if year_match else 0
-
-    acta = Acta(
-        filename=filename,
-        year=year,
-        fecha=parse_fecha(text),
-        texto_completo=text,
-        quorum=_extract_quorum(text),
-        miembros_presentes=_extract_miembros(text),
-    )
-
-    # ── 1. Resoluciones formales (con número de registro oficial) ─────────────
-    seen_registros: set[str] = set()
-    for m in RE_NUMERO_REGISTRO.finditer(text):
-        numero = m.group(1)
-        res_year = int(m.group(2))
-        key = f"{numero}/{res_year}"
-        if key in seen_registros:
-            continue
-        seen_registros.add(key)
-
-        # Buscar inicio del proyecto de resolución (hasta 3000 chars atrás)
-        lookback_start = max(0, m.start() - 3000)
-        preceding = text[lookback_start:m.end()]
-        proyecto_m = list(RE_INICIO_PROYECTO.finditer(preceding))
-        if proyecto_m:
-            texto_res = preceding[proyecto_m[-1].start():]
-        else:
-            texto_res = text[max(0, m.start() - 1500):m.end()]
-
-        votos_f, votos_c = _extract_votos(texto_res)
-        especies = list({em.group(0).lower() for em in RE_ESPECIE.finditer(texto_res)})
-        cuotas = _parse_cuotas(texto_res)
-
-        acta.resoluciones.append(Resolucion(
-            numero=numero,
-            year=res_year,
-            texto=texto_res[:2000],
-            fecha_acta=acta.fecha,
-            tipo=classify_resolucion(texto_res),
-            votos_favor=votos_f,
-            votos_contra=votos_c,
-            especies_mencionadas=especies,
-            cuotas_toneladas=cuotas,
-            empresas_mencionadas=extract_empresas(texto_res),
-        ))
-
-    # ── 2. Decisiones del cuerpo (sin número formal) ─────────────────────────
-    # Posiciones de resoluciones formales para evitar solapamiento
-    formal_positions = {
-        (max(0, m.start() - 3000), m.end())
-        for m in RE_NUMERO_REGISTRO.finditer(text)
-    }
-
-    decision_count = 0
-    for m in RE_SE_DECIDE.finditer(text):
-        # Saltar si está dentro de un bloque de resolución formal
-        in_formal = any(start <= m.start() <= end for start, end in formal_positions)
-        if in_formal:
-            continue
-
-        # Extraer contexto: 300 chars antes + hasta el final del párrafo (~600 chars)
-        ctx_start = max(0, m.start() - 300)
-        # Avanzar hasta el final del párrafo (doble newline o 600 chars)
-        rest = text[m.start():]
-        para_end = re.search(r"\n\n|\Z", rest, re.DOTALL)
-        ctx_end = m.start() + (para_end.start() if para_end else min(600, len(rest)))
-        ctx_end = min(ctx_end, m.start() + 600)
-
-        texto_res = text[ctx_start:ctx_end].strip()
-        if len(texto_res) < 50:
-            continue
-
-        decision_count += 1
-        votos_f, votos_c = _extract_votos(texto_res)
-        especies = list({em.group(0).lower() for em in RE_ESPECIE.finditer(texto_res)})
-        cuotas = _parse_cuotas(texto_res)
-
-        acta.resoluciones.append(Resolucion(
-            numero=f"D{decision_count}",
-            year=year,
-            texto=texto_res[:2000],
-            fecha_acta=acta.fecha,
-            tipo=classify_resolucion(texto_res),
-            votos_favor=votos_f,
-            votos_contra=votos_c,
-            especies_mencionadas=especies,
-            cuotas_toneladas=cuotas,
-            empresas_mencionadas=extract_empresas(texto_res),
-        ))
-
-    n_formal = len(seen_registros)
-    n_informal = decision_count
-    if acta.resoluciones:
-        logger.debug(
-            f"  {filename}: {n_formal} resoluciones formales + {n_informal} decisiones"
-        )
-    else:
-        logger.debug(f"  {filename}: sin resoluciones ni decisiones detectadas")
-    return acta
-
-
-def _parse_cuotas(texto: str) -> list[float]:
+def extract_toneladas(texto: str) -> list[float]:
     result = []
-    for m in RE_CUOTA.finditer(texto):
+    for m in RE_TONELADAS.finditer(texto):
         try:
-            result.append(float(m.group(1).replace(".", "").replace(",", ".")))
+            val = float(m.group(1).replace(".", "").replace(",", "."))
+            if 0 < val < 5_000_000:
+                result.append(val)
         except ValueError:
             pass
     return result
 
 
-def _extract_quorum(text: str) -> Optional[int]:
-    m = RE_QUORUM.search(text)
-    return int(m.group(1)) if m else None
+def parse_decisions(text: str) -> list[Decision]:
+    """Extrae todas las decisiones del texto de un acta."""
+    decisions = []
+
+    # Estrategia 1: buscar patrones "se decide por unanimidad"
+    for m in RE_DECISION.finditer(text):
+        texto = m.group(1).strip()[:800]
+        especies = list({x.lower() for x in RE_ESPECIE.findall(texto)})
+        empresas = list({e.strip() for e in RE_EMPRESA.findall(texto)})
+        d = Decision(
+            texto=texto,
+            tipo="unanimidad",
+            especies_mencionadas=especies,
+            empresas_mencionadas=empresas,
+            toneladas=extract_toneladas(texto),
+            tiene_citc=bool(RE_CITC.search(texto)),
+            referencias_res_cfp=extract_referencias_cfp(texto),
+        )
+        decisions.append(d)
+
+    # Estrategia 2: buscar puntos de agenda con su decisión
+    agenda_blocks = _split_by_agenda(text)
+    for punto, tema, bloque in agenda_blocks:
+        if not any(kw in bloque.lower() for kw in
+                   ["unanimidad", "aprueba", "acuerda", "resuelve", "autoriza", "instruye"]):
+            continue
+        # Extraer la parte de la decisión (después del contexto)
+        decisiones_en_bloque = re.findall(
+            r"se (?:decide|aprueba|acuerda|resuelve|autoriza|establece|instruye)"
+            r"(?:\s+por unanimidad)?[,\s]*(.{10,600}?)(?=\n\n|\nA continuación|\Z)",
+            bloque, re.IGNORECASE | re.DOTALL
+        )
+        for texto_dec in decisiones_en_bloque:
+            texto_dec = texto_dec.strip()[:800]
+            if any(d.texto[:100] == texto_dec[:100] for d in decisions):
+                continue  # Ya capturado
+            especies = list({x.lower() for x in RE_ESPECIE.findall(bloque)})
+            empresas = list({e.strip() for e in RE_EMPRESA.findall(bloque)})
+            d = Decision(
+                texto=texto_dec,
+                tipo=classify_decision(texto_dec),
+                agenda_punto=punto,
+                tema=tema[:150] if tema else None,
+                especies_mencionadas=especies,
+                empresas_mencionadas=empresas,
+                toneladas=extract_toneladas(bloque),
+                tiene_citc=bool(RE_CITC.search(bloque)),
+                referencias_res_cfp=extract_referencias_cfp(bloque),
+            )
+            decisions.append(d)
+
+    return decisions
 
 
-def _extract_votos(text: str) -> tuple[Optional[int], Optional[int]]:
-    m = RE_VOTOS.search(text)
-    if m:
-        favor = int(m.group(1))
-        contra = int(m.group(2)) if m.group(2) else 0
-        return favor, contra
-    return None, None
+def _split_by_agenda(text: str) -> list[tuple[str, str, str]]:
+    """Divide el texto en bloques por punto de agenda."""
+    # Buscar encabezados de agenda: "1.\nTITULO" o "1.2. Titulo"
+    pattern = re.compile(r"^(\d+(?:\.\d+)*)\.\s*\n?([^\n]{3,100})\n", re.MULTILINE)
+    matches = list(pattern.finditer(text))
+    blocks = []
+    for i, m in enumerate(matches):
+        punto = m.group(1)
+        tema = m.group(2).strip()
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        bloque = text[start:end]
+        if len(bloque) > 50:
+            blocks.append((punto, tema, bloque))
+    return blocks
 
 
-def _extract_miembros(text: str) -> list[str]:
-    """Extrae lista de miembros presentes del encabezado."""
-    miembros = []
-    # Buscar sección típica de presentes
-    presentes_match = re.search(
-        r"(?:PRESENTES?|Se\s+encuentran\s+presentes?)[:\s]+(.+?)(?:\n\n|\Z)",
-        text,
-        re.DOTALL | re.IGNORECASE,
+def parse_acta(text: str, filename: str) -> Acta:
+    """Parsea el texto completo de un acta y retorna estructura Acta."""
+    year_match = re.search(r"(\d{4})", filename)
+    year = int(year_match.group(1)) if year_match else 0
+
+    decisiones = parse_decisions(text)
+
+    acta = Acta(
+        filename=filename,
+        year=year,
+        numero=parse_numero_acta(text),
+        fecha=parse_fecha(text),
+        texto_completo=text,
+        quorum=parse_quorum(text),
+        miembros_presentes=parse_miembros(text),
+        decisiones=decisiones,
+        resoluciones=decisiones,   # alias para compatibilidad
     )
-    if presentes_match:
-        bloque = presentes_match.group(1)
-        # Extraer líneas con nombre + cargo
-        for line in bloque.split("\n"):
-            line = line.strip()
-            if len(line) > 10 and len(line) < 100:
-                miembros.append(line)
-    return miembros[:20]  # Máximo 20 miembros
+
+    return acta
 
 
 def batch_parse(text_dir: Path, output_dir: Path) -> int:
@@ -324,6 +299,7 @@ def batch_parse(text_dir: Path, output_dir: Path) -> int:
                 encoding="utf-8",
             )
             count += 1
+            logger.debug(f"  {txt_path.name}: {len(acta.decisiones)} decisiones")
         except Exception as exc:
             logger.error(f"Error parseando {txt_path.name}: {exc}")
 
