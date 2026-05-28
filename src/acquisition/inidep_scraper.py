@@ -122,7 +122,7 @@ class INIDEPScraper:
     def get_total_itos(self) -> int:
         """Retorna el total de ITOs en la colección."""
         data = self.list_itos_page(page=0, size=1)
-        return data.get("_embedded", {}).get("searchresults", {}).get("page", {}).get("totalElements", 0)
+        return data.get("_embedded", {}).get("searchResult", {}).get("page", {}).get("totalElements", 0)
 
     def scrape_all_metadata(self, max_items: Optional[int] = None) -> list[ITORecord]:
         """
@@ -141,7 +141,7 @@ class INIDEPScraper:
                 logger.error(f"Error en página {page}: {exc}")
                 break
 
-            embedded = data.get("_embedded", {}).get("searchresults", {})
+            embedded = data.get("_embedded", {}).get("searchResult", {})
             page_info = embedded.get("page", {})
 
             if total_pages is None:
@@ -300,7 +300,7 @@ class INIDEPScraper:
                 logger.error(f"Error buscando '{especie}': {exc}")
                 break
 
-            embedded = data.get("_embedded", {}).get("searchresults", {})
+            embedded = data.get("_embedded", {}).get("searchResult", {})
             items = embedded.get("_embedded", {}).get("objects", [])
             total_pages = embedded.get("page", {}).get("totalPages", 1)
 
