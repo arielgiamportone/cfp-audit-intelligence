@@ -167,16 +167,28 @@ class INIDEPComparator:
             conn.commit()
 
     def upsert_inidep_evaluacion(self, rec: dict) -> None:
+        """Inserta una evaluación INIDEP. Ignora duplicados (mismo especie_code+zona+year+ito)."""
         with self._conn() as conn:
             conn.execute(
                 """
                 INSERT INTO inidep_evaluaciones
                     (especie, especie_code, zona, year, cba_recomendada_tn,
-                     estado_stock, numero_ito, fuente_url, notas)
+                     cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)
                 VALUES (:especie, :especie_code, :zona, :year, :cba_recomendada_tn,
-                        :estado_stock, :numero_ito, :fuente_url, :notas)
+                        :cba_alternativa_tn, :estado_stock, :numero_ito, :fuente_url, :notas)
                 """,
-                rec,
+                {
+                    "especie": rec.get("especie"),
+                    "especie_code": rec.get("especie_code"),
+                    "zona": rec.get("zona"),
+                    "year": rec.get("year"),
+                    "cba_recomendada_tn": rec.get("cba_recomendada_tn"),
+                    "cba_alternativa_tn": rec.get("cba_alternativa_tn"),
+                    "estado_stock": rec.get("estado_stock"),
+                    "numero_ito": rec.get("numero_ito"),
+                    "fuente_url": rec.get("fuente_url"),
+                    "notas": rec.get("notas"),
+                },
             )
             conn.commit()
 
