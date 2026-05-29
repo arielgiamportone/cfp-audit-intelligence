@@ -1,10 +1,10 @@
 # CFP Audit Intelligence — Backlog y Roadmap
 
-> Estado: 2026-05-28 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `claude/cfp-fisheries-audit-project-lLMib`
+> Estado: 2026-05-29 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `claude/cfp-fisheries-audit-project-lLMib`
 
 ---
 
-## ✅ Completado (v0.2 — Sprint 1)
+## ✅ Completado (v0.3 — Sprints 1–3)
 
 ### Infraestructura base
 - [x] Scraper batch CLI con retry y rate limiting (tenacity, 1.5s delay)
@@ -14,7 +14,7 @@
 - [x] Vector store ChromaDB con embeddings multilingües (`paraphrase-multilingual-MiniLM-L12-v2`)
 - [x] Motor de auditoría con Claude API + prompt caching
 - [x] Detector de patrones estadísticos (HHI concentración, votaciones, reversiones)
-- [x] Dashboard Streamlit multipágina (5 páginas activas)
+- [x] Dashboard Streamlit multipágina (11 páginas activas)
 - [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit`)
 - [x] Makefile con targets clave
 - [x] ADRs (001–004), CLAUDE.md, AGENTS.md
@@ -26,83 +26,95 @@
 - [x] Motor de comparación con 4 niveles de alerta (verde/amarillo/rojo/crítico)
 - [x] Página dashboard `05_INIDEP_Comparador.py` con alertas, gráficos, formulario manual
 
-### Tests y CI (Issue #3)
-- [x] `tests/conftest.py` — fixtures compartidas
-- [x] `tests/test_document_parser.py` — 43 tests del parser (fecha, quórum, decisiones, agenda)
-- [x] `tests/test_catalog_manager.py` — 16 tests del catálogo SQLite
-- [x] `tests/test_inidep_comparator.py` — 21 tests del comparador (alertas, ratios, persistencia)
-- [x] `tests/test_inidep_scraper.py` — 34 tests (SEED_DATA, extracción especie/zona, normalización)
-- [x] 114 tests totales, todos verdes
-- [x] GitHub Actions CI (`.github/workflows/tests.yml`) — Python 3.10 y 3.11
+### NER pesquero especializado (Issue #5)
+- [x] EntityRuler spaCy con 6 categorías: ESPECIE, EMPRESA_PESQUERA, PERSONA_CFP, NORMATIVA, ZONA_PESCA, BUQUE
+- [x] Integrado en `document_parser.py` reemplazando heurísticas regex
+- [x] Tests en `test_ner_pesquero.py`
 
-### Repo y documentación
-- [x] Repo renombrado: `cfp-actas-scraper` → `cfp-audit-intelligence`
-- [x] Archivos legacy eliminados del root (`cfp_scraper.py`, HTMLs de prueba)
-- [x] README reescrito con arquitectura, módulos, roadmap y marco legal
+### Timeline interactivo por especie (Issue #6)
+- [x] Dataset de cuotas históricas en `cfp_cuotas` SQLite
+- [x] Página `06_Timeline.py` con Plotly y overlay INIDEP
+- [x] Filtro por especie, zona, empresa
+
+### Grafo de relaciones (Issue #7)
+- [x] NetworkX + pyvis: empresas — resoluciones — miembros CFP
+- [x] Detección de comunidades (`graph_builder.py`)
+- [x] Página `07_Grafo.py` con visualización interactiva
+
+### Sistema de alertas configurables (Issue #8)
+- [x] Motor de alertas con 4 tipos: `cuota_supera_cba | empresa_recurrente | veda_revertida | quorum_minimo`
+- [x] `test_alert_engine.py` con cobertura completa
+- [x] Página `08_Alertas.py`
+
+### API REST FastAPI (Issue #13)
+- [x] `GET /actas`, `GET /resoluciones/{id}`, `POST /search`, `POST /analyze`
+- [x] `/health` endpoint para Docker healthcheck
+- [x] Documentación OpenAPI auto-generada
+- [x] Tests en `test_api.py` y `test_inidep_scraper_api.py`
+
+### Reporte PDF ejecutivo (Issue #12)
+- [x] Template reportlab: portada, hallazgos, alertas, comparaciones CFP/INIDEP, top actores, metodología
+- [x] `src/analysis/report_generator.py` con `CFPReportGenerator`
+- [x] Página `09_Reporte.py` con generación y descarga PDF
+- [x] 25 tests en `test_report_generator.py`
+
+### Infraestructura Docker + CI (Issue #14)
+- [x] Dockerfile multi-stage (builder → runtime, non-root user)
+- [x] `docker-compose.yml` con api + dashboard, healthchecks, volumes
+- [x] GitHub Actions CI 3 jobs: lint (ruff), test (matrix 3.10/3.11), docker-build
+- [x] `.dockerignore` optimizado
+
+### Integración FAO FIRMS (Issue #10)
+- [x] `src/acquisition/fao_firms_scraper.py` con 8 especies, datos seed verificados
+- [x] Schema: `fao_capturas` + `fao_stock_status`
+- [x] Página `10_FAO_FIRMS.py`: capturas Argentina vs. Mundo, estado de stocks, alertas sobrexplotación
+- [x] 39 tests en `test_fao_firms.py`
+
+### Publicaciones científicas CONICET/INIDEP (Issue #11)
+- [x] `src/acquisition/conicet_scraper.py` con DSpace REST API y 12 publicaciones seed
+- [x] `normalizar_especie_from_titulo()` con detección científico/común
+- [x] Página `11_CONICET.py`: 3 tabs (por especie, búsqueda live, tabla completa)
+- [x] 40 tests en `test_conicet_scraper.py`
+
+### Tests y CI
+- [x] 350 tests totales, todos verdes
+- [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ---
 
-## 🔴 Prioridad Alta (Sprint 2)
-
-### [FEAT] NER pesquero especializado (Issue #5)
-- [ ] Corpus de entrenamiento: anotar ~500 resoluciones con spaCy
-- [ ] Entidades: ESPECIE, EMPRESA_PESQUERA, PERSONA_CFP, NORMATIVA, ZONA_PESCA, BUQUE
-- [ ] Fine-tuning de `es_core_news_sm` o `spaCy-transformers`
-- [ ] Integrar NER en `document_parser.py` reemplazando heurísticas regex
-- [ ] Validar recall sobre entidades conocidas (Merluza, CONARPESA, INIDEP, etc.)
-
-### [FEAT] Timeline interactivo por especie (Issue #6)
-- [ ] Dataset de cuotas históricas 1998–2025 extraídas del pipeline
-- [ ] Visualización Plotly: línea temporal con eventos (vedas, reaperturas, picos de cuota)
-- [ ] Overlay con recomendaciones INIDEP
-- [ ] Filtro por especie, zona, empresa
-- [ ] Página `06_Timeline.py`
-
-### [FEAT] Grafo de relaciones (Issue #7)
-- [ ] NetworkX: empresas — resoluciones — miembros CFP
-- [ ] Visualización interactiva con pyvis
-- [ ] Detección de comunidades (empresas con patrones compartidos)
-- [ ] Página `07_Grafo.py`
+## 🔴 Prioridad Alta
 
 ### [FEAT] Scraping completo INIDEP Mar Abierto (Issue #9)
 - [ ] Scraping de los 492 ITOs disponibles en marabierto.inidep.edu.ar
 - [ ] Extracción automática de valores CBA desde texto de ITOs
 - [ ] Enriquecer `inidep_evaluaciones` con series históricas por especie
+- [ ] Tests con fixtures HTTP mockeadas (no llamadas reales)
 
 ---
 
-## 🟡 Prioridad Media (Sprint 3)
-
-### [FEAT] Sistema de alertas configurables (Issue #8)
-- [ ] Modelo: `alertas(id, tipo, especie, empresa, umbral, activa)`
-- [ ] Tipos: `cuota_supera_cba | empresa_recurrente | veda_revertida | quorum_minimo`
-- [ ] Notificación email/webhook cuando se detecta alerta
-
-### [FEAT] Integración fuentes externas
-- [ ] FAO FIRMS: capturas globales por especie para contexto internacional (Issue #10)
-- [ ] CONICET/UTN: publicaciones científicas para enriquecer KB (Issue #11)
-- [ ] Capturas reales SIPA/SAGPyA: validar cuotas vs capturas efectivas
+## 🟡 Prioridad Media
 
 ### [IMPROVEMENT] Mejoras al parser
 - [ ] Extraer fecha exacta de cada resolución (no solo del acta)
 - [ ] Detectar miembros que votaron en contra por nombre
 - [ ] Manejo de actas multi-sesión (plenarios largos)
 
+### [FEAT] Capturas reales SIPA/SAGPyA
+- [ ] Validar cuotas CFP vs capturas efectivas por especie/año
+- [ ] Integrar en comparador para detectar sub-utilización de cuotas
+
 ---
 
-## 🟢 Prioridad Baja (Sprint 4)
+## 🟢 Prioridad Baja
 
-### [FEAT] API REST FastAPI (Issue #13)
-- [ ] `GET /actas`, `GET /resoluciones/{id}`, `POST /search`, `POST /analyze`
-- [ ] Documentación OpenAPI auto-generada
+### [INFRA] Deployment
+- [ ] Publicación en Streamlit Cloud o HuggingFace Spaces
+- [ ] Dataset abierto en Hugging Face / Zenodo (actas procesadas 1998–2025)
 
-### [FEAT] Reporte PDF ejecutivo (Issue #12)
-- [ ] Template reportlab: portada, hallazgos, evidencia textual, gráficos
-- [ ] Generación desde dashboard
-
-### [IMPROVEMENT] Infraestructura (Issue #14)
-- [ ] Docker + docker-compose
-- [ ] GitHub Actions: pipeline completo con PDFs de prueba en CI
+### [ANALYSIS] Investigación futura
+- [ ] Modelo predictivo: ¿qué variables predicen cuota > CBA?
+- [ ] Red de conflictos de interés: directores de empresas pesqueras en cargos públicos
+- [ ] Comparación internacional con Chile, Perú, UE
 
 ---
 
@@ -110,9 +122,9 @@
 
 | Decisión | Opciones | Deadline |
 |----------|---------|---------|
-| ¿Dónde hospedar el dashboard? | Streamlit Cloud / HuggingFace Spaces / VPS | Sprint 3 |
+| ¿Dónde hospedar el dashboard? | Streamlit Cloud / HuggingFace Spaces / VPS | Sprint 4 |
 | ¿Publicar datos procesados? | Dataset abierto en Hugging Face / Zenodo | Sprint 4 |
-| ¿Framework de anotación NER? | Prodigy (pago) / Label Studio (libre) / Doccano | Sprint 2 |
+| ¿Framework de anotación NER? | Prodigy (pago) / Label Studio (libre) / Doccano | Sprint 4 |
 
 ---
 
@@ -120,13 +132,3 @@
 
 - [ ] El parser puede fallar en actas con estructura atípica (sesiones extraordinarias muy cortas)
 - [ ] El delay de scraping hardcodeado en el dashboard no usa `config/settings.yaml`
-
----
-
-## 💡 Ideas para investigación futura
-
-- Análisis de sentimiento en declaraciones de miembros del CFP
-- Modelo predictivo: ¿qué variables predicen una cuota por encima de la CBA?
-- Red de conflictos de interés: directores de empresas pesqueras en cargos públicos
-- Comparación internacional: decisiones CFP vs organismos equivalentes (Chile, Perú, UE)
-- Publicación como dataset abierto en Hugging Face (actas procesadas 1998–2025)
