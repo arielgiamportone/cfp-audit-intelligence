@@ -4,23 +4,22 @@ Generador de reportes PDF ejecutivos para el CFP Audit Intelligence.
 Produce un informe técnico con portada, resumen ejecutivo, hallazgos
 de auditoría, comparaciones CFP-INIDEP, alertas activas y gráficos.
 """
+
 import io
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     BaseDocTemplate,
     Frame,
     HRFlowable,
-    Image,
     NextPageTemplate,
     PageBreak,
     PageTemplate,
@@ -31,17 +30,16 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.flowables import KeepTogether
 
-
 # ── Paleta de colores ──────────────────────────────────────────────────────────
 
-COLOR_PRIMARY = colors.HexColor("#1565C0")   # azul oscuro
-COLOR_ACCENT = colors.HexColor("#E65100")    # naranja
-COLOR_DANGER = colors.HexColor("#C62828")    # rojo
-COLOR_WARNING = colors.HexColor("#F57F17")   # ámbar
-COLOR_SUCCESS = colors.HexColor("#2E7D32")   # verde
-COLOR_LIGHT = colors.HexColor("#E3F2FD")     # azul muy claro
-COLOR_GRAY = colors.HexColor("#757575")      # gris
-COLOR_DARK = colors.HexColor("#212121")      # casi negro
+COLOR_PRIMARY = colors.HexColor("#1565C0")  # azul oscuro
+COLOR_ACCENT = colors.HexColor("#E65100")  # naranja
+COLOR_DANGER = colors.HexColor("#C62828")  # rojo
+COLOR_WARNING = colors.HexColor("#F57F17")  # ámbar
+COLOR_SUCCESS = colors.HexColor("#2E7D32")  # verde
+COLOR_LIGHT = colors.HexColor("#E3F2FD")  # azul muy claro
+COLOR_GRAY = colors.HexColor("#757575")  # gris
+COLOR_DARK = colors.HexColor("#212121")  # casi negro
 
 ALERTA_COLORS = {
     "verde": COLOR_SUCCESS,
@@ -63,69 +61,92 @@ def _build_styles() -> dict:
         "title": ParagraphStyle(
             "ReportTitle",
             parent=base["Title"],
-            fontSize=24, textColor=COLOR_PRIMARY,
-            spaceAfter=6, alignment=TA_CENTER, leading=28,
+            fontSize=24,
+            textColor=COLOR_PRIMARY,
+            spaceAfter=6,
+            alignment=TA_CENTER,
+            leading=28,
         ),
         "subtitle": ParagraphStyle(
             "ReportSubtitle",
             parent=base["Normal"],
-            fontSize=13, textColor=COLOR_GRAY,
-            spaceAfter=4, alignment=TA_CENTER,
+            fontSize=13,
+            textColor=COLOR_GRAY,
+            spaceAfter=4,
+            alignment=TA_CENTER,
         ),
         "h1": ParagraphStyle(
             "H1",
             parent=base["Heading1"],
-            fontSize=16, textColor=COLOR_PRIMARY,
-            spaceBefore=16, spaceAfter=6,
+            fontSize=16,
+            textColor=COLOR_PRIMARY,
+            spaceBefore=16,
+            spaceAfter=6,
         ),
         "h2": ParagraphStyle(
             "H2",
             parent=base["Heading2"],
-            fontSize=12, textColor=COLOR_DARK,
-            spaceBefore=10, spaceAfter=4,
+            fontSize=12,
+            textColor=COLOR_DARK,
+            spaceBefore=10,
+            spaceAfter=4,
         ),
         "body": ParagraphStyle(
             "Body",
             parent=base["Normal"],
-            fontSize=10, leading=14, alignment=TA_JUSTIFY,
+            fontSize=10,
+            leading=14,
+            alignment=TA_JUSTIFY,
             spaceAfter=6,
         ),
         "caption": ParagraphStyle(
             "Caption",
             parent=base["Normal"],
-            fontSize=8, textColor=COLOR_GRAY,
-            alignment=TA_CENTER, spaceAfter=4,
+            fontSize=8,
+            textColor=COLOR_GRAY,
+            alignment=TA_CENTER,
+            spaceAfter=4,
         ),
         "alert_critical": ParagraphStyle(
             "AlertCritical",
             parent=base["Normal"],
-            fontSize=9, textColor=COLOR_DANGER,
+            fontSize=9,
+            textColor=COLOR_DANGER,
             backColor=colors.HexColor("#FFEBEE"),
-            leftIndent=8, rightIndent=8, spaceAfter=4,
+            leftIndent=8,
+            rightIndent=8,
+            spaceAfter=4,
         ),
         "alert_warning": ParagraphStyle(
             "AlertWarning",
             parent=base["Normal"],
-            fontSize=9, textColor=colors.HexColor("#E65100"),
+            fontSize=9,
+            textColor=colors.HexColor("#E65100"),
             backColor=colors.HexColor("#FFF3E0"),
-            leftIndent=8, rightIndent=8, spaceAfter=4,
+            leftIndent=8,
+            rightIndent=8,
+            spaceAfter=4,
         ),
         "metric_value": ParagraphStyle(
             "MetricValue",
             parent=base["Normal"],
-            fontSize=22, textColor=COLOR_PRIMARY,
-            alignment=TA_CENTER, leading=26,
+            fontSize=22,
+            textColor=COLOR_PRIMARY,
+            alignment=TA_CENTER,
+            leading=26,
         ),
         "metric_label": ParagraphStyle(
             "MetricLabel",
             parent=base["Normal"],
-            fontSize=8, textColor=COLOR_GRAY,
+            fontSize=8,
+            textColor=COLOR_GRAY,
             alignment=TA_CENTER,
         ),
         "footer": ParagraphStyle(
             "Footer",
             parent=base["Normal"],
-            fontSize=7, textColor=COLOR_GRAY,
+            fontSize=7,
+            textColor=COLOR_GRAY,
             alignment=TA_CENTER,
         ),
     }
@@ -174,12 +195,8 @@ class CFPReportGenerator:
             "total_menciones": self._safe_scalar("SELECT COUNT(*) FROM menciones"),
             "años_min": self._safe_scalar("SELECT MIN(year) FROM actas WHERE year IS NOT NULL"),
             "años_max": self._safe_scalar("SELECT MAX(year) FROM actas WHERE year IS NOT NULL"),
-            "n_empresas": self._safe_scalar(
-                "SELECT COUNT(*) FROM entidades WHERE tipo='empresa'"
-            ),
-            "n_especies": self._safe_scalar(
-                "SELECT COUNT(*) FROM entidades WHERE tipo='especie'"
-            ),
+            "n_empresas": self._safe_scalar("SELECT COUNT(*) FROM entidades WHERE tipo='empresa'"),
+            "n_especies": self._safe_scalar("SELECT COUNT(*) FROM entidades WHERE tipo='especie'"),
         }
 
     def _get_alertas_criticas(self) -> list:
@@ -240,53 +257,59 @@ class CFPReportGenerator:
         s = self.styles
         cells = []
         for val, label in metrics:
-            cells.append([
-                Paragraph(str(val), s["metric_value"]),
-                Paragraph(label, s["metric_label"]),
-            ])
+            cells.append(
+                [
+                    Paragraph(str(val), s["metric_value"]),
+                    Paragraph(label, s["metric_label"]),
+                ]
+            )
 
         # Distribuir en filas de 4
         rows = []
         for i in range(0, len(cells), 4):
-            chunk = cells[i:i+4]
+            chunk = cells[i : i + 4]
             while len(chunk) < 4:
                 chunk.append(["", ""])
             rows.append([c[0] for c in chunk])
             rows.append([c[1] for c in chunk])
 
-        col_w = (W - 4*cm) / 4
+        col_w = (W - 4 * cm) / 4
         t = Table(rows, colWidths=[col_w] * 4)
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), COLOR_LIGHT),
-            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_LIGHT, colors.white]),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#BBDEFB")),
-            ("ROUNDEDCORNERS", [4]),
-        ]))
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), COLOR_LIGHT),
+                    ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_LIGHT, colors.white]),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#BBDEFB")),
+                    ("ROUNDEDCORNERS", [4]),
+                ]
+            )
+        )
         return t
 
     def _comparaciones_table(self, rows: list) -> Table:
-        s = self.styles
         header = ["Especie", "Zona", "Año", "CBA (tn)", "CMP (tn)", "Ratio", "Alerta"]
         data = [header]
         for r in rows:
             ratio = r["ratio_sobreasignacion"] or 0
             nivel = r["nivel_alerta"] or "sin_datos"
-            color_alerta = ALERTA_COLORS.get(nivel, COLOR_GRAY)
-            data.append([
-                r["especie"] or "—",
-                r["zona"] or "—",
-                str(r["year"] or "—"),
-                f"{r['cba_inidep_tn']:,.0f}" if r["cba_inidep_tn"] else "—",
-                f"{r['cmp_cfp_tn']:,.0f}" if r["cmp_cfp_tn"] else "—",
-                f"{ratio:.2f}x",
-                nivel.upper(),
-            ])
+            data.append(
+                [
+                    r["especie"] or "—",
+                    r["zona"] or "—",
+                    str(r["year"] or "—"),
+                    f"{r['cba_inidep_tn']:,.0f}" if r["cba_inidep_tn"] else "—",
+                    f"{r['cmp_cfp_tn']:,.0f}" if r["cmp_cfp_tn"] else "—",
+                    f"{ratio:.2f}x",
+                    nivel.upper(),
+                ]
+            )
 
-        col_widths = [4.5*cm, 2.5*cm, 1.5*cm, 2.2*cm, 2.2*cm, 1.8*cm, 2.3*cm]
+        col_widths = [4.5 * cm, 2.5 * cm, 1.5 * cm, 2.2 * cm, 2.2 * cm, 1.8 * cm, 2.3 * cm]
         t = Table(data, colWidths=col_widths, repeatRows=1)
 
         style = [
@@ -314,25 +337,34 @@ class CFPReportGenerator:
     def _empresas_table(self, rows: list) -> Table:
         header = ["Empresa", "Co-menciones en resoluciones"]
         data = [header] + [[r["nombre"], str(r["n_menciones"])] for r in rows]
-        t = Table(data, colWidths=[11*cm, 6*cm])
-        t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), COLOR_ACCENT),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("ALIGN", (1, 0), (1, -1), "CENTER"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FBE9E7")]),
-            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BDBDBD")),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        t = Table(data, colWidths=[11 * cm, 6 * cm])
+        t.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), COLOR_ACCENT),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("ALIGN", (1, 0), (1, -1), "CENTER"),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#FBE9E7")],
+                    ),
+                    ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BDBDBD")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
         return t
 
     # ── Construcción del documento ─────────────────────────────────────────────
 
     def generate(
         self,
-        output_path: Optional[Path | str] = None,
+        output_path: Path | str | None = None,
         title: str = "Auditoría CFP — Informe Ejecutivo",
         periodo: str = "1998–2025",
         author: str = "CFP Audit Intelligence",
@@ -347,23 +379,27 @@ class CFPReportGenerator:
         doc = BaseDocTemplate(
             buf,
             pagesize=A4,
-            leftMargin=2*cm,
-            rightMargin=2*cm,
-            topMargin=2*cm,
-            bottomMargin=2.5*cm,
+            leftMargin=2 * cm,
+            rightMargin=2 * cm,
+            topMargin=2 * cm,
+            bottomMargin=2.5 * cm,
             title=title,
             author=author,
         )
 
         # ── Frames y page templates ────────────────────────────────────────────
         content_frame = Frame(
-            doc.leftMargin, doc.bottomMargin,
-            doc.width, doc.height,
+            doc.leftMargin,
+            doc.bottomMargin,
+            doc.width,
+            doc.height,
             id="main",
         )
         cover_frame = Frame(
-            doc.leftMargin, doc.bottomMargin,
-            doc.width, doc.height,
+            doc.leftMargin,
+            doc.bottomMargin,
+            doc.width,
+            doc.height,
             id="cover",
         )
 
@@ -373,31 +409,42 @@ class CFPReportGenerator:
             canvas.setFillColor(COLOR_GRAY)
             now = datetime.now().strftime("%Y-%m-%d")
             canvas.drawCentredString(
-                W / 2, 1.2*cm,
+                W / 2,
+                1.2 * cm,
                 f"CFP Audit Intelligence | {title} | Generado: {now} | Pág. {doc.page}",
             )
             canvas.restoreState()
 
-        doc.addPageTemplates([
-            PageTemplate(id="cover", frames=[cover_frame]),
-            PageTemplate(id="main", frames=[content_frame], onPage=_footer),
-        ])
+        doc.addPageTemplates(
+            [
+                PageTemplate(id="cover", frames=[cover_frame]),
+                PageTemplate(id="main", frames=[content_frame], onPage=_footer),
+            ]
+        )
 
         story = []
 
         # ── 1. PORTADA ─────────────────────────────────────────────────────────
-        story.append(Spacer(1, 3*cm))
+        story.append(Spacer(1, 3 * cm))
         story.append(HRFlowable(width="100%", thickness=3, color=COLOR_PRIMARY))
-        story.append(Spacer(1, 0.5*cm))
-        story.append(Paragraph("CONSEJO FEDERAL PESQUERO", ParagraphStyle(
-            "OrgName", fontSize=11, textColor=COLOR_GRAY,
-            alignment=TA_CENTER, spaceAfter=4,
-        )))
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(
+            Paragraph(
+                "CONSEJO FEDERAL PESQUERO",
+                ParagraphStyle(
+                    "OrgName",
+                    fontSize=11,
+                    textColor=COLOR_GRAY,
+                    alignment=TA_CENTER,
+                    spaceAfter=4,
+                ),
+            )
+        )
         story.append(Paragraph(title, s["title"]))
         story.append(Paragraph(f"Período analizado: {periodo}", s["subtitle"]))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_PRIMARY))
-        story.append(Spacer(1, 2*cm))
+        story.append(Spacer(1, 2 * cm))
 
         now_str = datetime.now().strftime("%d de %B de %Y")
         cover_meta = [
@@ -407,29 +454,42 @@ class CFPReportGenerator:
             ["Fuentes:", "Actas CFP + Evaluaciones INIDEP (Mar Abierto)"],
             ["Clasificación:", "Información pública — libre distribución"],
         ]
-        meta_table = Table(cover_meta, colWidths=[5*cm, 11*cm])
-        meta_table.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 10),
-            ("TEXTCOLOR", (0, 0), (0, -1), COLOR_PRIMARY),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ("LINEBELOW", (0, -1), (-1, -1), 0.5, COLOR_GRAY),
-        ]))
+        meta_table = Table(cover_meta, colWidths=[5 * cm, 11 * cm])
+        meta_table.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("TEXTCOLOR", (0, 0), (0, -1), COLOR_PRIMARY),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("LINEBELOW", (0, -1), (-1, -1), 0.5, COLOR_GRAY),
+                ]
+            )
+        )
         story.append(meta_table)
-        story.append(Spacer(1, 2*cm))
+        story.append(Spacer(1, 2 * cm))
 
         disclaimer = (
             "<b>Aviso:</b> Este informe es generado automáticamente a partir de documentos "
             "públicos del CFP. El análisis es descriptivo y no constituye acusación legal. "
             "Los datos son trazables y reproducibles desde el repositorio público del proyecto."
         )
-        story.append(Paragraph(disclaimer, ParagraphStyle(
-            "Disclaimer", fontSize=8, textColor=COLOR_GRAY,
-            backColor=colors.HexColor("#FFFDE7"),
-            leftIndent=10, rightIndent=10,
-            borderPad=8, alignment=TA_JUSTIFY,
-        )))
+        story.append(
+            Paragraph(
+                disclaimer,
+                ParagraphStyle(
+                    "Disclaimer",
+                    fontSize=8,
+                    textColor=COLOR_GRAY,
+                    backColor=colors.HexColor("#FFFDE7"),
+                    leftIndent=10,
+                    rightIndent=10,
+                    borderPad=8,
+                    alignment=TA_JUSTIFY,
+                ),
+            )
+        )
 
         story.append(NextPageTemplate("main"))
         story.append(PageBreak())
@@ -438,7 +498,7 @@ class CFPReportGenerator:
         stats = self._get_stats()
         story.append(Paragraph("1. Resumen Ejecutivo", s["h1"]))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_LIGHT))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
 
         resumen_text = (
             f"El sistema CFP Audit Intelligence ha procesado <b>{stats['total_actas']}</b> actas "
@@ -451,7 +511,7 @@ class CFPReportGenerator:
             "lo establece el Art. 9 de la Ley 24.922."
         )
         story.append(Paragraph(resumen_text, s["body"]))
-        story.append(Spacer(1, 0.4*cm))
+        story.append(Spacer(1, 0.4 * cm))
 
         metrics = [
             (f"{stats['total_actas']:,}", "Actas CFP\nanalizadas"),
@@ -460,44 +520,52 @@ class CFPReportGenerator:
             (f"{stats['n_empresas']}", "Empresas\nidentificadas"),
         ]
         story.append(self._metric_table(metrics))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5 * cm))
 
         # ── 3. ALERTAS ACTIVAS ─────────────────────────────────────────────────
         alertas = self._get_alertas_criticas()
         story.append(Paragraph("2. Alertas de Sostenibilidad Activas", s["h1"]))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_LIGHT))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
 
         if not alertas:
-            story.append(Paragraph(
-                "No se detectaron alertas abiertas con los datos actuales. "
-                "Ejecutar 'Evaluar ahora' en el dashboard o POST /alertas/evaluar para actualizar.",
-                s["body"]
-            ))
+            story.append(
+                Paragraph(
+                    "No se detectaron alertas abiertas con los datos actuales. "
+                    "Ejecutar 'Evaluar ahora' en el dashboard o POST /alertas/evaluar para actualizar.",
+                    s["body"],
+                )
+            )
         else:
             criticas = [a for a in alertas if a["severidad"] in ("critical", "critico")]
             warnings = [a for a in alertas if a["severidad"] == "warning"]
 
-            story.append(Paragraph(
-                f"Se detectaron <b>{len(criticas)} alertas críticas</b> y "
-                f"<b>{len(warnings)} advertencias</b> sobre la sostenibilidad pesquera:",
-                s["body"]
-            ))
-            story.append(Spacer(1, 0.3*cm))
+            story.append(
+                Paragraph(
+                    f"Se detectaron <b>{len(criticas)} alertas críticas</b> y "
+                    f"<b>{len(warnings)} advertencias</b> sobre la sostenibilidad pesquera:",
+                    s["body"],
+                )
+            )
+            story.append(Spacer(1, 0.3 * cm))
 
             for alerta in alertas[:15]:
                 sev = alerta["severidad"]
                 icon = "🔴" if sev in ("critical", "critico") else "⚠️"
                 style_key = "alert_critical" if sev in ("critical", "critico") else "alert_warning"
-                story.append(KeepTogether([
-                    Paragraph(
-                        f"<b>{icon} {alerta['tipo'].replace('_', ' ').upper()}</b>"
-                        + (f" | {alerta['especie']}" if alerta["especie"] else "")
-                        + (f" | {alerta['year']}" if alerta["year"] else ""),
-                        s[style_key]
-                    ),
-                    Paragraph(alerta["mensaje"], s["body"]),
-                ]))
+                story.append(
+                    KeepTogether(
+                        [
+                            Paragraph(
+                                f"<b>{icon} {alerta['tipo'].replace('_', ' ').upper()}</b>"
+                                + (f" | {alerta['especie']}" if alerta["especie"] else "")
+                                + (f" | {alerta['year']}" if alerta["year"] else ""),
+                                s[style_key],
+                            ),
+                            Paragraph(alerta["mensaje"], s["body"]),
+                        ]
+                    )
+                )
 
         story.append(PageBreak())
 
@@ -505,37 +573,43 @@ class CFPReportGenerator:
         comparaciones = self._get_comparaciones()
         story.append(Paragraph("3. Comparación CMP Aprobada vs. CBA Recomendada (INIDEP)", s["h1"]))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_LIGHT))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
 
-        story.append(Paragraph(
-            "La Ley 24.922 (Art. 9) establece que el CFP debe fijar las CMP en base a las "
-            "evaluaciones científicas del INIDEP. La tabla a continuación muestra los casos "
-            "donde la cuota aprobada supera la CBA recomendada, ordenados por ratio de "
-            "sobreasignación (mayor a menor).",
-            s["body"]
-        ))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(
+            Paragraph(
+                "La Ley 24.922 (Art. 9) establece que el CFP debe fijar las CMP en base a las "
+                "evaluaciones científicas del INIDEP. La tabla a continuación muestra los casos "
+                "donde la cuota aprobada supera la CBA recomendada, ordenados por ratio de "
+                "sobreasignación (mayor a menor).",
+                s["body"],
+            )
+        )
+        story.append(Spacer(1, 0.3 * cm))
 
         if comparaciones:
             story.append(self._comparaciones_table(comparaciones))
-            story.append(Spacer(1, 0.2*cm))
-            story.append(Paragraph(
-                "Leyenda: VERDE = ≤100% CBA | AMARILLO = 101–115% | ROJO = 116–130% | CRÍTICO = >130%",
-                s["caption"]
-            ))
+            story.append(Spacer(1, 0.2 * cm))
+            story.append(
+                Paragraph(
+                    "Leyenda: VERDE = ≤100% CBA | AMARILLO = 101–115% | ROJO = 116–130% | CRÍTICO = >130%",
+                    s["caption"],
+                )
+            )
         else:
-            story.append(Paragraph(
-                "No hay datos de comparación disponibles. Ejecutar el comparador INIDEP para "
-                "cargar evaluaciones y cuotas CFP.",
-                s["body"]
-            ))
+            story.append(
+                Paragraph(
+                    "No hay datos de comparación disponibles. Ejecutar el comparador INIDEP para "
+                    "cargar evaluaciones y cuotas CFP.",
+                    s["body"],
+                )
+            )
 
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5 * cm))
 
         # ── 5. ACTORES: EMPRESAS Y ESPECIES ───────────────────────────────────
         story.append(Paragraph("4. Principales Actores del Sector", s["h1"]))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_LIGHT))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
 
         top_empresas = self._get_top_empresas()
         top_especies = self._get_top_especies()
@@ -552,30 +626,38 @@ class CFPReportGenerator:
             esp_data = [["Especie", "Menciones"]] + [
                 [r["nombre"], str(r["n_menciones"])] for r in top_especies
             ]
-            esp_table = Table(esp_data, colWidths=[7*cm, 3*cm])
-            esp_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), COLOR_PRIMARY),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("ALIGN", (1, 0), (1, -1), "CENTER"),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_LIGHT]),
-                ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BDBDBD")),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]))
+            esp_table = Table(esp_data, colWidths=[7 * cm, 3 * cm])
+            esp_table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), COLOR_PRIMARY),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, -1), 9),
+                        ("ALIGN", (1, 0), (1, -1), "CENTER"),
+                        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, COLOR_LIGHT]),
+                        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BDBDBD")),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ]
+                )
+            )
             col2_content.append(esp_table)
 
         if col1_content or col2_content:
             two_col = Table(
                 [[col1_content or [""], col2_content or [""]]],
-                colWidths=[doc.width / 2 - 0.5*cm, doc.width / 2 - 0.5*cm],
+                colWidths=[doc.width / 2 - 0.5 * cm, doc.width / 2 - 0.5 * cm],
             )
-            two_col.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-            ]))
+            two_col.setStyle(
+                TableStyle(
+                    [
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ]
+                )
+            )
             story.append(two_col)
 
         story.append(PageBreak())
@@ -583,32 +665,54 @@ class CFPReportGenerator:
         # ── 6. METODOLOGÍA ─────────────────────────────────────────────────────
         story.append(Paragraph("5. Metodología y Fuentes", s["h1"]))
         story.append(HRFlowable(width="100%", thickness=1, color=COLOR_LIGHT))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.3 * cm))
 
         metodologia = [
-            ("<b>Fuente de actas CFP:</b>", "Portal oficial CFP (cfp.gob.ar). Descarga automática "
-             "de PDFs con rate limiting y retry (tenacity). Extracción de texto en cascada: "
-             "pdfplumber → PyMuPDF → OCR Tesseract para documentos escaneados."),
-            ("<b>Fuente INIDEP:</b>", "Repositorio Mar Abierto (marabierto.inidep.edu.ar) vía "
-             "DSpace 7 REST API. Evaluaciones de stock (ITO) con CBA por especie y año."),
-            ("<b>NER pesquero:</b>", "EntityRuler spaCy con 461+ patrones de dominio para detectar "
-             "ESPECIE_PESCA, EMPRESA_PESCA, ZONA_PESCA, CUOTA_PESCA, NORMATIVA_CFP, BUQUE_PESCA."),
-            ("<b>HHI concentración:</b>", "Índice de Herfindahl-Hirschman calculado como suma de "
-             "cuadrados de participaciones de co-menciones × 10.000. HHI > 2.500 indica alta "
-             "concentración oligopólica."),
-            ("<b>Niveles de alerta:</b>", "VERDE (CMP ≤ 100% CBA) | AMARILLO (101–115%) | "
-             "ROJO (116–130%) | CRÍTICO (>130%). Basado en el principio precautorio del Art. 9, "
-             "Ley 24.922."),
-            ("<b>Reproducibilidad:</b>", "Todo el código es open source. Los datos son "
-             "documentos públicos. Las evaluaciones son trazables al ITO del INIDEP correspondiente."),
+            (
+                "<b>Fuente de actas CFP:</b>",
+                "Portal oficial CFP (cfp.gob.ar). Descarga automática "
+                "de PDFs con rate limiting y retry (tenacity). Extracción de texto en cascada: "
+                "pdfplumber → PyMuPDF → OCR Tesseract para documentos escaneados.",
+            ),
+            (
+                "<b>Fuente INIDEP:</b>",
+                "Repositorio Mar Abierto (marabierto.inidep.edu.ar) vía "
+                "DSpace 7 REST API. Evaluaciones de stock (ITO) con CBA por especie y año.",
+            ),
+            (
+                "<b>NER pesquero:</b>",
+                "EntityRuler spaCy con 461+ patrones de dominio para detectar "
+                "ESPECIE_PESCA, EMPRESA_PESCA, ZONA_PESCA, CUOTA_PESCA, NORMATIVA_CFP, BUQUE_PESCA.",
+            ),
+            (
+                "<b>HHI concentración:</b>",
+                "Índice de Herfindahl-Hirschman calculado como suma de "
+                "cuadrados de participaciones de co-menciones × 10.000. HHI > 2.500 indica alta "
+                "concentración oligopólica.",
+            ),
+            (
+                "<b>Niveles de alerta:</b>",
+                "VERDE (CMP ≤ 100% CBA) | AMARILLO (101–115%) | "
+                "ROJO (116–130%) | CRÍTICO (>130%). Basado en el principio precautorio del Art. 9, "
+                "Ley 24.922.",
+            ),
+            (
+                "<b>Reproducibilidad:</b>",
+                "Todo el código es open source. Los datos son "
+                "documentos públicos. Las evaluaciones son trazables al ITO del INIDEP correspondiente.",
+            ),
         ]
 
         for label, texto in metodologia:
-            story.append(KeepTogether([
-                Paragraph(label, s["h2"]),
-                Paragraph(texto, s["body"]),
-                Spacer(1, 0.2*cm),
-            ]))
+            story.append(
+                KeepTogether(
+                    [
+                        Paragraph(label, s["h2"]),
+                        Paragraph(texto, s["body"]),
+                        Spacer(1, 0.2 * cm),
+                    ]
+                )
+            )
 
         # ── Build ──────────────────────────────────────────────────────────────
         doc.build(story)
@@ -623,7 +727,7 @@ class CFPReportGenerator:
 
 def generate_report(
     db_path: Path | str = "data/processed/catalog.db",
-    output_path: Optional[Path | str] = None,
+    output_path: Path | str | None = None,
     **kwargs,
 ) -> bytes:
     """Función de conveniencia para generar el reporte."""

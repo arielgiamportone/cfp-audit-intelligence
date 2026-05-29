@@ -6,19 +6,18 @@ Estrategia en cascada:
   2. PyMuPDF     → fallback para PDFs con fuentes embebidas complejas
   3. Tesseract OCR → fallback para PDFs escaneados (imágenes)
 """
-import io
+
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
+MIN_TEXT_LENGTH = 100  # Umbral para considerar que la extracción fue exitosa
 
-MIN_TEXT_LENGTH = 100   # Umbral para considerar que la extracción fue exitosa
 
-
-def extract_with_pdfplumber(pdf_path: Path) -> Optional[str]:
+def extract_with_pdfplumber(pdf_path: Path) -> str | None:
     try:
         import pdfplumber
+
         with pdfplumber.open(pdf_path) as pdf:
             pages_text = []
             for page in pdf.pages:
@@ -31,9 +30,10 @@ def extract_with_pdfplumber(pdf_path: Path) -> Optional[str]:
         return None
 
 
-def extract_with_pymupdf(pdf_path: Path) -> Optional[str]:
+def extract_with_pymupdf(pdf_path: Path) -> str | None:
     try:
         import fitz  # PyMuPDF
+
         doc = fitz.open(str(pdf_path))
         pages_text = []
         for page in doc:
@@ -47,7 +47,7 @@ def extract_with_pymupdf(pdf_path: Path) -> Optional[str]:
         return None
 
 
-def extract_with_ocr(pdf_path: Path, lang: str = "spa") -> Optional[str]:
+def extract_with_ocr(pdf_path: Path, lang: str = "spa") -> str | None:
     """OCR usando Tesseract vía PyMuPDF para renderizar páginas como imágenes."""
     try:
         import fitz
@@ -99,6 +99,7 @@ def extract_text(pdf_path: Path, ocr_lang: str = "spa") -> dict:
     # Intentar obtener número de páginas
     try:
         import fitz
+
         doc = fitz.open(str(pdf_path))
         result["page_count"] = doc.page_count
         doc.close()
@@ -116,9 +117,7 @@ def extract_text(pdf_path: Path, ocr_lang: str = "spa") -> dict:
             result["text"] = _clean_text(text)
             result["method"] = method_name
             result["char_count"] = len(result["text"])
-            logger.debug(
-                f"  {pdf_path.name}: {result['char_count']} chars via {method_name}"
-            )
+            logger.debug(f"  {pdf_path.name}: {result['char_count']} chars via {method_name}")
             return result
 
     logger.warning(f"  No se pudo extraer texto de {pdf_path.name}")
@@ -128,6 +127,7 @@ def extract_text(pdf_path: Path, ocr_lang: str = "spa") -> dict:
 def _clean_text(text: str) -> str:
     """Limpieza básica del texto extraído."""
     import re
+
     # Normalizar saltos de línea
     text = re.sub(r"\r\n|\r", "\n", text)
     # Eliminar caracteres de control (excepto newlines y tabs)

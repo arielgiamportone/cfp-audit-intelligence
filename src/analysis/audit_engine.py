@@ -10,16 +10,15 @@ Capacidades:
 
 Usa prompt caching para reducir costos en análisis masivos.
 """
+
 import json
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import anthropic
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
-
 
 SYSTEM_PROMPT = """Eres un experto en derecho pesquero argentino, biología marina y política de recursos naturales.
 Tu función es auditar las actas del Consejo Federal Pesquero (CFP) de Argentina para:
@@ -48,7 +47,7 @@ class AuditResult:
     resolucion_id: str
     resolucion_texto: str
     riesgo_score: float
-    categoria_riesgo: str          # bajo | medio | alto | critico
+    categoria_riesgo: str  # bajo | medio | alto | critico
     hallazgos: list[str]
     indicios: list[str]
     recomendaciones: list[str]
@@ -66,7 +65,7 @@ class CFPAuditEngine:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "claude-sonnet-4-6",
         audit_model: str = "claude-opus-4-7",
         max_tokens: int = 4096,
@@ -125,7 +124,7 @@ class CFPAuditEngine:
         self,
         resolucion_id: str,
         texto: str,
-        acta_context: Optional[str] = None,
+        acta_context: str | None = None,
         high_stakes: bool = False,
     ) -> AuditResult:
         """
@@ -357,6 +356,7 @@ Responde en JSON:
 def _extract_json(text: str) -> dict:
     """Extrae el primer objeto JSON válido del texto de respuesta."""
     import re
+
     # Buscar bloque JSON
     match = re.search(r"\{[\s\S]*\}", text)
     if match:

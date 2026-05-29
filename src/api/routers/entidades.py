@@ -1,11 +1,11 @@
 """Router /entidades — especies, empresas y personas mencionadas."""
+
 import sqlite3
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.models import EntidadOut, EntidadListOut
 from src.api.deps import DB_PATH
+from src.api.models import EntidadListOut, EntidadOut
 
 router = APIRouter(prefix="/entidades", tags=["entidades"])
 
@@ -20,8 +20,10 @@ def _conn():
 
 @router.get("", response_model=EntidadListOut, summary="Listar entidades detectadas")
 def list_entidades(
-    tipo: Optional[str] = Query(None, description="especie | empresa | persona | lugar | normativa | buque"),
-    q: Optional[str] = Query(None, description="Búsqueda por nombre"),
+    tipo: str | None = Query(
+        None, description="especie | empresa | persona | lugar | normativa | buque"
+    ),
+    q: str | None = Query(None, description="Búsqueda por nombre"),
     min_menciones: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),
 ):
@@ -54,8 +56,11 @@ def list_entidades(
 
     items = [
         EntidadOut(
-            id=r["id"], tipo=r["tipo"], nombre=r["nombre"],
-            nombre_norm=r["nombre_norm"], menciones=r["m_count"],
+            id=r["id"],
+            tipo=r["tipo"],
+            nombre=r["nombre"],
+            nombre_norm=r["nombre_norm"],
+            menciones=r["m_count"],
         )
         for r in rows
     ]
@@ -76,6 +81,9 @@ def get_entidad(entidad_id: int):
     if not row:
         raise HTTPException(404, f"Entidad {entidad_id} no encontrada")
     return EntidadOut(
-        id=row["id"], tipo=row["tipo"], nombre=row["nombre"],
-        nombre_norm=row["nombre_norm"], menciones=row["m_count"],
+        id=row["id"],
+        tipo=row["tipo"],
+        nombre=row["nombre"],
+        nombre_norm=row["nombre_norm"],
+        menciones=row["m_count"],
     )

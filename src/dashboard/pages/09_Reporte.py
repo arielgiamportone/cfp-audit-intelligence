@@ -1,5 +1,5 @@
 """Página 9 — Reporte PDF Ejecutivo."""
-import tempfile
+
 from datetime import datetime
 from pathlib import Path
 
@@ -24,10 +24,14 @@ with st.expander("⚙️ Configuración del reporte", expanded=True):
         )
         author = st.text_input("Autor / Sistema", value="CFP Audit Intelligence")
     with col2:
-        year_min = st.number_input("Período desde (año)", value=1998, min_value=1990, max_value=2030)
+        year_min = st.number_input(
+            "Período desde (año)", value=1998, min_value=1990, max_value=2030
+        )
         year_max = st.number_input(
-            "Período hasta (año)", value=datetime.now().year,
-            min_value=1990, max_value=2030,
+            "Período hasta (año)",
+            value=datetime.now().year,
+            min_value=1990,
+            max_value=2030,
         )
 
 periodo = f"{year_min}–{year_max}"
@@ -95,13 +99,31 @@ if DB_PATH.exists():
     if alertas:
         st.markdown("**Alertas que se incluirán:**")
         import pandas as pd
+
         df_alertas = pd.DataFrame([dict(a) for a in alertas[:10]])
-        cols_show = [c for c in ["severidad", "tipo", "especie", "zona", "year", "mensaje"] if c in df_alertas.columns]
+        cols_show = [
+            c
+            for c in ["severidad", "tipo", "especie", "zona", "year", "mensaje"]
+            if c in df_alertas.columns
+        ]
         st.dataframe(df_alertas[cols_show], use_container_width=True, hide_index=True)
 
     if comparaciones:
         st.markdown("**Comparaciones CFP vs INIDEP que se incluirán:**")
         import pandas as pd
+
         df_comp = pd.DataFrame([dict(c) for c in comparaciones])
-        cols_comp = [c for c in ["especie", "zona", "year", "cba_inidep_tn", "cmp_cfp_tn", "ratio_sobreasignacion", "nivel_alerta"] if c in df_comp.columns]
+        cols_comp = [
+            c
+            for c in [
+                "especie",
+                "zona",
+                "year",
+                "cba_inidep_tn",
+                "cmp_cfp_tn",
+                "ratio_sobreasignacion",
+                "nivel_alerta",
+            ]
+            if c in df_comp.columns
+        ]
         st.dataframe(df_comp[cols_comp], use_container_width=True, hide_index=True)

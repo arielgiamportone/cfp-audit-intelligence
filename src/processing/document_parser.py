@@ -8,14 +8,13 @@ Formato real del CFP:
   - Referencias a Resoluciones CFP previas (N° X/YYYY)
   - CITC = Cuotas Individuales Transferibles de Captura
 """
+
 import json
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
-
 
 # ── Patrones regex ajustados al formato real del CFP ─────────────────────────
 
@@ -72,19 +71,29 @@ RE_MIEMBRO = re.compile(
 )
 
 MESES = {
-    "enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
-    "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
-    "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12,
+    "enero": 1,
+    "febrero": 2,
+    "marzo": 3,
+    "abril": 4,
+    "mayo": 5,
+    "junio": 6,
+    "julio": 7,
+    "agosto": 8,
+    "septiembre": 9,
+    "octubre": 10,
+    "noviembre": 11,
+    "diciembre": 12,
 }
 
 
 @dataclass
 class Decision:
     """Una decisión tomada en la sesión del CFP."""
+
     texto: str
-    tipo: str                               # unanimidad | mayoria | aprobacion | otro
-    agenda_punto: Optional[str] = None      # "1.1.3" etc.
-    tema: Optional[str] = None              # descripción del punto de agenda
+    tipo: str  # unanimidad | mayoria | aprobacion | otro
+    agenda_punto: str | None = None  # "1.1.3" etc.
+    tema: str | None = None  # descripción del punto de agenda
     especies_mencionadas: list[str] = field(default_factory=list)
     empresas_mencionadas: list[str] = field(default_factory=list)
     toneladas: list[float] = field(default_factory=list)
@@ -96,10 +105,10 @@ class Decision:
 class Acta:
     filename: str
     year: int
-    numero: Optional[str] = None           # "34" de "ACTA CFP N° 34/2025"
-    fecha: Optional[str] = None
-    lugar: Optional[str] = None
-    quorum: Optional[int] = None
+    numero: str | None = None  # "34" de "ACTA CFP N° 34/2025"
+    fecha: str | None = None
+    lugar: str | None = None
+    quorum: int | None = None
     texto_completo: str = ""
     miembros_presentes: list[str] = field(default_factory=list)
     decisiones: list[Decision] = field(default_factory=list)
@@ -107,7 +116,7 @@ class Acta:
     resoluciones: list[Decision] = field(default_factory=list)
 
 
-def parse_fecha(text: str) -> Optional[str]:
+def parse_fecha(text: str) -> str | None:
     m = RE_FECHA.search(text)
     if m:
         day, month_name, year = m.groups()
@@ -117,14 +126,14 @@ def parse_fecha(text: str) -> Optional[str]:
     return None
 
 
-def parse_numero_acta(text: str) -> Optional[str]:
+def parse_numero_acta(text: str) -> str | None:
     m = re.search(r"ACTA\s+CFP\s+N[°º]\s*(\d+)/(\d{4})", text[:500])
     if m:
         return m.group(1)
     return None
 
 
-def parse_quorum(text: str) -> Optional[int]:
+def parse_quorum(text: str) -> int | None:
     m = RE_QUORUM.search(text[:2000])
     if m:
         return int(m.group(2))
@@ -169,10 +178,9 @@ def classify_decision(texto: str) -> str:
 
 def extract_referencias_cfp(text: str) -> list[str]:
     """Extrae referencias a Resoluciones/Actas CFP previas."""
-    return list(set(re.findall(
-        r"(?:Resolución|Acta)\s+CFP\s+N[°º]\s*[\d/]+",
-        text, re.IGNORECASE
-    )))[:10]
+    return list(
+        set(re.findall(r"(?:Resolución|Acta)\s+CFP\s+N[°º]\s*[\d/]+", text, re.IGNORECASE))
+    )[:10]
 
 
 def extract_toneladas(texto: str) -> list[float]:
@@ -210,14 +218,17 @@ def parse_decisions(text: str) -> list[Decision]:
     # Estrategia 2: buscar puntos de agenda con su decisión
     agenda_blocks = _split_by_agenda(text)
     for punto, tema, bloque in agenda_blocks:
-        if not any(kw in bloque.lower() for kw in
-                   ["unanimidad", "aprueba", "acuerda", "resuelve", "autoriza", "instruye"]):
+        if not any(
+            kw in bloque.lower()
+            for kw in ["unanimidad", "aprueba", "acuerda", "resuelve", "autoriza", "instruye"]
+        ):
             continue
         # Extraer la parte de la decisión (después del contexto)
         decisiones_en_bloque = re.findall(
             r"se (?:decide|aprueba|acuerda|resuelve|autoriza|establece|instruye)"
             r"(?:\s+por unanimidad)?[,\s]*(.{10,600}?)(?=\n\n|\nA continuación|\Z)",
-            bloque, re.IGNORECASE | re.DOTALL
+            bloque,
+            re.IGNORECASE | re.DOTALL,
         )
         for texto_dec in decisiones_en_bloque:
             texto_dec = texto_dec.strip()[:800]
@@ -274,7 +285,7 @@ def parse_acta(text: str, filename: str) -> Acta:
         quorum=parse_quorum(text),
         miembros_presentes=parse_miembros(text),
         decisiones=decisiones,
-        resoluciones=decisiones,   # alias para compatibilidad
+        resoluciones=decisiones,  # alias para compatibilidad
     )
 
     return acta

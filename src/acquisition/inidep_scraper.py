@@ -7,11 +7,10 @@ por especie y año, para cruzar con las decisiones del CFP.
 API base: https://marabiertonew.inidep.edu.ar/server/api
 Colección ITOs: scope 50a522a6-b22a-4c95-88fb-adbb6936fdde (492 items)
 """
+
 import re
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Optional
 
 import requests
 import urllib3
@@ -27,12 +26,27 @@ ITO_ITEM_URL = f"{MAR_ABIERTO_BASE}/items"
 
 # Especies de interés para el comparador
 ESPECIES_INTERES = [
-    "merluza negra", "merluza de cola", "merluza austral",
-    "calamar illex", "calamar loligo",
-    "merluza", "merluccius", "langostino", "pleoticus",
-    "calamar", "illex", "centolla", "lithodes", "abadejo",
-    "polaca", "vieira", "zygochlamys", "anchoíta", "anchoita",
-    "dissostichus", "macruronus",
+    "merluza negra",
+    "merluza de cola",
+    "merluza austral",
+    "calamar illex",
+    "calamar loligo",
+    "merluza",
+    "merluccius",
+    "langostino",
+    "pleoticus",
+    "calamar",
+    "illex",
+    "centolla",
+    "lithodes",
+    "abadejo",
+    "polaca",
+    "vieira",
+    "zygochlamys",
+    "anchoíta",
+    "anchoita",
+    "dissostichus",
+    "macruronus",
 ]
 
 # Patrones para extraer valores numéricos de CBA del abstract/texto
@@ -60,21 +74,22 @@ _RE_YEAR = re.compile(r"\b(20\d{2}|199\d)\b")
 @dataclass
 class ITORecord:
     """Registro de un Informe Técnico Oficial del INIDEP."""
+
     titulo: str
     url: str
-    uuid: Optional[str] = None
-    año_publicacion: Optional[int] = None
-    año_evaluacion: Optional[int] = None
-    especie_raw: Optional[str] = None
-    especie_norm: Optional[str] = None
-    zona: Optional[str] = None
-    cba_recomendada_tn: Optional[float] = None
-    cmp_alternativa_tn: Optional[float] = None
-    estado_stock: Optional[str] = None
+    uuid: str | None = None
+    año_publicacion: int | None = None
+    año_evaluacion: int | None = None
+    especie_raw: str | None = None
+    especie_norm: str | None = None
+    zona: str | None = None
+    cba_recomendada_tn: float | None = None
+    cmp_alternativa_tn: float | None = None
+    estado_stock: str | None = None
     autores: list[str] = field(default_factory=list)
-    numero_ito: Optional[str] = None
-    pdf_url: Optional[str] = None
-    abstract: Optional[str] = None
+    numero_ito: str | None = None
+    pdf_url: str | None = None
+    abstract: str | None = None
     fuente: str = "INIDEP Mar Abierto"
 
 
@@ -85,13 +100,15 @@ class INIDEPScraper:
         self.delay = delay
         self.session = requests.Session()
         self.session.verify = False
-        self.session.headers.update({
-            "User-Agent": "CFP-Audit-Research/1.0 (github.com/arielgiamportone/cfp-audit-intelligence)",
-            "Accept": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "CFP-Audit-Research/1.0 (github.com/arielgiamportone/cfp-audit-intelligence)",
+                "Accept": "application/json",
+            }
+        )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
-    def _get_json(self, url: str, params: Optional[dict] = None) -> dict:
+    def _get_json(self, url: str, params: dict | None = None) -> dict:
         time.sleep(self.delay)
         resp = self.session.get(url, params=params, timeout=30)
         resp.raise_for_status()
@@ -122,9 +139,14 @@ class INIDEPScraper:
     def get_total_itos(self) -> int:
         """Retorna el total de ITOs en la colección."""
         data = self.list_itos_page(page=0, size=1)
-        return data.get("_embedded", {}).get("searchResult", {}).get("page", {}).get("totalElements", 0)
+        return (
+            data.get("_embedded", {})
+            .get("searchResult", {})
+            .get("page", {})
+            .get("totalElements", 0)
+        )
 
-    def scrape_all_metadata(self, max_items: Optional[int] = None) -> list[ITORecord]:
+    def scrape_all_metadata(self, max_items: int | None = None) -> list[ITORecord]:
         """
         Scrapea metadatos de todos los ITOs via API DSpace 7.
         Rápido: solo metadata + abstract, sin descargar PDFs.
@@ -161,7 +183,9 @@ class INIDEPScraper:
                     logger.info(f"Límite alcanzado: {max_items} ITOs")
                     return records
 
-            logger.info(f"  Página {page + 1}/{total_pages}: {len(items)} items — total acumulado: {len(records)}")
+            logger.info(
+                f"  Página {page + 1}/{total_pages}: {len(items)} items — total acumulado: {len(records)}"
+            )
 
             page += 1
             if page >= total_pages:
@@ -170,7 +194,7 @@ class INIDEPScraper:
         logger.success(f"Scraping completado: {len(records)} ITOs recuperados")
         return records
 
-    def _parse_search_result(self, obj: dict) -> Optional[ITORecord]:
+    def _parse_search_result(self, obj: dict) -> ITORecord | None:
         """Parsea un resultado de búsqueda DSpace en ITORecord."""
         try:
             item = obj.get("_embedded", {}).get("indexableObject", {})
@@ -218,7 +242,7 @@ class INIDEPScraper:
             logger.warning(f"Error parseando item: {exc}")
             return None
 
-    def get_pdf_url(self, uuid: str) -> Optional[str]:
+    def get_pdf_url(self, uuid: str) -> str | None:
         """Obtiene la URL de descarga del PDF de un ITO dado su UUID."""
         try:
             bundles = self._get_json(f"{DSPACE_API}/core/items/{uuid}/bundles")
@@ -236,7 +260,7 @@ class INIDEPScraper:
             logger.warning(f"Error obteniendo PDF URL para {uuid}: {exc}")
         return None
 
-    def download_and_extract_pdf(self, rec: ITORecord) -> Optional[str]:
+    def download_and_extract_pdf(self, rec: ITORecord) -> str | None:
         """
         Descarga el PDF de un ITO y extrae su texto.
         Requiere PyMuPDF (fitz). Lento — usar solo cuando sea necesario.
@@ -248,6 +272,7 @@ class INIDEPScraper:
             return None
         try:
             import fitz  # PyMuPDF
+
             pdf_bytes = self._get_bytes(pdf_url)
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
             text = "\n".join(page.get_text() for page in doc)
@@ -318,7 +343,8 @@ class INIDEPScraper:
 
 # ── Extracción de campos ───────────────────────────────────────────────────────
 
-def _first_value(metadata: dict, key: str) -> Optional[str]:
+
+def _first_value(metadata: dict, key: str) -> str | None:
     vals = metadata.get(key, [])
     return vals[0].get("value") if vals else None
 
@@ -327,26 +353,27 @@ def _all_values(metadata: dict, key: str) -> list[str]:
     return [v.get("value", "") for v in metadata.get(key, [])]
 
 
-def _parse_year(s: str) -> Optional[int]:
+def _parse_year(s: str) -> int | None:
     m = _RE_YEAR.search(s or "")
     return int(m.group(1)) if m else None
 
 
-def _extract_ito_number(text: str) -> Optional[str]:
+def _extract_ito_number(text: str) -> str | None:
     m = _RE_ITO_NUM.search(text or "")
     return m.group(1) if m else None
 
 
-def _extract_eval_year(titulo: str) -> Optional[int]:
+def _extract_eval_year(titulo: str) -> int | None:
     """Extrae el año de evaluación del título (puede diferir del año de publicación)."""
     m = re.search(
         r"(?:temporada|evaluaci[oó]n|a[ñn]o|período)[^.]{0,40}?(20\d{2}|199\d)",
-        titulo, re.IGNORECASE,
+        titulo,
+        re.IGNORECASE,
     )
     return int(m.group(1)) if m else None
 
 
-def _extract_cba(text: str) -> Optional[float]:
+def _extract_cba(text: str) -> float | None:
     """Extrae el valor numérico de CBA del abstract o texto de un ITO."""
     if not text:
         return None
@@ -364,7 +391,7 @@ def _extract_cba(text: str) -> Optional[float]:
     return None
 
 
-def _extract_estado_stock(text: str) -> Optional[str]:
+def _extract_estado_stock(text: str) -> str | None:
     """Infiere el estado del stock a partir del texto."""
     if not text:
         return None
@@ -382,7 +409,7 @@ def _extract_estado_stock(text: str) -> Optional[str]:
     return None
 
 
-def _extract_especie(texto: str) -> Optional[str]:
+def _extract_especie(texto: str) -> str | None:
     texto_l = texto.lower()
     for esp in sorted(ESPECIES_INTERES, key=len, reverse=True):
         if esp in texto_l:
@@ -412,7 +439,7 @@ def _normalize_especie(especie: str) -> str:
     return especie.lower().replace(" ", "_")
 
 
-def _extract_zona(titulo: str) -> Optional[str]:
+def _extract_zona(titulo: str) -> str | None:
     t = titulo.lower()
     if "sur de 41" in t or "sur 41" in t:
         return "Sur 41°S"

@@ -1,12 +1,11 @@
 """Router /actas — listado, detalle y búsqueda de actas CFP."""
+
 import sqlite3
-from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.models import ActaOut, ActaListOut, ResolucionOut, ResolucionListOut
 from src.api.deps import DB_PATH
+from src.api.models import ActaListOut, ActaOut, ResolucionListOut, ResolucionOut
 
 router = APIRouter(prefix="/actas", tags=["actas"])
 
@@ -21,8 +20,8 @@ def _conn():
 
 @router.get("", response_model=ActaListOut, summary="Listar actas del CFP")
 def list_actas(
-    year: Optional[int] = Query(None, description="Filtrar por año"),
-    descargadas: Optional[bool] = Query(None, description="Solo actas descargadas"),
+    year: int | None = Query(None, description="Filtrar por año"),
+    descargadas: bool | None = Query(None, description="Solo actas descargadas"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ):
@@ -71,8 +70,11 @@ def get_acta(acta_id: int):
     if not row:
         raise HTTPException(404, f"Acta {acta_id} no encontrada")
     return ActaOut(
-        id=row["id"], year=row["year"], nombre=row["nombre"],
-        url=row["url"], filename=row["filename"],
+        id=row["id"],
+        year=row["year"],
+        nombre=row["nombre"],
+        url=row["url"],
+        filename=row["filename"],
         download_status=row["download_status"],
         text_extracted=bool(row["text_extracted"]),
         embedded=bool(row["embedded"]),
@@ -80,11 +82,12 @@ def get_acta(acta_id: int):
     )
 
 
-@router.get("/{acta_id}/resoluciones", response_model=ResolucionListOut,
-            summary="Resoluciones de un acta")
+@router.get(
+    "/{acta_id}/resoluciones", response_model=ResolucionListOut, summary="Resoluciones de un acta"
+)
 def get_resoluciones(
     acta_id: int,
-    categoria: Optional[str] = Query(None),
+    categoria: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ):
@@ -103,9 +106,7 @@ def get_resoluciones(
         where = "WHERE " + " AND ".join(filters)
         offset = (page - 1) * page_size
 
-        total = conn.execute(
-            f"SELECT COUNT(*) FROM resoluciones r {where}", params
-        ).fetchone()[0]
+        total = conn.execute(f"SELECT COUNT(*) FROM resoluciones r {where}", params).fetchone()[0]
         rows = conn.execute(
             f"""SELECT r.*, a.year FROM resoluciones r
                 JOIN actas a ON r.acta_id = a.id
@@ -115,11 +116,16 @@ def get_resoluciones(
 
     items = [
         ResolucionOut(
-            id=r["id"], acta_id=r["acta_id"], numero=r["numero"],
-            tipo=r["tipo"], categoria=r["categoria"],
+            id=r["id"],
+            acta_id=r["acta_id"],
+            numero=r["numero"],
+            tipo=r["tipo"],
+            categoria=r["categoria"],
             texto_resumen=r["texto_resumen"],
-            votos_favor=r["votos_favor"], votos_contra=r["votos_contra"],
-            quorum=r["quorum"], riesgo_score=r["riesgo_score"],
+            votos_favor=r["votos_favor"],
+            votos_contra=r["votos_contra"],
+            quorum=r["quorum"],
+            riesgo_score=r["riesgo_score"],
             year=r["year"],
         )
         for r in rows

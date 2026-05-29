@@ -4,17 +4,15 @@ Comparador CFP vs INIDEP: cuotas aprobadas vs. CBA/CMP recomendada científicame
 Genera alertas cuando el CFP aprueba cuotas superiores a las recomendaciones del INIDEP,
 evidenciando potenciales decisiones contra la sostenibilidad (Ley 24.922, Art. 9).
 """
-import json
+
 import sqlite3
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
 
 from src.acquisition.inidep_scraper import SEED_DATA
-
 
 SCHEMA_INIDEP = """
 CREATE TABLE IF NOT EXISTS inidep_evaluaciones (
@@ -68,10 +66,10 @@ CREATE INDEX IF NOT EXISTS idx_comparacion_year ON comparacion_cfp_inidep(year);
 """
 
 # ── Niveles de alerta ─────────────────────────────────────────────────────────
-ALERTA_VERDE = "verde"       # cuota ≤ 100% CBA
+ALERTA_VERDE = "verde"  # cuota ≤ 100% CBA
 ALERTA_AMARILLA = "amarillo"  # cuota 101–115% CBA
-ALERTA_ROJA = "rojo"          # cuota 116–130% CBA
-ALERTA_CRITICA = "critico"    # cuota > 130% CBA
+ALERTA_ROJA = "rojo"  # cuota 116–130% CBA
+ALERTA_CRITICA = "critico"  # cuota > 130% CBA
 ALERTA_SIN_DATOS = "sin_datos"
 
 
@@ -80,14 +78,14 @@ class AlertaComparacion:
     especie: str
     zona: str
     year: int
-    cba_inidep_tn: Optional[float]
-    cmp_cfp_tn: Optional[float]
-    diferencia_tn: Optional[float]
-    ratio: Optional[float]
+    cba_inidep_tn: float | None
+    cmp_cfp_tn: float | None
+    diferencia_tn: float | None
+    ratio: float | None
     nivel: str
     descripcion: str
-    numero_ito: Optional[str]
-    acta_cfp: Optional[str]
+    numero_ito: str | None
+    acta_cfp: str | None
 
 
 class INIDEPComparator:
@@ -148,9 +146,9 @@ class INIDEPComparator:
         especie_code: str,
         year: int,
         cmp_aprobada_tn: float,
-        zona: Optional[str] = None,
-        acta_referencia: Optional[str] = None,
-        resolucion_cfp: Optional[str] = None,
+        zona: str | None = None,
+        acta_referencia: str | None = None,
+        resolucion_cfp: str | None = None,
         tipo_decision: str = "CMP",
     ) -> None:
         with self._conn() as conn:
@@ -161,8 +159,16 @@ class INIDEPComparator:
                      tipo_decision, acta_referencia, resolucion_cfp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (especie, especie_code, zona, year, cmp_aprobada_tn,
-                 tipo_decision, acta_referencia, resolucion_cfp),
+                (
+                    especie,
+                    especie_code,
+                    zona,
+                    year,
+                    cmp_aprobada_tn,
+                    tipo_decision,
+                    acta_referencia,
+                    resolucion_cfp,
+                ),
             )
             conn.commit()
 
@@ -240,35 +246,37 @@ class INIDEPComparator:
                 elif ratio <= 1.15:
                     nivel = ALERTA_AMARILLA
                     desc = (
-                        f"Cuota CFP ({cmp:,.0f} tn) supera en {(ratio-1)*100:.1f}% "
+                        f"Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
                         f"la CBA del INIDEP ({cba:,.0f} tn). Monitorear."
                     )
                 elif ratio <= 1.30:
                     nivel = ALERTA_ROJA
                     desc = (
-                        f"⚠️ Cuota CFP ({cmp:,.0f} tn) supera en {(ratio-1)*100:.1f}% "
+                        f"⚠️ Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
                         f"la CBA del INIDEP ({cba:,.0f} tn). Sobreasignación significativa."
                     )
                 else:
                     nivel = ALERTA_CRITICA
                     desc = (
-                        f"🚨 Cuota CFP ({cmp:,.0f} tn) supera en {(ratio-1)*100:.1f}% "
+                        f"🚨 Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
                         f"la CBA del INIDEP ({cba:,.0f} tn). Riesgo crítico de sostenibilidad."
                     )
 
-            alertas.append(AlertaComparacion(
-                especie=row["especie"],
-                zona=row["zona"],
-                year=row["year"],
-                cba_inidep_tn=cba,
-                cmp_cfp_tn=cmp,
-                diferencia_tn=diff,
-                ratio=ratio,
-                nivel=nivel,
-                descripcion=desc,
-                numero_ito=row["numero_ito"],
-                acta_cfp=row["acta_referencia"],
-            ))
+            alertas.append(
+                AlertaComparacion(
+                    especie=row["especie"],
+                    zona=row["zona"],
+                    year=row["year"],
+                    cba_inidep_tn=cba,
+                    cmp_cfp_tn=cmp,
+                    diferencia_tn=diff,
+                    ratio=ratio,
+                    nivel=nivel,
+                    descripcion=desc,
+                    numero_ito=row["numero_ito"],
+                    acta_cfp=row["acta_referencia"],
+                )
+            )
 
         # Guardar en BD
         self._persist_comparisons(alertas)
@@ -287,10 +295,18 @@ class INIDEPComparator:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        a.especie, a.especie.lower().replace(" ", "_"),
-                        a.zona, a.year, a.cba_inidep_tn, a.cmp_cfp_tn,
-                        a.diferencia_tn, a.ratio, a.nivel, a.descripcion,
-                        a.numero_ito, a.acta_cfp,
+                        a.especie,
+                        a.especie.lower().replace(" ", "_"),
+                        a.zona,
+                        a.year,
+                        a.cba_inidep_tn,
+                        a.cmp_cfp_tn,
+                        a.diferencia_tn,
+                        a.ratio,
+                        a.nivel,
+                        a.descripcion,
+                        a.numero_ito,
+                        a.acta_cfp,
                     ),
                 )
             conn.commit()
@@ -298,20 +314,29 @@ class INIDEPComparator:
     # ── Queries de análisis ───────────────────────────────────────────────────
 
     def get_alertas_activas(self, nivel_minimo: str = ALERTA_AMARILLA) -> pd.DataFrame:
-        niveles_orden = {ALERTA_VERDE: 0, ALERTA_AMARILLA: 1,
-                         ALERTA_ROJA: 2, ALERTA_CRITICA: 3, ALERTA_SIN_DATOS: -1}
-        nivel_num = niveles_orden.get(nivel_minimo, 1)
+        niveles_orden = {
+            ALERTA_VERDE: 0,
+            ALERTA_AMARILLA: 1,
+            ALERTA_ROJA: 2,
+            ALERTA_CRITICA: 3,
+            ALERTA_SIN_DATOS: -1,
+        }
+        umbral = niveles_orden.get(nivel_minimo, 1)
+        niveles_incluidos = [k for k, v in niveles_orden.items() if v >= umbral]
 
         with self._conn() as conn:
+            placeholders = ",".join("?" * len(niveles_incluidos))
             df = pd.read_sql_query(
-                """
+                f"""
                 SELECT especie, zona, year, cba_inidep_tn, cmp_cfp_tn,
                        diferencia_tn, ratio_sobreasignacion, nivel_alerta,
                        descripcion_alerta, numero_ito
                 FROM comparacion_cfp_inidep
+                WHERE nivel_alerta IN ({placeholders})
                 ORDER BY ratio_sobreasignacion DESC NULLS LAST
                 """,
                 conn,
+                params=niveles_incluidos,
             )
         return df
 
@@ -332,6 +357,7 @@ class INIDEPComparator:
     def summary_report(self) -> dict:
         alertas = self.compute_comparisons()
         from collections import Counter
+
         conteo = Counter(a.nivel for a in alertas)
         criticas = [a for a in alertas if a.nivel == ALERTA_CRITICA]
         rojas = [a for a in alertas if a.nivel == ALERTA_ROJA]

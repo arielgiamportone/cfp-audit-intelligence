@@ -3,15 +3,16 @@ Catálogo SQLite de actas: registro de metadatos, estado de procesamiento y hash
 
 Provee trazabilidad completa del pipeline desde PDF hasta análisis.
 """
+
 import hashlib
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Generator, Optional
+from typing import Any
 
 from loguru import logger
-
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS actas (
@@ -193,12 +194,8 @@ class CatalogManager:
             processed = conn.execute(
                 "SELECT COUNT(*) FROM actas WHERE text_extracted=TRUE"
             ).fetchone()[0]
-            embedded = conn.execute(
-                "SELECT COUNT(*) FROM actas WHERE embedded=TRUE"
-            ).fetchone()[0]
-            analyzed = conn.execute(
-                "SELECT COUNT(*) FROM actas WHERE analyzed=TRUE"
-            ).fetchone()[0]
+            embedded = conn.execute("SELECT COUNT(*) FROM actas WHERE embedded=TRUE").fetchone()[0]
+            analyzed = conn.execute("SELECT COUNT(*) FROM actas WHERE analyzed=TRUE").fetchone()[0]
             by_year = conn.execute(
                 "SELECT year, COUNT(*) as n FROM actas GROUP BY year ORDER BY year"
             ).fetchall()
@@ -260,8 +257,8 @@ class CatalogManager:
         self,
         resolucion_id: int,
         entidad_id: int,
-        contexto: Optional[str] = None,
-        sentimiento: Optional[str] = None,
+        contexto: str | None = None,
+        sentimiento: str | None = None,
     ) -> None:
         with self._conn() as conn:
             conn.execute(
@@ -302,5 +299,6 @@ class CatalogManager:
     @staticmethod
     def _normalize(text: str) -> str:
         import unicodedata
+
         nfkd = unicodedata.normalize("NFKD", text.lower())
         return "".join(c for c in nfkd if not unicodedata.combining(c)).strip()

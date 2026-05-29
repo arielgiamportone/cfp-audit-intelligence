@@ -10,17 +10,13 @@ de reglas para reconocer entidades específicas del sector pesquero:
   NORMATIVA_CFP   — resoluciones y leyes (Res. CFP N° 5/2020, Ley 24.922, ...)
   BUQUE_PESCA     — embarcaciones pesqueras
 """
-import re
+
 from dataclasses import dataclass, field
 from functools import lru_cache
-from pathlib import Path
-from typing import Optional
 
 import spacy
-from spacy.language import Language
-from spacy.pipeline import EntityRuler
 from loguru import logger
-
+from spacy.language import Language
 
 # ── Etiquetas de entidad ───────────────────────────────────────────────────────
 
@@ -46,81 +42,175 @@ LABEL_COLORS = {
 
 _ESPECIES = [
     # Merluza y variantes
-    "merluza hubbsi", "merluza común", "merluza de cola", "merluza austral",
-    "merluza negra", "merluza del sur", "merluza del norte",
-    "merluccius hubbsi", "merluccius polylepis", "merluccius australis",
-    "dissostichus eleginoides", "macruronus magellanicus",
+    "merluza hubbsi",
+    "merluza común",
+    "merluza de cola",
+    "merluza austral",
+    "merluza negra",
+    "merluza del sur",
+    "merluza del norte",
+    "merluccius hubbsi",
+    "merluccius polylepis",
+    "merluccius australis",
+    "dissostichus eleginoides",
+    "macruronus magellanicus",
     # Calamar
-    "calamar illex", "calamar loligo", "illex argentinus",
-    "loligo gahi", "loligo patagonica",
+    "calamar illex",
+    "calamar loligo",
+    "illex argentinus",
+    "loligo gahi",
+    "loligo patagonica",
     # Langostino / crustáceos
-    "langostino patagónico", "langostino", "pleoticus muelleri",
-    "camarón", "camarón patagónico",
-    "centolla", "centollón", "lithodes santolla", "paralomis granulosa",
-    "cangrejo", "crustáceos patagónicos",
+    "langostino patagónico",
+    "langostino",
+    "pleoticus muelleri",
+    "camarón",
+    "camarón patagónico",
+    "centolla",
+    "centollón",
+    "lithodes santolla",
+    "paralomis granulosa",
+    "cangrejo",
+    "crustáceos patagónicos",
     # Peces demersales
-    "abadejo", "genypterus blacodes", "genypterus brasiliensis",
-    "polaca", "micromesistius australis",
-    "pez espada", "xiphias gladius",
-    "corvina rubia", "micropogonias furnieri",
-    "corvina negra", "pogonias cromis",
-    "pescadilla", "cynoscion guatucupa",
-    "brótola", "urophycis brasiliensis",
-    "lenguado", "paralichthys",
-    "cazón", "squalus acanthias",
-    "palometa", "seriolella punctata",
+    "abadejo",
+    "genypterus blacodes",
+    "genypterus brasiliensis",
+    "polaca",
+    "micromesistius australis",
+    "pez espada",
+    "xiphias gladius",
+    "corvina rubia",
+    "micropogonias furnieri",
+    "corvina negra",
+    "pogonias cromis",
+    "pescadilla",
+    "cynoscion guatucupa",
+    "brótola",
+    "urophycis brasiliensis",
+    "lenguado",
+    "paralichthys",
+    "cazón",
+    "squalus acanthias",
+    "palometa",
+    "seriolella punctata",
     # Pelágicos
-    "anchoíta", "anchoita", "engraulis anchoita",
-    "caballa", "scomber japonicus",
-    "salmón de mar", "pseudopercis semifasciata",
-    "pejerrey", "odontesthes",
+    "anchoíta",
+    "anchoita",
+    "engraulis anchoita",
+    "caballa",
+    "scomber japonicus",
+    "salmón de mar",
+    "pseudopercis semifasciata",
+    "pejerrey",
+    "odontesthes",
     # Moluscos / equinodermos
-    "vieira patagónica", "vieira", "zygochlamys patagonica",
-    "mejillón", "mytilus chilensis",
-    "pulpo", "octopus tehuelchus",
+    "vieira patagónica",
+    "vieira",
+    "zygochlamys patagonica",
+    "mejillón",
+    "mytilus chilensis",
+    "pulpo",
+    "octopus tehuelchus",
     "erizo de mar",
     # Genéricas
-    "recursos pesqueros", "recursos demersales", "recursos pelágicos",
-    "peces cartilaginosos", "condrictios", "elasmobranquios",
+    "recursos pesqueros",
+    "recursos demersales",
+    "recursos pelágicos",
+    "peces cartilaginosos",
+    "condrictios",
+    "elasmobranquios",
 ]
 
 _ZONAS = [
-    "sur 41°s", "norte 41°s", "sur del paralelo 41", "norte del paralelo 41",
-    "sur de 41°s", "norte de 41°s",
-    "patagonia", "patagónico", "zona patagónica",
-    "golfo san jorge", "gsj", "golfo nuevo", "golfo san matías",
-    "zona austral", "aguas australes", "plataforma continental",
-    "mar argentino", "zona económica exclusiva", "zee",
-    "atlántico sudoccidental", "atlántico sur",
-    "tierra del fuego", "canal beagle", "estrecho de magallanes",
-    "islas malvinas", "georgias del sur", "sandwich del sur",
-    "bahía san julián", "golfo de san jorge",
-    "zona iii", "zona iv", "zona v",
-    "subárea 41", "subárea 48",
+    "sur 41°s",
+    "norte 41°s",
+    "sur del paralelo 41",
+    "norte del paralelo 41",
+    "sur de 41°s",
+    "norte de 41°s",
+    "patagonia",
+    "patagónico",
+    "zona patagónica",
+    "golfo san jorge",
+    "gsj",
+    "golfo nuevo",
+    "golfo san matías",
+    "zona austral",
+    "aguas australes",
+    "plataforma continental",
+    "mar argentino",
+    "zona económica exclusiva",
+    "zee",
+    "atlántico sudoccidental",
+    "atlántico sur",
+    "tierra del fuego",
+    "canal beagle",
+    "estrecho de magallanes",
+    "islas malvinas",
+    "georgias del sur",
+    "sandwich del sur",
+    "bahía san julián",
+    "golfo de san jorge",
+    "zona iii",
+    "zona iv",
+    "zona v",
+    "subárea 41",
+    "subárea 48",
 ]
 
 _NORMATIVAS = [
-    "ley 24.922", "ley 24922",
-    "ley 25.290", "ley 25290",
+    "ley 24.922",
+    "ley 24922",
+    "ley 25.290",
+    "ley 25290",
     "decreto 748",
-    "art. 9", "artículo 9",
-    "art. 27", "artículo 27",
+    "art. 9",
+    "artículo 9",
+    "art. 27",
+    "artículo 27",
 ]
 
 # ── Patrones empresa ───────────────────────────────────────────────────────────
 
 _EMPRESAS_CONOCIDAS = [
-    "argenova", "conarpesa", "arbumasa", "abadejero", "pesantar",
-    "estremar", "prodesur", "glaciar pesquera", "altamare", "ardapez",
-    "tinopesca", "illex fishing", "wanchese argentina", "wanchese arg",
-    "shin yang ar", "shing yang ar",
-    "continental de armadores", "continental armadores",
-    "antonio baldino e hijos", "baldino e hijos",
-    "pesquera latina", "pesquería del atlántico", "pesqueria del atlantico",
-    "crustáceos patagónicos", "crustaceos patagonicos",
-    "fonseca", "inidep", "cfp", "consejo federal pesquero",
-    "harengus", "bariloche", "frigoríficos", "pesquería nacional",
-    "nivia mar", "alpesca", "iberconsa", "novo mar",
+    "argenova",
+    "conarpesa",
+    "arbumasa",
+    "abadejero",
+    "pesantar",
+    "estremar",
+    "prodesur",
+    "glaciar pesquera",
+    "altamare",
+    "ardapez",
+    "tinopesca",
+    "illex fishing",
+    "wanchese argentina",
+    "wanchese arg",
+    "shin yang ar",
+    "shing yang ar",
+    "continental de armadores",
+    "continental armadores",
+    "antonio baldino e hijos",
+    "baldino e hijos",
+    "pesquera latina",
+    "pesquería del atlántico",
+    "pesqueria del atlantico",
+    "crustáceos patagónicos",
+    "crustaceos patagonicos",
+    "fonseca",
+    "inidep",
+    "cfp",
+    "consejo federal pesquero",
+    "harengus",
+    "bariloche",
+    "frigoríficos",
+    "pesquería nacional",
+    "nivia mar",
+    "alpesca",
+    "iberconsa",
+    "novo mar",
 ]
 
 
@@ -150,103 +240,121 @@ def _build_ruler_patterns() -> list[dict]:
 
     # ── Patrón genérico empresa: NOMBRE S.A. / S.R.L. / S.A.C.I. ─────────────
     for suffix in ["S.A.", "S.R.L.", "S.A.C.I.", "S.A.C.I.F.", "S.C.A.", "S.A.I.C."]:
-        patterns.append({
-            "label": LABEL_EMPRESA,
-            "pattern": [
-                {"IS_UPPER": True, "OP": "+"},
-                {"ORTH": suffix},
-            ],
-        })
+        patterns.append(
+            {
+                "label": LABEL_EMPRESA,
+                "pattern": [
+                    {"IS_UPPER": True, "OP": "+"},
+                    {"ORTH": suffix},
+                ],
+            }
+        )
 
     # ── Zonas con patrón de token (Sur/Norte + número + ° + S/N) ─────────────
     for direccion in ["sur", "norte"]:
         for paralelo in ["41", "42", "47"]:
             # "Sur 41°S" — la S final puede tener punto (fin de frase)
-            patterns.append({
-                "label": LABEL_ZONA,
-                "pattern": [
-                    {"LOWER": {"IN": [direccion, direccion.title()]}},
-                    {"LOWER": paralelo},
-                    {"ORTH": "°"},
-                    {"TEXT": {"REGEX": r"[SsNn]\.?"}},
-                ],
-            })
+            patterns.append(
+                {
+                    "label": LABEL_ZONA,
+                    "pattern": [
+                        {"LOWER": {"IN": [direccion, direccion.title()]}},
+                        {"LOWER": paralelo},
+                        {"ORTH": "°"},
+                        {"TEXT": {"REGEX": r"[SsNn]\.?"}},
+                    ],
+                }
+            )
             # "sur del paralelo 41°S"
-            patterns.append({
-                "label": LABEL_ZONA,
-                "pattern": [
-                    {"LOWER": {"IN": [direccion, direccion.title()]}},
-                    {"LOWER": {"IN": ["del", "de"]}},
-                    {"LOWER": "paralelo"},
-                    {"LOWER": paralelo},
-                    {"ORTH": "°", "OP": "?"},
-                    {"TEXT": {"REGEX": r"[SsNn]\.?"}, "OP": "?"},
-                ],
-            })
+            patterns.append(
+                {
+                    "label": LABEL_ZONA,
+                    "pattern": [
+                        {"LOWER": {"IN": [direccion, direccion.title()]}},
+                        {"LOWER": {"IN": ["del", "de"]}},
+                        {"LOWER": "paralelo"},
+                        {"LOWER": paralelo},
+                        {"ORTH": "°", "OP": "?"},
+                        {"TEXT": {"REGEX": r"[SsNn]\.?"}, "OP": "?"},
+                    ],
+                }
+            )
 
     # ── Normativas ────────────────────────────────────────────────────────────
     for norm in _NORMATIVAS:
         patterns.append({"label": LABEL_NORMATIVA, "pattern": norm})
 
     # Resolución CFP N° X/YYYY  — "N" y "°" son tokens separados
-    patterns.append({
-        "label": LABEL_NORMATIVA,
-        "pattern": [
-            {"LOWER": {"IN": ["resolución", "resolucion", "res."]}},
-            {"LOWER": {"IN": ["cfp"]}, "OP": "?"},
-            {"LOWER": {"IN": ["n", "nro.", "núm.", "num."]}, "OP": "?"},
-            {"ORTH": "°", "OP": "?"},
-            {"TEXT": {"REGEX": r"\d{1,4}/\d{4}"}},
-        ],
-    })
+    patterns.append(
+        {
+            "label": LABEL_NORMATIVA,
+            "pattern": [
+                {"LOWER": {"IN": ["resolución", "resolucion", "res."]}},
+                {"LOWER": {"IN": ["cfp"]}, "OP": "?"},
+                {"LOWER": {"IN": ["n", "nro.", "núm.", "num."]}, "OP": "?"},
+                {"ORTH": "°", "OP": "?"},
+                {"TEXT": {"REGEX": r"\d{1,4}/\d{4}"}},
+            ],
+        }
+    )
 
     # Resolución CFP (sin número)
-    patterns.append({
-        "label": LABEL_NORMATIVA,
-        "pattern": [
-            {"LOWER": {"IN": ["resolución", "resolucion"]}},
-            {"LOWER": "cfp"},
-        ],
-    })
+    patterns.append(
+        {
+            "label": LABEL_NORMATIVA,
+            "pattern": [
+                {"LOWER": {"IN": ["resolución", "resolucion"]}},
+                {"LOWER": "cfp"},
+            ],
+        }
+    )
 
     # ── Cuotas: número + unidad ───────────────────────────────────────────────
     for unit in ["toneladas", "tn", "t.", "ton."]:
         # "300.000 toneladas"
-        patterns.append({
-            "label": LABEL_CUOTA,
-            "pattern": [{"LIKE_NUM": True}, {"LOWER": unit}],
-        })
+        patterns.append(
+            {
+                "label": LABEL_CUOTA,
+                "pattern": [{"LIKE_NUM": True}, {"LOWER": unit}],
+            }
+        )
         # "300.000 de toneladas"
-        patterns.append({
-            "label": LABEL_CUOTA,
-            "pattern": [{"LIKE_NUM": True}, {"LOWER": "de"}, {"LOWER": unit}],
-        })
+        patterns.append(
+            {
+                "label": LABEL_CUOTA,
+                "pattern": [{"LIKE_NUM": True}, {"LOWER": "de"}, {"LOWER": unit}],
+            }
+        )
 
     # CBA/CMP de X toneladas
     for keyword in ["cba", "cmp", "cuota"]:
-        patterns.append({
-            "label": LABEL_CUOTA,
-            "pattern": [
-                {"LOWER": keyword},
-                {"LOWER": {"IN": ["de", "=", ":"]}, "OP": "?"},
-                {"LIKE_NUM": True},
-                {"LOWER": {"IN": ["toneladas", "tn", "t."]}, "OP": "?"},
-            ],
-        })
+        patterns.append(
+            {
+                "label": LABEL_CUOTA,
+                "pattern": [
+                    {"LOWER": keyword},
+                    {"LOWER": {"IN": ["de", "=", ":"]}, "OP": "?"},
+                    {"LIKE_NUM": True},
+                    {"LOWER": {"IN": ["toneladas", "tn", "t."]}, "OP": "?"},
+                ],
+            }
+        )
 
     # ── Buques: "B / P NOMBRE" — nombre en mayúsculas, máx 3 palabras ────────
     for stern in ["p", "m", "t", "r"]:
-        patterns.append({
-            "label": LABEL_BUQUE,
-            "pattern": [
-                {"LOWER": "b"},
-                {"ORTH": "/"},
-                {"LOWER": stern},
-                {"IS_UPPER": True},
-                {"IS_UPPER": True, "OP": "?"},
-                {"IS_UPPER": True, "OP": "?"},
-            ],
-        })
+        patterns.append(
+            {
+                "label": LABEL_BUQUE,
+                "pattern": [
+                    {"LOWER": "b"},
+                    {"ORTH": "/"},
+                    {"LOWER": stern},
+                    {"IS_UPPER": True},
+                    {"IS_UPPER": True, "OP": "?"},
+                    {"IS_UPPER": True, "OP": "?"},
+                ],
+            }
+        )
 
     return patterns
 
@@ -313,7 +421,7 @@ class FisheriesNER:
 
     def __init__(self, model: str = "es_core_news_sm"):
         self.model = model
-        self._nlp: Optional[Language] = None
+        self._nlp: Language | None = None
 
     def _load(self) -> Language:
         if self._nlp is not None:
@@ -374,13 +482,15 @@ class FisheriesNER:
             contexto = text[ctx_start:ctx_end].replace("\n", " ").strip()
 
             texto = ent.text.strip().rstrip(".,;:")
-            entidades.append(EntidadExtraida(
-                texto=texto,
-                etiqueta=ent.label_,
-                inicio=ent.start_char,
-                fin=ent.end_char,
-                contexto=contexto,
-            ))
+            entidades.append(
+                EntidadExtraida(
+                    texto=texto,
+                    etiqueta=ent.label_,
+                    inicio=ent.start_char,
+                    fin=ent.end_char,
+                    contexto=contexto,
+                )
+            )
 
         return ResultadoNER(texto_original=text, entidades=entidades)
 
@@ -390,7 +500,7 @@ class FisheriesNER:
         resultados = []
 
         for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
+            batch = texts[i : i + batch_size]
             for doc, text in zip(nlp.pipe(batch), batch):
                 entidades = []
                 seen = set()
@@ -401,12 +511,14 @@ class FisheriesNER:
                     if key in seen:
                         continue
                     seen.add(key)
-                    entidades.append(EntidadExtraida(
-                        texto=ent.text.strip(),
-                        etiqueta=ent.label_,
-                        inicio=ent.start_char,
-                        fin=ent.end_char,
-                    ))
+                    entidades.append(
+                        EntidadExtraida(
+                            texto=ent.text.strip(),
+                            etiqueta=ent.label_,
+                            inicio=ent.start_char,
+                            fin=ent.end_char,
+                        )
+                    )
                 resultados.append(ResultadoNER(texto_original=text, entidades=entidades))
 
         return resultados
@@ -420,6 +532,7 @@ class FisheriesNER:
     def visualize_html(text: str, ner: "FisheriesNER") -> str:
         """Retorna HTML con entidades resaltadas (para Streamlit)."""
         from spacy import displacy
+
         nlp = ner._load()
         doc = nlp(text[:5000])
         options = {

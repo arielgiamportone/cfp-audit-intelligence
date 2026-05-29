@@ -1,21 +1,20 @@
 """Router /alertas — historial y reglas del sistema de alertas."""
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.models import AlertaOut, AlertaListOut
 from src.api.deps import DB_PATH, get_alert_engine
+from src.api.models import AlertaListOut, AlertaOut
 
 router = APIRouter(prefix="/alertas", tags=["alertas"])
 
 
 @router.get("", response_model=AlertaListOut, summary="Listar alertas")
 def list_alertas(
-    severidad: Optional[str] = Query(None, description="info | warning | critical"),
+    severidad: str | None = Query(None, description="info | warning | critical"),
     solo_abiertas: bool = Query(True),
-    especie_code: Optional[str] = Query(None),
-    year_desde: Optional[int] = Query(None),
-    year_hasta: Optional[int] = Query(None),
+    especie_code: str | None = Query(None),
+    year_desde: int | None = Query(None),
+    year_hasta: int | None = Query(None),
     limit: int = Query(100, ge=1, le=500),
 ):
     """Retorna el historial de alertas con filtros opcionales."""

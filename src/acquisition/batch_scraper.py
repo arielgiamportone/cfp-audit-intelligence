@@ -5,12 +5,12 @@ Uso:
     python -m src.acquisition.batch_scraper --years 1998-2025
     python -m src.acquisition.batch_scraper --year 2024
 """
+
 import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import requests
 import urllib3
@@ -33,9 +33,9 @@ class ActaMetadata:
     filename: str
     is_anexo: bool
     scraped_at: datetime = field(default_factory=datetime.utcnow)
-    local_path: Optional[Path] = None
-    download_status: str = "pending"   # pending | ok | error | duplicate
-    error_msg: Optional[str] = None
+    local_path: Path | None = None
+    download_status: str = "pending"  # pending | ok | error | duplicate
+    error_msg: str | None = None
 
 
 class CFPScraper:
@@ -53,12 +53,14 @@ class CFPScraper:
         self.max_retries = max_retries
         self.session = requests.Session()
         self.session.verify = ssl_verify
-        self.session.headers.update({
-            "User-Agent": (
-                "Mozilla/5.0 (compatible; CFP-Audit-Bot/1.0; "
-                "Investigacion publica datos abiertos)"
-            )
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": (
+                    "Mozilla/5.0 (compatible; CFP-Audit-Bot/1.0; "
+                    "Investigacion publica datos abiertos)"
+                )
+            }
+        )
 
     @retry(
         stop=stop_after_attempt(3),

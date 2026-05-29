@@ -4,25 +4,26 @@ Página 8 — Sistema de Alertas Configurables CFP.
 Permite configurar reglas de alerta, evaluar el estado actual
 y consultar el historial de alertas detectadas.
 """
+
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from src.analysis.alert_engine import (
-    AlertEngine,
-    AlertaRegla,
-    TIPOS_VALIDOS,
-    TIPO_CBA_EXCESO,
-    TIPO_STOCK_CRITICO,
-    TIPO_QUORUM_MINIMO,
-    TIPO_REVERSION,
-    SEVERIDADES,
+    SEV_CRITICAL,
     SEV_INFO,
     SEV_WARNING,
-    SEV_CRITICAL,
+    SEVERIDADES,
     SEVERITY_COLORS,
     SEVERITY_ICONS,
+    TIPO_CBA_EXCESO,
+    TIPO_QUORUM_MINIMO,
+    TIPO_REVERSION,
+    TIPO_STOCK_CRITICO,
+    TIPOS_VALIDOS,
+    AlertaRegla,
+    AlertEngine,
 )
 
 st.set_page_config(
@@ -85,11 +86,13 @@ st.divider()
 
 # ── Tabs ───────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3 = st.tabs([
-    "🚨 Alertas activas",
-    "⚙️ Reglas",
-    "📋 Historial",
-])
+tab1, tab2, tab3 = st.tabs(
+    [
+        "🚨 Alertas activas",
+        "⚙️ Reglas",
+        "📋 Historial",
+    ]
+)
 
 
 # ─── Tab 1: Alertas activas ────────────────────────────────────────────────────
@@ -174,10 +177,10 @@ with tab1:
                         st.markdown(
                             f'<div style="border-left: 4px solid {color}; padding: 6px 12px; '
                             f'margin-bottom: 8px; background: rgba(0,0,0,0.2)">'
-                            f'<small><b>{tipo_label}</b>'
+                            f"<small><b>{tipo_label}</b>"
                             + (f" · {row['year']}" if row.get("year") else "")
                             + (f" · {row['acta_referencia']}" if row.get("acta_referencia") else "")
-                            + f'</small><br>{row["mensaje"]}</div>',
+                            + f"</small><br>{row['mensaje']}</div>",
                             unsafe_allow_html=True,
                         )
                     with col_btn:
@@ -260,7 +263,10 @@ with tab2:
         with col_n5:
             umbral_pct = st.number_input(
                 "Umbral % (para CBA exceso)",
-                value=115.0, min_value=100.0, max_value=300.0, step=5.0,
+                value=115.0,
+                min_value=100.0,
+                max_value=300.0,
+                step=5.0,
                 help="Solo para tipo 'cba_exceso'",
             )
 
@@ -340,11 +346,7 @@ with tab3:
             df_chart = df_hist.dropna(subset=["year"]).copy()
             df_chart["year"] = df_chart["year"].astype(int)
             if not df_chart.empty:
-                df_count = (
-                    df_chart.groupby(["year", "severidad"])
-                    .size()
-                    .reset_index(name="count")
-                )
+                df_count = df_chart.groupby(["year", "severidad"]).size().reset_index(name="count")
                 color_map = {SEV_CRITICAL: "#F44336", SEV_WARNING: "#FF9800", SEV_INFO: "#2196F3"}
                 fig = px.bar(
                     df_count,
@@ -366,17 +368,24 @@ with tab3:
             pass
 
         # Tabla
-        cols_show = ["severidad", "tipo", "especie", "year", "zona", "mensaje",
-                     "acta_referencia", "regla_nombre", "created_at"]
+        cols_show = [
+            "severidad",
+            "tipo",
+            "especie",
+            "year",
+            "zona",
+            "mensaje",
+            "acta_referencia",
+            "regla_nombre",
+            "created_at",
+        ]
         cols_present = [c for c in cols_show if c in df_hist.columns]
 
         df_display = df_hist[cols_present].copy()
         df_display["severidad"] = df_display["severidad"].map(
             lambda s: SEVERITY_ICONS.get(s, s) + " " + s
         )
-        df_display["tipo"] = df_display["tipo"].map(
-            lambda t: TIPO_LABELS.get(t, t)
-        )
+        df_display["tipo"] = df_display["tipo"].map(lambda t: TIPO_LABELS.get(t, t))
 
         st.dataframe(df_display, use_container_width=True, hide_index=True)
 

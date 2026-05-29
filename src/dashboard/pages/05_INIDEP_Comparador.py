@@ -4,6 +4,7 @@ Página del Comparador CFP vs. INIDEP: cuotas aprobadas vs. CBA recomendada.
 Visualiza alertas cuando el CFP aprueba cuotas superiores a las recomendaciones
 científicas del INIDEP (Ley 24.922, Art. 9).
 """
+
 import sys
 from pathlib import Path
 
@@ -31,9 +32,11 @@ DB_PATH = ROOT / "data" / "processed" / "catalog.db"
 
 # ── Inicializar comparador ─────────────────────────────────────────────────────
 
+
 @st.cache_resource(show_spinner="Inicializando base de datos INIDEP...")
 def get_comparator():
     from src.analysis.inidep_comparator import INIDEPComparator
+
     return INIDEPComparator(DB_PATH)
 
 
@@ -95,22 +98,24 @@ if not alertas:
     st.info("No hay datos de comparación disponibles. Ingresa cuotas CFP desde el panel lateral.")
     st.stop()
 
-df = pd.DataFrame([
-    {
-        "Especie": a.especie,
-        "Zona": a.zona,
-        "Año": a.year,
-        "CBA INIDEP (tn)": a.cba_inidep_tn,
-        "CMP CFP (tn)": a.cmp_cfp_tn,
-        "Diferencia (tn)": a.diferencia_tn,
-        "Ratio": a.ratio,
-        "Nivel": a.nivel,
-        "Descripción": a.descripcion,
-        "ITO": a.numero_ito,
-        "Acta CFP": a.acta_cfp,
-    }
-    for a in alertas
-])
+df = pd.DataFrame(
+    [
+        {
+            "Especie": a.especie,
+            "Zona": a.zona,
+            "Año": a.year,
+            "CBA INIDEP (tn)": a.cba_inidep_tn,
+            "CMP CFP (tn)": a.cmp_cfp_tn,
+            "Diferencia (tn)": a.diferencia_tn,
+            "Ratio": a.ratio,
+            "Nivel": a.nivel,
+            "Descripción": a.descripcion,
+            "ITO": a.numero_ito,
+            "Acta CFP": a.acta_cfp,
+        }
+        for a in alertas
+    ]
+)
 
 # ── Métricas de resumen ───────────────────────────────────────────────────────
 
@@ -132,12 +137,14 @@ st.divider()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab_alertas, tab_grafico, tab_inidep, tab_metodologia = st.tabs([
-    "🚨 Alertas Activas",
-    "📊 Visualización",
-    "📋 Datos INIDEP",
-    "ℹ️ Metodología",
-])
+tab_alertas, tab_grafico, tab_inidep, tab_metodologia = st.tabs(
+    [
+        "🚨 Alertas Activas",
+        "📊 Visualización",
+        "📋 Datos INIDEP",
+        "ℹ️ Metodología",
+    ]
+)
 
 # ── Tab 1: Alertas activas ─────────────────────────────────────────────────────
 
@@ -193,7 +200,8 @@ with tab_alertas:
                         if row["Diferencia (tn)"] and row["Diferencia (tn)"] > 0
                         else (
                             f"{row['Diferencia (tn)']:,.0f} tn bajo CBA"
-                            if row["Diferencia (tn)"] else None
+                            if row["Diferencia (tn)"]
+                            else None
                         )
                     ),
                     delta_color="inverse" if (row["Diferencia (tn)"] or 0) > 0 else "normal",
@@ -231,26 +239,32 @@ with tab_grafico:
         )
 
         fig = go.Figure()
-        fig.add_trace(go.Bar(
-            name="CBA INIDEP (recomendada)",
-            x=df_con_datos["Especie/Zona"],
-            y=df_con_datos["CBA INIDEP (tn)"],
-            marker_color="#2196F3",
-            opacity=0.85,
-        ))
-        fig.add_trace(go.Bar(
-            name="CMP CFP (aprobada)",
-            x=df_con_datos["Especie/Zona"],
-            y=df_con_datos["CMP CFP (tn)"],
-            marker_color=df_con_datos["Nivel"].map({
-                "critico": "#D32F2F",
-                "rojo": "#F44336",
-                "amarillo": "#FFC107",
-                "verde": "#4CAF50",
-                "sin_datos": "#9E9E9E",
-            }),
-            opacity=0.85,
-        ))
+        fig.add_trace(
+            go.Bar(
+                name="CBA INIDEP (recomendada)",
+                x=df_con_datos["Especie/Zona"],
+                y=df_con_datos["CBA INIDEP (tn)"],
+                marker_color="#2196F3",
+                opacity=0.85,
+            )
+        )
+        fig.add_trace(
+            go.Bar(
+                name="CMP CFP (aprobada)",
+                x=df_con_datos["Especie/Zona"],
+                y=df_con_datos["CMP CFP (tn)"],
+                marker_color=df_con_datos["Nivel"].map(
+                    {
+                        "critico": "#D32F2F",
+                        "rojo": "#F44336",
+                        "amarillo": "#FFC107",
+                        "verde": "#4CAF50",
+                        "sin_datos": "#9E9E9E",
+                    }
+                ),
+                opacity=0.85,
+            )
+        )
         fig.update_layout(
             barmode="group",
             title="Comparación CBA INIDEP vs. CMP CFP",
@@ -278,16 +292,25 @@ with tab_grafico:
             labels={"Ratio": "Ratio (CMP/CBA)", "Especie/Zona": ""},
         )
         fig_ratio.add_hline(
-            y=1.0, line_dash="dash", line_color="gray",
-            annotation_text="Límite CBA", annotation_position="top right",
+            y=1.0,
+            line_dash="dash",
+            line_color="gray",
+            annotation_text="Límite CBA",
+            annotation_position="top right",
         )
         fig_ratio.add_hline(
-            y=1.15, line_dash="dot", line_color="#FFC107",
-            annotation_text="Umbral amarillo", annotation_position="top right",
+            y=1.15,
+            line_dash="dot",
+            line_color="#FFC107",
+            annotation_text="Umbral amarillo",
+            annotation_position="top right",
         )
         fig_ratio.add_hline(
-            y=1.30, line_dash="dot", line_color="#F44336",
-            annotation_text="Umbral rojo", annotation_position="top right",
+            y=1.30,
+            line_dash="dot",
+            line_color="#F44336",
+            annotation_text="Umbral rojo",
+            annotation_position="top right",
         )
         fig_ratio.update_layout(height=400)
         st.plotly_chart(fig_ratio, use_container_width=True)
@@ -301,18 +324,27 @@ with tab_inidep:
         st.info("No hay evaluaciones INIDEP registradas.")
     else:
         st.dataframe(
-            df_inidep[[
-                "especie", "zona", "year", "cba_recomendada_tn",
-                "estado_stock", "numero_ito", "notas"
-            ]].rename(columns={
-                "especie": "Especie",
-                "zona": "Zona",
-                "year": "Año",
-                "cba_recomendada_tn": "CBA (tn)",
-                "estado_stock": "Estado stock",
-                "numero_ito": "ITO",
-                "notas": "Notas",
-            }),
+            df_inidep[
+                [
+                    "especie",
+                    "zona",
+                    "year",
+                    "cba_recomendada_tn",
+                    "estado_stock",
+                    "numero_ito",
+                    "notas",
+                ]
+            ].rename(
+                columns={
+                    "especie": "Especie",
+                    "zona": "Zona",
+                    "year": "Año",
+                    "cba_recomendada_tn": "CBA (tn)",
+                    "estado_stock": "Estado stock",
+                    "numero_ito": "ITO",
+                    "notas": "Notas",
+                }
+            ),
             use_container_width=True,
             hide_index=True,
         )
@@ -324,18 +356,27 @@ with tab_inidep:
         st.info("No hay cuotas CFP registradas. Usa el formulario del panel lateral.")
     else:
         st.dataframe(
-            df_cfp[[
-                "especie", "zona", "year", "cmp_aprobada_tn",
-                "tipo_decision", "acta_referencia", "resolucion_cfp"
-            ]].rename(columns={
-                "especie": "Especie",
-                "zona": "Zona",
-                "year": "Año",
-                "cmp_aprobada_tn": "CMP aprobada (tn)",
-                "tipo_decision": "Tipo",
-                "acta_referencia": "Acta referencia",
-                "resolucion_cfp": "Resolución CFP",
-            }),
+            df_cfp[
+                [
+                    "especie",
+                    "zona",
+                    "year",
+                    "cmp_aprobada_tn",
+                    "tipo_decision",
+                    "acta_referencia",
+                    "resolucion_cfp",
+                ]
+            ].rename(
+                columns={
+                    "especie": "Especie",
+                    "zona": "Zona",
+                    "year": "Año",
+                    "cmp_aprobada_tn": "CMP aprobada (tn)",
+                    "tipo_decision": "Tipo",
+                    "acta_referencia": "Acta referencia",
+                    "resolucion_cfp": "Resolución CFP",
+                }
+            ),
             use_container_width=True,
             hide_index=True,
         )
