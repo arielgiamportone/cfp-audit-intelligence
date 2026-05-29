@@ -1,6 +1,7 @@
 """
 Página de Timeline interactivo: evolución histórica de CBA INIDEP y CMP CFP por especie.
 """
+
 import sqlite3
 import sys
 from pathlib import Path
@@ -27,7 +28,9 @@ st.caption(
 DB_PATH = ROOT / "data" / "processed" / "catalog.db"
 
 if not DB_PATH.exists():
-    st.error("Base de datos no encontrada. Ejecuta: `python scripts/scrape_inidep.py --mode metadata`")
+    st.error(
+        "Base de datos no encontrada. Ejecuta: `python scripts/scrape_inidep.py --mode metadata`"
+    )
     st.stop()
 
 
@@ -109,15 +112,15 @@ with st.sidebar:
 # ── Filtrar datos ──────────────────────────────────────────────────────────────
 
 mask = (
-    (df_inidep["especie_code"] == especie_sel) &
-    (df_inidep["year"] >= year_range[0]) &
-    (df_inidep["year"] <= year_range[1])
+    (df_inidep["especie_code"] == especie_sel)
+    & (df_inidep["year"] >= year_range[0])
+    & (df_inidep["year"] <= year_range[1])
 )
 df_esp = df_inidep[mask].copy()
 df_esp_cfp = df_cfp[
-    (df_cfp["especie_code"] == especie_sel) &
-    (df_cfp["year"] >= year_range[0]) &
-    (df_cfp["year"] <= year_range[1])
+    (df_cfp["especie_code"] == especie_sel)
+    & (df_cfp["year"] >= year_range[0])
+    & (df_cfp["year"] <= year_range[1])
 ].copy()
 
 especie_label = ESPECIE_LABELS.get(especie_sel, especie_sel.replace("_", " ").title())
@@ -127,20 +130,24 @@ especie_label = ESPECIE_LABELS.get(especie_sel, especie_sel.replace("_", " ").ti
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("ITOs encontrados", len(df_esp))
 col2.metric("Con CBA numérica", df_esp["cba_recomendada_tn"].notna().sum())
-col3.metric("Período cubierto",
-            f"{int(df_esp['year'].min())}–{int(df_esp['year'].max())}" if len(df_esp) else "—")
+col3.metric(
+    "Período cubierto",
+    f"{int(df_esp['year'].min())}–{int(df_esp['year'].max())}" if len(df_esp) else "—",
+)
 col4.metric("Cuotas CFP registradas", len(df_esp_cfp))
 
 st.divider()
 
 # ── Tabs ───────────────────────────────────────────────────────────────────────
 
-tab_timeline, tab_heatmap, tab_actividad, tab_datos = st.tabs([
-    "📊 Timeline CBA vs. CFP",
-    "🗓️ Mapa de actividad",
-    "🐠 Actividad por especie",
-    "📋 Datos",
-])
+tab_timeline, tab_heatmap, tab_actividad, tab_datos = st.tabs(
+    [
+        "📊 Timeline CBA vs. CFP",
+        "🗓️ Mapa de actividad",
+        "🐠 Actividad por especie",
+        "📋 Datos",
+    ]
+)
 
 # ── Tab 1: Timeline CBA vs. CMP ───────────────────────────────────────────────
 
@@ -157,11 +164,17 @@ with tab_timeline:
         if not df_esp.empty and mostrar_sin_cba:
             st.subheader("Evaluaciones INIDEP (sin CBA numérica)")
             st.dataframe(
-                df_esp[["year", "zona", "numero_ito", "estado_stock", "notas"]].rename(columns={
-                    "year": "Año", "zona": "Zona", "numero_ito": "ITO",
-                    "estado_stock": "Estado", "notas": "Notas",
-                }),
-                use_container_width=True, hide_index=True,
+                df_esp[["year", "zona", "numero_ito", "estado_stock", "notas"]].rename(
+                    columns={
+                        "year": "Año",
+                        "zona": "Zona",
+                        "numero_ito": "ITO",
+                        "estado_stock": "Estado",
+                        "notas": "Notas",
+                    }
+                ),
+                use_container_width=True,
+                hide_index=True,
             )
     else:
         fig = go.Figure()
@@ -170,60 +183,76 @@ with tab_timeline:
         if not df_cba.empty:
             df_cba_sorted = df_cba.sort_values("year")
             # Agregar por año (promedio si hay varios registros)
-            df_cba_agg = df_cba_sorted.groupby("year").agg(
-                cba=("cba_recomendada_tn", "mean"),
-                estado=("estado_stock", "first"),
-                ito=("numero_ito", "first"),
-            ).reset_index()
+            df_cba_agg = (
+                df_cba_sorted.groupby("year")
+                .agg(
+                    cba=("cba_recomendada_tn", "mean"),
+                    estado=("estado_stock", "first"),
+                    ito=("numero_ito", "first"),
+                )
+                .reset_index()
+            )
 
-            fig.add_trace(go.Scatter(
-                x=df_cba_agg["year"],
-                y=df_cba_agg["cba"],
-                name="CBA INIDEP (recomendada)",
-                mode="lines+markers",
-                line=dict(color="#1976D2", width=2.5),
-                marker=dict(
-                    size=10,
-                    color=[ESTADO_COLOR.get(e, "#9E9E9E") for e in df_cba_agg["estado"]],
-                    line=dict(color="white", width=1.5),
-                ),
-                customdata=df_cba_agg[["estado", "ito"]],
-                hovertemplate=(
-                    "<b>%{x}</b><br>"
-                    "CBA: %{y:,.0f} tn<br>"
-                    "Estado: %{customdata[0]}<br>"
-                    "ITO: %{customdata[1]}<extra></extra>"
-                ),
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=df_cba_agg["year"],
+                    y=df_cba_agg["cba"],
+                    name="CBA INIDEP (recomendada)",
+                    mode="lines+markers",
+                    line=dict(color="#1976D2", width=2.5),
+                    marker=dict(
+                        size=10,
+                        color=[ESTADO_COLOR.get(e, "#9E9E9E") for e in df_cba_agg["estado"]],
+                        line=dict(color="white", width=1.5),
+                    ),
+                    customdata=df_cba_agg[["estado", "ito"]],
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        "CBA: %{y:,.0f} tn<br>"
+                        "Estado: %{customdata[0]}<br>"
+                        "ITO: %{customdata[1]}<extra></extra>"
+                    ),
+                )
+            )
 
         # CMP CFP — barras rojas semitransparentes
         if not df_esp_cfp.empty:
-            df_cfp_agg = df_esp_cfp.groupby("year").agg(
-                cmp=("cmp_aprobada_tn", "sum"),
-                acta=("acta_referencia", "first"),
-            ).reset_index()
-            fig.add_trace(go.Bar(
-                x=df_cfp_agg["year"],
-                y=df_cfp_agg["cmp"],
-                name="CMP CFP (aprobada)",
-                marker_color="rgba(211, 47, 47, 0.55)",
-                customdata=df_cfp_agg[["acta"]],
-                hovertemplate=(
-                    "<b>%{x}</b><br>"
-                    "CMP aprobada: %{y:,.0f} tn<br>"
-                    "Acta: %{customdata[0]}<extra></extra>"
-                ),
-            ))
+            df_cfp_agg = (
+                df_esp_cfp.groupby("year")
+                .agg(
+                    cmp=("cmp_aprobada_tn", "sum"),
+                    acta=("acta_referencia", "first"),
+                )
+                .reset_index()
+            )
+            fig.add_trace(
+                go.Bar(
+                    x=df_cfp_agg["year"],
+                    y=df_cfp_agg["cmp"],
+                    name="CMP CFP (aprobada)",
+                    marker_color="rgba(211, 47, 47, 0.55)",
+                    customdata=df_cfp_agg[["acta"]],
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        "CMP aprobada: %{y:,.0f} tn<br>"
+                        "Acta: %{customdata[0]}<extra></extra>"
+                    ),
+                )
+            )
 
         # Leyenda de estados
         for estado, color in ESTADO_COLOR.items():
             if estado and not df_cba.empty and estado in df_cba["estado_stock"].values:
-                fig.add_trace(go.Scatter(
-                    x=[None], y=[None], mode="markers",
-                    marker=dict(size=8, color=color),
-                    name=estado.replace("_", " ").title(),
-                    showlegend=True,
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=[None],
+                        y=[None],
+                        mode="markers",
+                        marker=dict(size=8, color=color),
+                        name=estado.replace("_", " ").title(),
+                        showlegend=True,
+                    )
+                )
 
         fig.update_layout(
             title=f"{especie_label} — CBA INIDEP vs. CMP CFP ({year_range[0]}–{year_range[1]})",
@@ -240,12 +269,19 @@ with tab_timeline:
         if not df_cba.empty:
             with st.expander("Ver datos de CBA por año"):
                 st.dataframe(
-                    df_cba[["year", "zona", "cba_recomendada_tn", "estado_stock", "numero_ito"]].rename(columns={
-                        "year": "Año", "zona": "Zona",
-                        "cba_recomendada_tn": "CBA (tn)",
-                        "estado_stock": "Estado stock", "numero_ito": "ITO",
-                    }),
-                    use_container_width=True, hide_index=True,
+                    df_cba[
+                        ["year", "zona", "cba_recomendada_tn", "estado_stock", "numero_ito"]
+                    ].rename(
+                        columns={
+                            "year": "Año",
+                            "zona": "Zona",
+                            "cba_recomendada_tn": "CBA (tn)",
+                            "estado_stock": "Estado stock",
+                            "numero_ito": "ITO",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
                 )
 
 # ── Tab 2: Mapa de actividad (heatmap especie × año) ──────────────────────────
@@ -256,8 +292,11 @@ with tab_heatmap:
     pivot = df_inidep[
         (df_inidep["year"] >= year_range[0]) & (df_inidep["year"] <= year_range[1])
     ].pivot_table(
-        index="especie_code", columns="year", values="cba_recomendada_tn",
-        aggfunc="count", fill_value=0,
+        index="especie_code",
+        columns="year",
+        values="cba_recomendada_tn",
+        aggfunc="count",
+        fill_value=0,
     )
 
     if pivot.empty:
@@ -290,7 +329,8 @@ with tab_heatmap:
         )
         fig_bar = px.bar(
             cba_por_esp,
-            x="count", y="especie_label",
+            x="count",
+            y="especie_label",
             orientation="h",
             title="ITOs con valor de CBA extraído (abstract o PDF)",
             labels={"count": "Cantidad ITOs", "especie_label": ""},
@@ -329,7 +369,8 @@ with tab_actividad:
 
     fig_donut = px.bar(
         total_por_esp,
-        x="especie_label", y="total",
+        x="especie_label",
+        y="total",
         color="cobertura_cba",
         color_continuous_scale="RdYlGn",
         range_color=(0, 100),
@@ -343,12 +384,20 @@ with tab_actividad:
 
     # Tabla resumen
     st.dataframe(
-        total_por_esp[["especie_label", "total", "con_cba", "cobertura_cba", "primer_año", "ultimo_año"]].rename(columns={
-            "especie_label": "Especie", "total": "Total ITOs",
-            "con_cba": "Con CBA", "cobertura_cba": "% CBA",
-            "primer_año": "Primer año", "ultimo_año": "Último año",
-        }),
-        use_container_width=True, hide_index=True,
+        total_por_esp[
+            ["especie_label", "total", "con_cba", "cobertura_cba", "primer_año", "ultimo_año"]
+        ].rename(
+            columns={
+                "especie_label": "Especie",
+                "total": "Total ITOs",
+                "con_cba": "Con CBA",
+                "cobertura_cba": "% CBA",
+                "primer_año": "Primer año",
+                "ultimo_año": "Último año",
+            }
+        ),
+        use_container_width=True,
+        hide_index=True,
     )
 
     st.info(
@@ -367,12 +416,20 @@ with tab_datos:
         df_show = df_show[df_show["cba_recomendada_tn"].notna()]
 
     st.dataframe(
-        df_show[["year", "zona", "cba_recomendada_tn", "estado_stock", "numero_ito", "notas"]].rename(columns={
-            "year": "Año", "zona": "Zona",
-            "cba_recomendada_tn": "CBA (tn)", "estado_stock": "Estado stock",
-            "numero_ito": "ITO", "notas": "Notas",
-        }),
-        use_container_width=True, hide_index=True,
+        df_show[
+            ["year", "zona", "cba_recomendada_tn", "estado_stock", "numero_ito", "notas"]
+        ].rename(
+            columns={
+                "year": "Año",
+                "zona": "Zona",
+                "cba_recomendada_tn": "CBA (tn)",
+                "estado_stock": "Estado stock",
+                "numero_ito": "ITO",
+                "notas": "Notas",
+            }
+        ),
+        use_container_width=True,
+        hide_index=True,
     )
 
     col_dl1, col_dl2 = st.columns(2)
@@ -383,9 +440,7 @@ with tab_datos:
         "text/csv",
     )
 
-    df_all = df_inidep[
-        (df_inidep["year"] >= year_range[0]) & (df_inidep["year"] <= year_range[1])
-    ]
+    df_all = df_inidep[(df_inidep["year"] >= year_range[0]) & (df_inidep["year"] <= year_range[1])]
     col_dl2.download_button(
         "⬇️ Descargar todas las especies (CSV)",
         df_all.to_csv(index=False).encode("utf-8"),

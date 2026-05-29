@@ -1,6 +1,7 @@
 """
 Página de Adquisición: descarga masiva de actas del CFP.
 """
+
 import sys
 from pathlib import Path
 
@@ -15,7 +16,7 @@ st.caption("Scraping y descarga masiva de PDFs del Consejo Federal Pesquero")
 
 # ── Configuración ─────────────────────────────────────────────────────────────
 
-from src.acquisition.batch_scraper import CFPScraper, parse_year_range
+from src.acquisition.batch_scraper import CFPScraper
 from src.acquisition.catalog_manager import CatalogManager
 
 RAW_DIR = ROOT / "data" / "raw"
@@ -54,6 +55,7 @@ with col_right:
     if stats["by_year"]:
         import pandas as pd
         import plotly.express as px
+
         df_years = pd.DataFrame(
             list(stats["by_year"].items()), columns=["Año", "Cantidad"]
         ).sort_values("Año")
@@ -69,20 +71,24 @@ if st.button("🚀 Iniciar Scraping y Descarga", type="primary"):
     years = list(range(year_from, year_to + 1))
     scraper = CFPScraper(delay=delay)
 
-    with st.status(f"Procesando {len(years)} años ({year_from}–{year_to})...", expanded=True) as status:
+    with st.status(
+        f"Procesando {len(years)} años ({year_from}–{year_to})...", expanded=True
+    ) as status:
         st.write("Obteniendo listado de actas...")
         actas = scraper.scrape_years(years)
         st.write(f"Encontradas {len(actas)} actas en total")
 
         # Catalogar
         for acta in actas:
-            catalog.upsert_acta({
-                "year": acta.year,
-                "nombre": acta.nombre,
-                "url": acta.url,
-                "filename": acta.filename,
-                "is_anexo": acta.is_anexo,
-            })
+            catalog.upsert_acta(
+                {
+                    "year": acta.year,
+                    "nombre": acta.nombre,
+                    "url": acta.url,
+                    "filename": acta.filename,
+                    "is_anexo": acta.is_anexo,
+                }
+            )
 
         if not only_list:
             st.write("Descargando PDFs...")
@@ -102,6 +108,8 @@ if st.button("🚀 Iniciar Scraping y Descarga", type="primary"):
                 state="complete",
             )
         else:
-            status.update(label=f"Listado completado: {len(actas)} actas catalogadas", state="complete")
+            status.update(
+                label=f"Listado completado: {len(actas)} actas catalogadas", state="complete"
+            )
 
     st.rerun()

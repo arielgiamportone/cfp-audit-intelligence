@@ -7,12 +7,12 @@ Permite:
   - Filtrado por año, tipo de resolución, especie
   - Recuperación por similitud para análisis RAG con Claude
 """
+
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
-
 
 COLLECTION_NAME = "cfp_resoluciones"
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -38,12 +38,14 @@ class CFPVectorStore:
     def _get_client(self):
         if self._client is None:
             import chromadb
+
             self._client = chromadb.PersistentClient(path=str(self.persist_dir))
         return self._client
 
     def _get_embed_fn(self):
         if self._embed_fn is None:
             from chromadb.utils import embedding_functions
+
             self._embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
                 model_name=self._embedding_model
             )
@@ -100,10 +102,10 @@ class CFPVectorStore:
         self,
         query: str,
         n_results: int = 10,
-        where: Optional[dict] = None,
-        year_from: Optional[int] = None,
-        year_to: Optional[int] = None,
-        tipo: Optional[str] = None,
+        where: dict | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        tipo: str | None = None,
     ) -> list[dict]:
         """
         Búsqueda semántica. Retorna lista de resultados con texto y metadatos.
@@ -150,7 +152,7 @@ class CFPVectorStore:
             for i in range(len(results["ids"][0]))
         ]
 
-    def get_by_id(self, doc_id: str) -> Optional[dict]:
+    def get_by_id(self, doc_id: str) -> dict | None:
         collection = self._get_collection()
         result = collection.get(ids=[doc_id], include=["documents", "metadatas"])
         if result["ids"]:
@@ -209,15 +211,17 @@ class CFPVectorStore:
 
                     ids.append(doc_id)
                     texts.append(texto)
-                    metas.append({
-                        "year": year,
-                        "numero": res.get("numero", ""),
-                        "tipo": res.get("tipo", "otro"),
-                        "fecha_acta": res.get("fecha_acta") or "",
-                        "acta_filename": acta_filename,
-                        "especies": ", ".join(res.get("especies_mencionadas", [])),
-                        "empresas": ", ".join(res.get("empresas_mencionadas", []))[:500],
-                    })
+                    metas.append(
+                        {
+                            "year": year,
+                            "numero": res.get("numero", ""),
+                            "tipo": res.get("tipo", "otro"),
+                            "fecha_acta": res.get("fecha_acta") or "",
+                            "acta_filename": acta_filename,
+                            "especies": ", ".join(res.get("especies_mencionadas", [])),
+                            "empresas": ", ".join(res.get("empresas_mencionadas", []))[:500],
+                        }
+                    )
             except Exception as exc:
                 logger.error(f"Error indexando {json_path.name}: {exc}")
 

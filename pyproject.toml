@@ -19,6 +19,12 @@ target-version = "py310"
 select = ["E", "F", "I", "UP"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Scripts manipulate sys.path before imports — E402 is intentional
+"scripts/*.py" = ["E402"]
+# Streamlit pages do conditional imports after st.stop() guards — E402 is intentional
+"src/dashboard/pages/*.py" = ["E402"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

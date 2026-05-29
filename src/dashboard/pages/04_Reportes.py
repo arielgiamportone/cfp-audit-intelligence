@@ -1,6 +1,7 @@
 """
 Página de Reportes: visualizaciones, exportación y generación de informes.
 """
+
 import sys
 from pathlib import Path
 
@@ -23,8 +24,8 @@ if not DB_PATH.exists():
     st.error("Base de datos no encontrada. Ejecuta el pipeline de adquisición y procesamiento.")
     st.stop()
 
-from src.analysis.pattern_detector import PatternDetector
 from src.acquisition.catalog_manager import CatalogManager
+from src.analysis.pattern_detector import PatternDetector
 
 catalog = CatalogManager(DB_PATH)
 detector = PatternDetector(DB_PATH)
@@ -32,12 +33,14 @@ stats = catalog.stats()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab_overview, tab_species, tab_risk, tab_export = st.tabs([
-    "📈 Panorama General",
-    "🐠 Por Especie",
-    "⚠️ Riesgo y Anomalías",
-    "💾 Exportar",
-])
+tab_overview, tab_species, tab_risk, tab_export = st.tabs(
+    [
+        "📈 Panorama General",
+        "🐠 Por Especie",
+        "⚠️ Riesgo y Anomalías",
+        "💾 Exportar",
+    ]
+)
 
 # ── Tab 1: Panorama general ───────────────────────────────────────────────────
 
@@ -50,7 +53,9 @@ with tab_overview:
         ).sort_values("Año")
 
         fig = px.bar(
-            df_years, x="Año", y="Actas",
+            df_years,
+            x="Año",
+            y="Actas",
             title="Actas del CFP por Año (1998–2025)",
             color="Actas",
             color_continuous_scale="Blues",
@@ -80,7 +85,7 @@ with tab_overview:
     max_val = max(stages.values()) if any(stages.values()) else 1
     for stage, val in stages.items():
         pct = val / max_val if max_val > 0 else 0
-        st.progress(pct, text=f"{stage}: {val:,} ({pct*100:.0f}%)")
+        st.progress(pct, text=f"{stage}: {val:,} ({pct * 100:.0f}%)")
 
 # ── Tab 2: Por especie ────────────────────────────────────────────────────────
 
@@ -118,17 +123,22 @@ with tab_species:
     st.caption("Datos ilustrativos hasta completar el pipeline de NER")
 
     # Radar de sostenibilidad por especie (placeholder)
-    categorias = ["Frecuencia decisiones", "Variabilidad cuotas",
-                  "Vedas registradas", "Alertas IA", "Índice presión"]
+    categorias = [
+        "Frecuencia decisiones",
+        "Variabilidad cuotas",
+        "Vedas registradas",
+        "Alertas IA",
+        "Índice presión",
+    ]
     fig_radar = go.Figure()
     for especie, values in [
         ("Merluza hubbsi", [0.9, 0.7, 0.6, 0.75, 0.8]),
         ("Langostino", [0.7, 0.5, 0.3, 0.4, 0.55]),
         ("Calamar Illex", [0.6, 0.8, 0.2, 0.5, 0.65]),
     ]:
-        fig_radar.add_trace(go.Scatterpolar(
-            r=values, theta=categorias, fill="toself", name=especie
-        ))
+        fig_radar.add_trace(
+            go.Scatterpolar(r=values, theta=categorias, fill="toself", name=especie)
+        )
     fig_radar.update_layout(title="Perfil de Presión Pesquera (Ilustrativo)")
     st.plotly_chart(fig_radar, use_container_width=True)
     st.caption("Datos ilustrativos. Se poblará automáticamente con el análisis IA completo.")
@@ -147,7 +157,9 @@ with tab_risk:
             title="Evolución del Score de Riesgo Promedio por Año",
             markers=True,
         )
-        fig_risk.add_hline(y=60, line_dash="dash", line_color="orange", annotation_text="Riesgo medio")
+        fig_risk.add_hline(
+            y=60, line_dash="dash", line_color="orange", annotation_text="Riesgo medio"
+        )
         fig_risk.add_hline(y=80, line_dash="dash", line_color="red", annotation_text="Riesgo alto")
         st.plotly_chart(fig_risk, use_container_width=True)
     else:
@@ -173,26 +185,28 @@ with tab_risk:
     st.subheader("Concentración de Mercado (HHI)")
     hhi_data = detector.hhi_concentration()
 
-    gauge_hhi = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=hhi_data.get("hhi", 0),
-        domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Índice HHI de Concentración"},
-        gauge={
-            "axis": {"range": [0, 10000]},
-            "bar": {"color": "darkblue"},
-            "steps": [
-                {"range": [0, 1000], "color": "lightgreen"},
-                {"range": [1000, 2500], "color": "yellow"},
-                {"range": [2500, 10000], "color": "salmon"},
-            ],
-            "threshold": {
-                "line": {"color": "red", "width": 4},
-                "thickness": 0.75,
-                "value": 2500,
+    gauge_hhi = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=hhi_data.get("hhi", 0),
+            domain={"x": [0, 1], "y": [0, 1]},
+            title={"text": "Índice HHI de Concentración"},
+            gauge={
+                "axis": {"range": [0, 10000]},
+                "bar": {"color": "darkblue"},
+                "steps": [
+                    {"range": [0, 1000], "color": "lightgreen"},
+                    {"range": [1000, 2500], "color": "yellow"},
+                    {"range": [2500, 10000], "color": "salmon"},
+                ],
+                "threshold": {
+                    "line": {"color": "red", "width": 4},
+                    "thickness": 0.75,
+                    "value": 2500,
+                },
             },
-        },
-    ))
+        )
+    )
     gauge_hhi.update_layout(height=300)
     st.plotly_chart(gauge_hhi, use_container_width=True)
     st.caption(hhi_data.get("interpretation", "Sin datos"))
@@ -214,8 +228,8 @@ with tab_export:
     )
 
     if st.button("Generar Exportaciones", type="primary"):
-        import sqlite3
         import json as json_lib
+        import sqlite3
 
         with sqlite3.connect(DB_PATH) as conn:
             conn.row_factory = sqlite3.Row

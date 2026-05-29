@@ -1,11 +1,11 @@
 """Router /analysis — NER sobre texto y búsqueda semántica en la KB."""
+
 import sqlite3
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from src.api.models import NERRequest, NERResponse, NEREntidadOut
 from src.api.deps import DB_PATH
+from src.api.models import NEREntidadOut, NERRequest, NERResponse
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -50,9 +50,15 @@ def get_stats():
     """Retorna métricas globales del sistema."""
     if not DB_PATH.exists():
         return {
-            "total_actas": 0, "actas_descargadas": 0, "actas_procesadas": 0,
-            "actas_analizadas": 0, "total_resoluciones": 0, "total_entidades": 0,
-            "total_menciones": 0, "años_cubiertos": [], "alertas_abiertas": 0,
+            "total_actas": 0,
+            "actas_descargadas": 0,
+            "actas_procesadas": 0,
+            "actas_analizadas": 0,
+            "total_resoluciones": 0,
+            "total_entidades": 0,
+            "total_menciones": 0,
+            "años_cubiertos": [],
+            "alertas_abiertas": 0,
             "alertas_criticas": 0,
         }
 
@@ -64,12 +70,8 @@ def get_stats():
         actas_desc = conn.execute(
             "SELECT COUNT(*) FROM actas WHERE download_status='downloaded'"
         ).fetchone()[0]
-        actas_proc = conn.execute(
-            "SELECT COUNT(*) FROM actas WHERE text_extracted=1"
-        ).fetchone()[0]
-        actas_anal = conn.execute(
-            "SELECT COUNT(*) FROM actas WHERE analyzed=1"
-        ).fetchone()[0]
+        actas_proc = conn.execute("SELECT COUNT(*) FROM actas WHERE text_extracted=1").fetchone()[0]
+        actas_anal = conn.execute("SELECT COUNT(*) FROM actas WHERE analyzed=1").fetchone()[0]
     except sqlite3.OperationalError:
         total_actas = actas_desc = actas_proc = actas_anal = 0
 
@@ -86,7 +88,8 @@ def get_stats():
 
     try:
         años = [
-            r[0] for r in conn.execute(
+            r[0]
+            for r in conn.execute(
                 "SELECT DISTINCT year FROM actas WHERE year IS NOT NULL ORDER BY year"
             ).fetchall()
         ]
@@ -99,6 +102,7 @@ def get_stats():
     alertas_abiertas = alertas_criticas = 0
     try:
         from src.analysis.alert_engine import AlertEngine
+
         engine = AlertEngine(db_path=DB_PATH)
         s = engine.get_summary()
         alertas_abiertas = s["total"]

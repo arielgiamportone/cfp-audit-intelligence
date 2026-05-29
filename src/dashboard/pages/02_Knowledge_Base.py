@@ -1,6 +1,7 @@
 """
 Página de Knowledge Base: búsqueda semántica y procesamiento de documentos.
 """
+
 import sys
 from pathlib import Path
 
@@ -20,9 +21,11 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 
 # ── Estado de la KB ───────────────────────────────────────────────────────────
 
+
 @st.cache_resource
 def get_vector_store():
     return CFPVectorStore(persist_dir=KB_DIR)
+
 
 vs = get_vector_store()
 
@@ -53,8 +56,16 @@ with col_filters:
     year_to_f = st.number_input("Hasta año", 1998, 2025, 2025, key="kb_year_to")
     tipo_filter = st.selectbox(
         "Tipo de resolución",
-        ["Todos", "cuota_captura", "veda", "habilitacion_buque", "area_protegida",
-         "convenio_internacional", "investigacion", "sancion"],
+        [
+            "Todos",
+            "cuota_captura",
+            "veda",
+            "habilitacion_buque",
+            "area_protegida",
+            "convenio_internacional",
+            "investigacion",
+            "sancion",
+        ],
     )
 
 if query and count > 0:
