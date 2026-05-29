@@ -1,7 +1,7 @@
 """
 Página de Auditoría IA: análisis con Claude API y detección de patrones.
 """
-import json
+
 import os
 import sys
 from pathlib import Path
@@ -34,12 +34,14 @@ DB_PATH = ROOT / "data" / "processed" / "catalog.db"
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab_analisis, tab_patrones, tab_sostenibilidad, tab_busqueda_auditada = st.tabs([
-    "🔬 Analizar Resolución",
-    "📊 Detección de Patrones",
-    "🌊 Sostenibilidad por Especie",
-    "🔍 Búsqueda + Auditoría",
-])
+tab_analisis, tab_patrones, tab_sostenibilidad, tab_busqueda_auditada = st.tabs(
+    [
+        "🔬 Analizar Resolución",
+        "📊 Detección de Patrones",
+        "🌊 Sostenibilidad por Especie",
+        "🔍 Búsqueda + Auditoría",
+    ]
+)
 
 # ── Tab 1: Analizar resolución individual ─────────────────────────────────────
 
@@ -83,8 +85,10 @@ with tab_analisis:
 
         # Score de riesgo
         risk_color = {
-            "bajo": "green", "medio": "orange",
-            "alto": "red", "critico": "darkred",
+            "bajo": "green",
+            "medio": "orange",
+            "alto": "red",
+            "critico": "darkred",
         }.get(result.categoria_riesgo, "gray")
 
         col_score, col_meta = st.columns([1, 3])
@@ -98,7 +102,9 @@ with tab_analisis:
             )
         with col_meta:
             st.markdown(f"**Modelo usado:** {result.modelo_usado}")
-            st.markdown(f"**Tokens:** {result.tokens_entrada} entrada / {result.tokens_salida} salida")
+            st.markdown(
+                f"**Tokens:** {result.tokens_entrada} entrada / {result.tokens_salida} salida"
+            )
 
         st.markdown("---")
 
@@ -140,7 +146,9 @@ with tab_patrones:
     st.subheader("Detección de Patrones Sistémicos")
 
     if not DB_PATH.exists():
-        st.error("Base de datos no encontrada. Ejecuta primero el pipeline de adquisición y procesamiento.")
+        st.error(
+            "Base de datos no encontrada. Ejecuta primero el pipeline de adquisición y procesamiento."
+        )
     else:
         detector = PatternDetector(DB_PATH)
 
@@ -175,6 +183,7 @@ with tab_patrones:
         reversals = detector.reversals_detection()
         if reversals:
             import pandas as pd
+
             st.dataframe(pd.DataFrame(reversals), use_container_width=True)
         else:
             st.info("No se detectaron reversiones o no hay datos suficientes.")
@@ -210,9 +219,16 @@ with tab_sostenibilidad:
     st.subheader("Análisis de Sostenibilidad por Especie")
 
     ESPECIES = [
-        "merluza hubbsi", "merluza de cola", "merluza negra",
-        "langostino", "calamar illex", "abadejo", "polaca",
-        "corvina rubia", "anchoita", "caballa",
+        "merluza hubbsi",
+        "merluza de cola",
+        "merluza negra",
+        "langostino",
+        "calamar illex",
+        "abadejo",
+        "polaca",
+        "corvina rubia",
+        "anchoita",
+        "caballa",
     ]
 
     col_esp, col_config_sust = st.columns([2, 1])
@@ -241,7 +257,9 @@ with tab_sostenibilidad:
             if not resoluciones_por_anio:
                 st.warning(f"No se encontraron resoluciones sobre {especie_sel} en el período.")
             else:
-                st.info(f"Analizando {sum(len(v) for v in resoluciones_por_anio.values())} resoluciones sobre {especie_sel}...")
+                st.info(
+                    f"Analizando {sum(len(v) for v in resoluciones_por_anio.values())} resoluciones sobre {especie_sel}..."
+                )
                 engine = CFPAuditEngine(api_key=api_key)
                 with st.spinner("Analizando con Claude Opus..."):
                     result = engine.analyze_sustainability(especie_sel, resoluciones_por_anio)
@@ -262,6 +280,7 @@ with tab_sostenibilidad:
                 if result.get("decisiones_cuestionables"):
                     st.markdown("**Decisiones cuestionables:**")
                     import pandas as pd
+
                     st.dataframe(pd.DataFrame(result["decisiones_cuestionables"]))
 
                 st.info(f"**Conclusión:** {result.get('conclusion', 'N/D')}")
@@ -304,8 +323,10 @@ with tab_busqueda_auditada:
                         )
 
                     risk_color = {
-                        "bajo": "🟢", "medio": "🟡",
-                        "alto": "🔴", "critico": "🚨",
+                        "bajo": "🟢",
+                        "medio": "🟡",
+                        "alto": "🔴",
+                        "critico": "🚨",
                     }.get(audit.categoria_riesgo, "⚪")
 
                     st.markdown(

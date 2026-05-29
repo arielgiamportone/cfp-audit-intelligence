@@ -9,9 +9,8 @@ Analiza:
   - Concentración de beneficios (índice HHI)
   - Correlación entre composición del CFP y decisiones
 """
-import json
+
 import sqlite3
-from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -80,7 +79,7 @@ class PatternDetector:
 
         total = df["menciones"].sum()
         shares = df["menciones"] / total
-        hhi = (shares ** 2).sum() * 10000
+        hhi = (shares**2).sum() * 10000
 
         return {
             "hhi": round(float(hhi), 2),
@@ -212,15 +211,17 @@ class PatternDetector:
                 & (cuotas["year"] <= veda_row["year"] + 2)
             ]
             if not same_species_cuota.empty:
-                reversals.append({
-                    "especie": veda_row["especie"],
-                    "anio_veda": int(veda_row["year"]),
-                    "anio_cuota_posterior": int(same_species_cuota["year"].min()),
-                    "alerta": (
-                        "Cuota otorgada poco después de una veda. "
-                        "Requiere verificación de justificación técnica."
-                    ),
-                })
+                reversals.append(
+                    {
+                        "especie": veda_row["especie"],
+                        "anio_veda": int(veda_row["year"]),
+                        "anio_cuota_posterior": int(same_species_cuota["year"].min()),
+                        "alerta": (
+                            "Cuota otorgada poco después de una veda. "
+                            "Requiere verificación de justificación técnica."
+                        ),
+                    }
+                )
 
         return reversals
 
@@ -234,12 +235,7 @@ class PatternDetector:
             "patrones_votacion": self.voting_patterns(),
             "reversiones_detectadas": self.reversals_detection(),
             "resoluciones_alto_riesgo": (
-                self.high_risk_resolutions()
-                .head(10)
-                .to_dict(orient="records")
+                self.high_risk_resolutions().head(10).to_dict(orient="records")
             ),
-            "timeline_resolucion": (
-                self.resolution_timeline()
-                .to_dict(orient="records")
-            ),
+            "timeline_resolucion": (self.resolution_timeline().to_dict(orient="records")),
         }

@@ -1,11 +1,11 @@
 """Router /inidep — evaluaciones científicas y comparaciones CFP vs. CBA."""
+
 import sqlite3
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.models import INIDEPEvalOut, ComparacionOut, ComparacionListOut
 from src.api.deps import DB_PATH
+from src.api.models import ComparacionListOut, ComparacionOut, INIDEPEvalOut
 
 router = APIRouter(prefix="/inidep", tags=["inidep"])
 
@@ -20,9 +20,9 @@ def _conn():
 
 @router.get("/evaluaciones", summary="Evaluaciones científicas INIDEP")
 def list_evaluaciones(
-    especie_code: Optional[str] = Query(None),
-    year: Optional[int] = Query(None),
-    estado_stock: Optional[str] = Query(None),
+    especie_code: str | None = Query(None),
+    year: int | None = Query(None),
+    estado_stock: str | None = Query(None),
     limit: int = Query(100, ge=1, le=500),
 ):
     filters = []
@@ -50,23 +50,30 @@ def list_evaluaciones(
 
     items = [
         INIDEPEvalOut(
-            id=r["id"], especie=r["especie"], especie_code=r["especie_code"],
-            zona=r["zona"], year=r["year"],
+            id=r["id"],
+            especie=r["especie"],
+            especie_code=r["especie_code"],
+            zona=r["zona"],
+            year=r["year"],
             cba_recomendada_tn=r["cba_recomendada_tn"],
-            estado_stock=r["estado_stock"], numero_ito=r["numero_ito"],
+            estado_stock=r["estado_stock"],
+            numero_ito=r["numero_ito"],
         )
         for r in rows
     ]
     return {"total": len(items), "items": items}
 
 
-@router.get("/comparaciones", response_model=ComparacionListOut,
-            summary="Comparaciones CMP aprobada vs. CBA recomendada")
+@router.get(
+    "/comparaciones",
+    response_model=ComparacionListOut,
+    summary="Comparaciones CMP aprobada vs. CBA recomendada",
+)
 def list_comparaciones(
-    especie_code: Optional[str] = Query(None),
-    nivel_alerta: Optional[str] = Query(None, description="verde | amarillo | rojo | critico"),
-    year_desde: Optional[int] = Query(None),
-    year_hasta: Optional[int] = Query(None),
+    especie_code: str | None = Query(None),
+    nivel_alerta: str | None = Query(None, description="verde | amarillo | rojo | critico"),
+    year_desde: int | None = Query(None),
+    year_hasta: int | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
 ):
@@ -105,9 +112,13 @@ def list_comparaciones(
 
     items = [
         ComparacionOut(
-            id=r["id"], especie=r["especie"], especie_code=r["especie_code"],
-            zona=r["zona"], year=r["year"],
-            cba_inidep_tn=r["cba_inidep_tn"], cmp_cfp_tn=r["cmp_cfp_tn"],
+            id=r["id"],
+            especie=r["especie"],
+            especie_code=r["especie_code"],
+            zona=r["zona"],
+            year=r["year"],
+            cba_inidep_tn=r["cba_inidep_tn"],
+            cmp_cfp_tn=r["cmp_cfp_tn"],
             diferencia_tn=r["diferencia_tn"],
             ratio_sobreasignacion=r["ratio_sobreasignacion"],
             nivel_alerta=r["nivel_alerta"],

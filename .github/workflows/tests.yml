@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,6 +7,29 @@ on:
     branches: ["main"]
 
 jobs:
+  # ── Lint ──────────────────────────────────────────────────────────────────
+  lint:
+    name: "Lint (ruff)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check style
+        run: ruff check src/ scripts/
+
+      - name: Check formatting
+        run: ruff format --check src/ scripts/
+
+  # ── Tests ─────────────────────────────────────────────────────────────────
   test:
     name: "pytest (Python ${{ matrix.python-version }})"
     runs-on: ubuntu-latest
@@ -31,6 +54,7 @@ jobs:
           pip install loguru tenacity pandas requests beautifulsoup4 lxml
           pip install "fastapi>=0.111.0" "uvicorn[standard]>=0.30.0" httpx
           pip install "spacy>=3.7.0"
+          pip install "reportlab>=4.0.0"
           python -m spacy download es_core_news_sm || echo "spacy model download failed - NER will use blank model fallback"
 
       - name: Run tests
@@ -47,3 +71,23 @@ jobs:
         with:
           name: coverage-report
           path: coverage.xml
+
+  # ── Docker build ──────────────────────────────────────────────────────────
+  docker-build:
+    name: "Docker build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          push: false
+          tags: cfp-audit-intelligence:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

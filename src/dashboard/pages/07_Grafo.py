@@ -4,16 +4,16 @@ Página 7 — Grafo de Relaciones CFP.
 Visualiza el grafo bipartito especie ↔ empresa basado en co-menciones
 en las decisiones del Consejo Federal Pesquero.
 """
-import io
+
 import tempfile
 from pathlib import Path
 
-import streamlit as st
 import networkx as nx
 import pandas as pd
+import streamlit as st
 from pyvis.network import Network
 
-from src.analysis.graph_builder import CFPGraphBuilder, NODE_ESPECIE, NODE_EMPRESA, NODE_COLORS
+from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
 
 st.set_page_config(
     page_title="Grafo CFP",
@@ -62,12 +62,7 @@ def render_pyvis(G: nx.Graph, height: int = 700) -> str:
         n_res = data.get("n_resoluciones", 0)
         size = 10 + min(menciones * 0.8, 40)
 
-        title = (
-            f"<b>{node}</b><br>"
-            f"Tipo: {tipo}<br>"
-            f"Menciones: {menciones}<br>"
-            f"Resoluciones: {n_res}"
-        )
+        title = f"<b>{node}</b><br>Tipo: {tipo}<br>Menciones: {menciones}<br>Resoluciones: {n_res}"
         net.add_node(
             node,
             label=node,
@@ -81,7 +76,8 @@ def render_pyvis(G: nx.Graph, height: int = 700) -> str:
         weight = data.get("weight", 1)
         width = min(weight * 1.2, 8)
         net.add_edge(
-            n1, n2,
+            n1,
+            n2,
             width=width,
             title=f"Co-menciones: {weight}",
             color={"color": "#546e7a", "highlight": "#ffffff"},
@@ -119,7 +115,9 @@ with st.sidebar:
 
     min_cooc = st.slider(
         "Mínimo co-menciones",
-        min_value=1, max_value=10, value=1,
+        min_value=1,
+        max_value=10,
+        value=1,
         help="Filtrar aristas con menos co-menciones que este umbral",
     )
 
@@ -165,12 +163,14 @@ st.divider()
 
 # ── Tabs principales ───────────────────────────────────────────────────────────
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🌐 Grafo interactivo",
-    "🔬 Ego-grafo",
-    "📊 Análisis HHI",
-    "📋 Datos",
-])
+tab1, tab2, tab3, tab4 = st.tabs(
+    [
+        "🌐 Grafo interactivo",
+        "🔬 Ego-grafo",
+        "📊 Análisis HHI",
+        "📋 Datos",
+    ]
+)
 
 
 # ─── Tab 1: Grafo completo ─────────────────────────────────────────────────────
@@ -211,7 +211,9 @@ with tab2:
 
     col_sel1, col_sel2 = st.columns(2)
     with col_sel1:
-        tipo_ego = st.radio("Tipo de nodo central", ["Especie", "Empresa", "Cualquiera"], horizontal=True)
+        tipo_ego = st.radio(
+            "Tipo de nodo central", ["Especie", "Empresa", "Cualquiera"], horizontal=True
+        )
     with col_sel2:
         if tipo_ego == "Especie":
             opciones = especies
@@ -253,7 +255,9 @@ with tab2:
                     if G.nodes[n].get("tipo") == NODE_ESPECIE
                 ]
                 if vecinos:
-                    df_vec = pd.DataFrame(sorted(vecinos, key=lambda x: x["Co-menciones"], reverse=True))
+                    df_vec = pd.DataFrame(
+                        sorted(vecinos, key=lambda x: x["Co-menciones"], reverse=True)
+                    )
                     st.dataframe(df_vec, use_container_width=True, hide_index=True)
 
             st.metric("Grado", G.degree(nodo_ego))
@@ -277,17 +281,28 @@ with tab3:
     )
 
     if stats.hhi_por_especie:
-        df_hhi = pd.DataFrame([
-            {"Especie": esp, "HHI": hhi, "Nivel": (
-                "🟢 Competitivo" if hhi < 1500
-                else "🟡 Moderado" if hhi < 2500
-                else "🔴 Alta concentración"
-            )}
-            for esp, hhi in sorted(stats.hhi_por_especie.items(), key=lambda x: x[1], reverse=True)
-        ])
+        df_hhi = pd.DataFrame(
+            [
+                {
+                    "Especie": esp,
+                    "HHI": hhi,
+                    "Nivel": (
+                        "🟢 Competitivo"
+                        if hhi < 1500
+                        else "🟡 Moderado"
+                        if hhi < 2500
+                        else "🔴 Alta concentración"
+                    ),
+                }
+                for esp, hhi in sorted(
+                    stats.hhi_por_especie.items(), key=lambda x: x[1], reverse=True
+                )
+            ]
+        )
 
         try:
             import plotly.express as px
+
             fig_hhi = px.bar(
                 df_hhi,
                 x="Especie",
@@ -299,10 +314,18 @@ with tab3:
                 labels={"HHI": "Índice HHI"},
                 text="HHI",
             )
-            fig_hhi.add_hline(y=1500, line_dash="dash", line_color="#ffeb3b",
-                              annotation_text="Umbral moderado (1.500)")
-            fig_hhi.add_hline(y=2500, line_dash="dash", line_color="#f44336",
-                              annotation_text="Umbral alta concentración (2.500)")
+            fig_hhi.add_hline(
+                y=1500,
+                line_dash="dash",
+                line_color="#ffeb3b",
+                annotation_text="Umbral moderado (1.500)",
+            )
+            fig_hhi.add_hline(
+                y=2500,
+                line_dash="dash",
+                line_color="#f44336",
+                annotation_text="Umbral alta concentración (2.500)",
+            )
             fig_hhi.update_traces(texttemplate="%{text:.0f}", textposition="outside")
             fig_hhi.update_layout(
                 plot_bgcolor="rgba(0,0,0,0)",
@@ -328,7 +351,9 @@ with tab3:
             if top_emp:
                 df_top_emp = pd.DataFrame(top_emp)
                 total_co = df_top_emp["co_menciones"].sum()
-                df_top_emp["participación_%"] = (df_top_emp["co_menciones"] / total_co * 100).round(1)
+                df_top_emp["participación_%"] = (df_top_emp["co_menciones"] / total_co * 100).round(
+                    1
+                )
                 df_top_emp.columns = ["Empresa", "Co-menciones", "Participación %"]
                 st.dataframe(df_top_emp, use_container_width=True, hide_index=True)
     else:
@@ -381,15 +406,17 @@ with tab4:
 
     st.divider()
     st.subheader("Nodos del grafo")
-    df_nodes = pd.DataFrame([
-        {
-            "Nodo": n,
-            "Tipo": d.get("tipo", ""),
-            "Menciones": d.get("menciones", 0),
-            "Resoluciones": d.get("n_resoluciones", 0),
-            "Grado": G.degree(n),
-        }
-        for n, d in G.nodes(data=True)
-    ]).sort_values("Grado", ascending=False)
+    df_nodes = pd.DataFrame(
+        [
+            {
+                "Nodo": n,
+                "Tipo": d.get("tipo", ""),
+                "Menciones": d.get("menciones", 0),
+                "Resoluciones": d.get("n_resoluciones", 0),
+                "Grado": G.degree(n),
+            }
+            for n, d in G.nodes(data=True)
+        ]
+    ).sort_values("Grado", ascending=False)
 
     st.dataframe(df_nodes, use_container_width=True, hide_index=True)

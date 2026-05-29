@@ -7,6 +7,7 @@ Modos de uso:
   python scripts/scrape_inidep.py --mode species --query "merluza"
   python scripts/scrape_inidep.py --count                  # Ver total disponible
 """
+
 import sys
 from pathlib import Path
 
@@ -45,13 +46,18 @@ def _ito_to_evaluacion(rec: ITORecord) -> dict:
 
 
 @click.command()
-@click.option("--mode", type=click.Choice(["metadata", "full", "species", "count"]),
-              default="metadata", show_default=True,
-              help="Modo de scraping: metadata (rápido), full (con PDFs), species, count")
+@click.option(
+    "--mode",
+    type=click.Choice(["metadata", "full", "species", "count"]),
+    default="metadata",
+    show_default=True,
+    help="Modo de scraping: metadata (rápido), full (con PDFs), species, count",
+)
 @click.option("--query", default="", help="Query para búsqueda por especie (modo species)")
 @click.option("--limit", default=None, type=int, help="Límite de ITOs a scrapear")
-@click.option("--delay", default=1.0, type=float, show_default=True,
-              help="Delay entre requests (segundos)")
+@click.option(
+    "--delay", default=1.0, type=float, show_default=True, help="Delay entre requests (segundos)"
+)
 @click.option("--db", default=str(DB_PATH), help="Path a catalog.db")
 @click.option("--dry-run", is_flag=True, help="No guardar en BD, solo mostrar resultados")
 def main(mode, query, limit, delay, db, dry_run):
@@ -90,14 +96,18 @@ def main(mode, query, limit, delay, db, dry_run):
     with_cba = sum(1 for r in records if r.cba_recomendada_tn is not None)
     with_especie = sum(1 for r in records if r.especie_raw)
     click.echo(f"\nResultados: {len(records)} ITOs")
-    click.echo(f"  Con especie identificada: {with_especie} ({with_especie/len(records)*100:.0f}%)")
-    click.echo(f"  Con CBA extraída:         {with_cba} ({with_cba/len(records)*100:.0f}%)")
+    click.echo(
+        f"  Con especie identificada: {with_especie} ({with_especie / len(records) * 100:.0f}%)"
+    )
+    click.echo(f"  Con CBA extraída:         {with_cba} ({with_cba / len(records) * 100:.0f}%)")
 
     if dry_run:
         click.echo("\n[dry-run] Primeros 5 registros:")
         for rec in records[:5]:
             click.echo(f"  - {rec.titulo[:70]}")
-            click.echo(f"    Especie: {rec.especie_norm} | Año: {rec.año_evaluacion} | CBA: {rec.cba_recomendada_tn}")
+            click.echo(
+                f"    Especie: {rec.especie_norm} | Año: {rec.año_evaluacion} | CBA: {rec.cba_recomendada_tn}"
+            )
         return
 
     # Guardar en BD

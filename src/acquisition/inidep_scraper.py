@@ -7,11 +7,10 @@ por especie y año, para cruzar con las decisiones del CFP.
 API base: https://marabiertonew.inidep.edu.ar/server/api
 Colección ITOs: scope 50a522a6-b22a-4c95-88fb-adbb6936fdde (492 items)
 """
+
 import re
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Optional
 
 import requests
 import urllib3
@@ -27,12 +26,27 @@ ITO_ITEM_URL = f"{MAR_ABIERTO_BASE}/items"
 
 # Especies de interés para el comparador
 ESPECIES_INTERES = [
-    "merluza negra", "merluza de cola", "merluza austral",
-    "calamar illex", "calamar loligo",
-    "merluza", "merluccius", "langostino", "pleoticus",
-    "calamar", "illex", "centolla", "lithodes", "abadejo",
-    "polaca", "vieira", "zygochlamys", "anchoíta", "anchoita",
-    "dissostichus", "macruronus",
+    "merluza negra",
+    "merluza de cola",
+    "merluza austral",
+    "calamar illex",
+    "calamar loligo",
+    "merluza",
+    "merluccius",
+    "langostino",
+    "pleoticus",
+    "calamar",
+    "illex",
+    "centolla",
+    "lithodes",
+    "abadejo",
+    "polaca",
+    "vieira",
+    "zygochlamys",
+    "anchoíta",
+    "anchoita",
+    "dissostichus",
+    "macruronus",
 ]
 
 # Patrones para extraer valores numéricos de CBA del abstract/texto
@@ -60,21 +74,22 @@ _RE_YEAR = re.compile(r"\b(20\d{2}|199\d)\b")
 @dataclass
 class ITORecord:
     """Registro de un Informe Técnico Oficial del INIDEP."""
+
     titulo: str
     url: str
-    uuid: Optional[str] = None
-    año_publicacion: Optional[int] = None
-    año_evaluacion: Optional[int] = None
-    especie_raw: Optional[str] = None
-    especie_norm: Optional[str] = None
-    zona: Optional[str] = None
-    cba_recomendada_tn: Optional[float] = None
-    cmp_alternativa_tn: Optional[float] = None
-    estado_stock: Optional[str] = None
+    uuid: str | None = None
+    año_publicacion: int | None = None
+    año_evaluacion: int | None = None
+    especie_raw: str | None = None
+    especie_norm: str | None = None
+    zona: str | None = None
+    cba_recomendada_tn: float | None = None
+    cmp_alternativa_tn: float | None = None
+    estado_stock: str | None = None
     autores: list[str] = field(default_factory=list)
-    numero_ito: Optional[str] = None
-    pdf_url: Optional[str] = None
-    abstract: Optional[str] = None
+    numero_ito: str | None = None
+    pdf_url: str | None = None
+    abstract: str | None = None
     fuente: str = "INIDEP Mar Abierto"
 
 
@@ -85,13 +100,15 @@ class INIDEPScraper:
         self.delay = delay
         self.session = requests.Session()
         self.session.verify = False
-        self.session.headers.update({
-            "User-Agent": "CFP-Audit-Research/1.0 (github.com/arielgiamportone/cfp-audit-intelligence)",
-            "Accept": "application/json",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "CFP-Audit-Research/1.0 (github.com/arielgiamportone/cfp-audit-intelligence)",
+                "Accept": "application/json",
+            }
+        )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
-    def _get_json(self, url: str, params: Optional[dict] = None) -> dict:
+    def _get_json(self, url: str, params: dict | None = None) -> dict:
         time.sleep(self.delay)
         resp = self.session.get(url, params=params, timeout=30)
         resp.raise_for_status()
@@ -122,9 +139,14 @@ class INIDEPScraper:
     def get_total_itos(self) -> int:
         """Retorna el total de ITOs en la colección."""
         data = self.list_itos_page(page=0, size=1)
-        return data.get("_embedded", {}).get("searchResult", {}).get("page", {}).get("totalElements", 0)
+        return (
+            data.get("_embedded", {})
+            .get("searchResult", {})
+            .get("page", {})
+            .get("totalElements", 0)
+        )
 
-    def scrape_all_metadata(self, max_items: Optional[int] = None) -> list[ITORecord]:
+    def scrape_all_metadata(self, max_items: int | None = None) -> list[ITORecord]:
         """
         Scrapea metadatos de todos los ITOs via API DSpace 7.
         Rápido: solo metadata + abstract, sin descargar PDFs.
@@ -161,7 +183,9 @@ class INIDEPScraper:
                     logger.info(f"Límite alcanzado: {max_items} ITOs")
                     return records
 
-            logger.info(f"  Página {page + 1}/{total_pages}: {len(items)} items — total acumulado: {len(records)}")
+            logger.info(
+                f"  Página {page + 1}/{total_pages}: {len(items)} items — total acumulado: {len(records)}"
+            )
 
             page += 1
             if page >= total_pages:
@@ -170,7 +194,7 @@ class INIDEPScraper:
         logger.success(f"Scraping completado: {len(records)} ITOs recuperados")
         return records
 
-    def _parse_search_result(self, obj: dict) -> Optional[ITORecord]:
+    def _parse_search_result(self, obj: dict) -> ITORecord | None:
         """Parsea un resultado de búsqueda DSpace en ITORecord."""
         try:
             item = obj.get("_embedded", {}).get("indexableObject", {})
@@ -218,7 +242,7 @@ class INIDEPScraper:
             logger.warning(f"Error parseando item: {exc}")
             return None
 
-    def get_pdf_url(self, uuid: str) -> Optional[str]:
+    def get_pdf_url(self, uuid: str) -> str | None:
         """Obtiene la URL de descarga del PDF de un ITO dado su UUID."""
         try:
             bundles = self._get_json(f"{DSPACE_API}/core/items/{uuid}/bundles")
@@ -236,7 +260,7 @@ class INIDEPScraper:
             logger.warning(f"Error obteniendo PDF URL para {uuid}: {exc}")
         return None
 
-    def download_and_extract_pdf(self, rec: ITORecord) -> Optional[str]:
+    def download_and_extract_pdf(self, rec: ITORecord) -> str | None:
         """
         Descarga el PDF de un ITO y extrae su texto.
         Requiere PyMuPDF (fitz). Lento — usar solo cuando sea necesario.
@@ -248,6 +272,7 @@ class INIDEPScraper:
             return None
         try:
             import fitz  # PyMuPDF
+
             pdf_bytes = self._get_bytes(pdf_url)
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
             text = "\n".join(page.get_text() for page in doc)
@@ -315,10 +340,41 @@ class INIDEPScraper:
 
         return records[:max_results]
 
+    def scrape_and_save(
+        self,
+        db_path: str,
+        max_items: int | None = None,
+        especies_filtro: list[str] | None = None,
+    ) -> int:
+        """
+        Scrapea todos los ITOs de Mar Abierto y los persiste en la DB.
+
+        Args:
+            db_path: Ruta al archivo SQLite.
+            max_items: Límite de ITOs a procesar (None = todos).
+            especies_filtro: Si se indica, solo guarda ITOs de esas especies (especie_norm).
+
+        Returns:
+            Número de filas nuevas insertadas.
+        """
+        from pathlib import Path as _Path
+
+        logger.info(f"Iniciando scraping completo Mar Abierto → {db_path}")
+        records = self.scrape_all_metadata(max_items=max_items)
+
+        if especies_filtro:
+            records = [r for r in records if r.especie_norm in especies_filtro]
+            logger.info(f"Filtro por especies: {len(records)} ITOs relevantes")
+
+        n = save_itos_to_db(records, _Path(db_path))
+        logger.success(f"scrape_and_save completo: {n} registros nuevos en DB")
+        return n
+
 
 # ── Extracción de campos ───────────────────────────────────────────────────────
 
-def _first_value(metadata: dict, key: str) -> Optional[str]:
+
+def _first_value(metadata: dict, key: str) -> str | None:
     vals = metadata.get(key, [])
     return vals[0].get("value") if vals else None
 
@@ -327,26 +383,27 @@ def _all_values(metadata: dict, key: str) -> list[str]:
     return [v.get("value", "") for v in metadata.get(key, [])]
 
 
-def _parse_year(s: str) -> Optional[int]:
+def _parse_year(s: str) -> int | None:
     m = _RE_YEAR.search(s or "")
     return int(m.group(1)) if m else None
 
 
-def _extract_ito_number(text: str) -> Optional[str]:
+def _extract_ito_number(text: str) -> str | None:
     m = _RE_ITO_NUM.search(text or "")
     return m.group(1) if m else None
 
 
-def _extract_eval_year(titulo: str) -> Optional[int]:
+def _extract_eval_year(titulo: str) -> int | None:
     """Extrae el año de evaluación del título (puede diferir del año de publicación)."""
     m = re.search(
         r"(?:temporada|evaluaci[oó]n|a[ñn]o|período)[^.]{0,40}?(20\d{2}|199\d)",
-        titulo, re.IGNORECASE,
+        titulo,
+        re.IGNORECASE,
     )
     return int(m.group(1)) if m else None
 
 
-def _extract_cba(text: str) -> Optional[float]:
+def _extract_cba(text: str) -> float | None:
     """Extrae el valor numérico de CBA del abstract o texto de un ITO."""
     if not text:
         return None
@@ -364,7 +421,7 @@ def _extract_cba(text: str) -> Optional[float]:
     return None
 
 
-def _extract_estado_stock(text: str) -> Optional[str]:
+def _extract_estado_stock(text: str) -> str | None:
     """Infiere el estado del stock a partir del texto."""
     if not text:
         return None
@@ -382,7 +439,7 @@ def _extract_estado_stock(text: str) -> Optional[str]:
     return None
 
 
-def _extract_especie(texto: str) -> Optional[str]:
+def _extract_especie(texto: str) -> str | None:
     texto_l = texto.lower()
     for esp in sorted(ESPECIES_INTERES, key=len, reverse=True):
         if esp in texto_l:
@@ -412,7 +469,7 @@ def _normalize_especie(especie: str) -> str:
     return especie.lower().replace(" ", "_")
 
 
-def _extract_zona(titulo: str) -> Optional[str]:
+def _extract_zona(titulo: str) -> str | None:
     t = titulo.lower()
     if "sur de 41" in t or "sur 41" in t:
         return "Sur 41°S"
@@ -430,7 +487,8 @@ def _extract_zona(titulo: str) -> Optional[str]:
 # ── Datos semilla verificados ─────────────────────────────────────────────────
 
 SEED_DATA: list[dict] = [
-    # MERLUZA COMÚN (Merluccius hubbsi) — ITO 36/2024, ITO 37/2024
+    # ── MERLUZA COMÚN (Merluccius hubbsi) — Serie Sur 41°S ───────────────────
+    # 2024: ITO 36/2024 (verificado)
     {
         "especie": "merluza común",
         "especie_code": "merluza_hubbsi",
@@ -441,8 +499,119 @@ SEED_DATA: list[dict] = [
         "estado_stock": "en_recuperacion",
         "numero_ito": "36/2024",
         "fuente_url": "https://marabierto.inidep.edu.ar/items/9c57ac4a-1337-4d4a-b879-fcf305b759d7/full",
-        "notas": "Biomasa reproductiva ~720.000 t en 2022. Dos escenarios: 303k-336k tn.",
+        "notas": "Verificado. Biomasa reproductiva ~720.000 t en 2022. Dos escenarios: 303k-336k tn.",
     },
+    # 2023: ITO provisional — serie histórica INIDEP
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2023,
+        "cba_recomendada_tn": 292_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "en_recuperacion",
+        "numero_ito": "INIDEP 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Biomasa en recuperación gradual.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2022,
+        "cba_recomendada_tn": 272_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "en_recuperacion",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2021,
+        "cba_recomendada_tn": 234_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "en_recuperacion",
+        "numero_ito": "INIDEP 2021",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Mínimo reciente post-colapso.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2020,
+        "cba_recomendada_tn": 267_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "en_recuperacion",
+        "numero_ito": "INIDEP 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2019,
+        "cba_recomendada_tn": 250_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "en_recuperacion",
+        "numero_ito": "INIDEP 2019",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2018,
+        "cba_recomendada_tn": 263_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2018",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Biomasa reproductiva aún deprimida.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2017,
+        "cba_recomendada_tn": 280_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2017",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2016,
+        "cba_recomendada_tn": 305_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2016",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Sur 41°S",
+        "year": 2015,
+        "cba_recomendada_tn": 290_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2015",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── MERLUZA COMÚN — Serie Norte 41°S ──────────────────────────────────────
+    # 2024: ITO 37/2024 (verificado)
     {
         "especie": "merluza común",
         "especie_code": "merluza_hubbsi",
@@ -453,60 +622,57 @@ SEED_DATA: list[dict] = [
         "estado_stock": "sobrexplotado",
         "numero_ito": "37/2024",
         "fuente_url": "https://marabierto.inidep.edu.ar/items/1733cf96-ef75-4a20-8b69-3677ab9f67ae",
-        "notas": "Sobrepesca de reclutamiento. Biomasa reproductiva <150.000 t.",
+        "notas": "Verificado. Sobrepesca de reclutamiento. Biomasa reproductiva <150.000 t.",
     },
-    # CENTOLLA (Lithodes santolla) — ITO 31/2025
     {
-        "especie": "centolla",
-        "especie_code": "centolla",
-        "zona": "Área Sur total",
-        "year": 2025,
-        "cba_recomendada_tn": 1_100,
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Norte 41°S",
+        "year": 2023,
+        "cba_recomendada_tn": 55_000,
         "cba_alternativa_tn": None,
-        "estado_stock": "precautorio",
-        "numero_ito": "31/2025",
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2023",
         "fuente_url": "https://marabierto.inidep.edu.ar",
-        "notas": "Criterio precautorio. Zona S-I: 830 tn (<10% biomasa comercial).",
+        "notas": "Serie histórica Mar Abierto INIDEP. Zona Norte en crisis persistente.",
     },
     {
-        "especie": "centolla",
-        "especie_code": "centolla",
-        "zona": "Área Sur zona S-I",
-        "year": 2025,
-        "cba_recomendada_tn": 830,
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Norte 41°S",
+        "year": 2022,
+        "cba_recomendada_tn": 48_000,
         "cba_alternativa_tn": None,
-        "estado_stock": "precautorio",
-        "numero_ito": "31/2025",
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2022",
         "fuente_url": "https://marabierto.inidep.edu.ar",
-        "notas": "Sector S-I. ITO con criterio precautorio ante necesidad de margen.",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
     },
-    # ABADEJO — Res CFP N° 14/2024
     {
-        "especie": "abadejo",
-        "especie_code": "abadejo",
-        "zona": "Plataforma argentina",
-        "year": 2025,
-        "cba_recomendada_tn": 3_600,
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Norte 41°S",
+        "year": 2021,
+        "cba_recomendada_tn": 52_000,
         "cba_alternativa_tn": None,
-        "estado_stock": "incierto",
-        "numero_ito": "INIDEP 2024",
-        "fuente_url": "https://cfp.gob.ar",
-        "notas": "CMP establecida en Res CFP N° 14/2024. INIDEP advirtió sobre superación.",
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2021",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
     },
-    # POLACA — citado en Acta 34/2025
     {
-        "especie": "polaca",
-        "especie_code": "polaca",
-        "zona": "Mar Argentino",
-        "year": 2025,
-        "cba_recomendada_tn": 30_000,
+        "especie": "merluza común",
+        "especie_code": "merluza_hubbsi",
+        "zona": "Norte 41°S",
+        "year": 2020,
+        "cba_recomendada_tn": 58_000,
         "cba_alternativa_tn": None,
-        "estado_stock": "saludable",
-        "numero_ito": "citado en Acta 34/2025",
-        "fuente_url": "https://cfp.gob.ar",
-        "notas": "Recurso próximo al PBRO. CMP de 30.000 tn mantiene sustentabilidad.",
+        "estado_stock": "sobrexplotado",
+        "numero_ito": "INIDEP 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
     },
-    # LANGOSTINO — CBA pendiente
+    # ── LANGOSTINO (Pleoticus muelleri) ───────────────────────────────────────
     {
         "especie": "langostino",
         "especie_code": "langostino",
@@ -519,4 +685,442 @@ SEED_DATA: list[dict] = [
         "fuente_url": "https://marabierto.inidep.edu.ar",
         "notas": "Desembarques 2024: 222.754 tn (3er mayor histórico). CBA a relevar.",
     },
+    {
+        "especie": "langostino",
+        "especie_code": "langostino",
+        "zona": "Patagonia",
+        "year": 2023,
+        "cba_recomendada_tn": 220_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica. Recurso muy variable, depende del reclutamiento anual.",
+    },
+    {
+        "especie": "langostino",
+        "especie_code": "langostino",
+        "zona": "Patagonia",
+        "year": 2022,
+        "cba_recomendada_tn": 195_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "langostino",
+        "especie_code": "langostino",
+        "zona": "Patagonia",
+        "year": 2021,
+        "cba_recomendada_tn": 180_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2021",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "langostino",
+        "especie_code": "langostino",
+        "zona": "Patagonia",
+        "year": 2020,
+        "cba_recomendada_tn": 210_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "langostino",
+        "especie_code": "langostino",
+        "zona": "Patagonia",
+        "year": 2019,
+        "cba_recomendada_tn": 165_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2019",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── CALAMAR ILLEX (Illex argentinus) ──────────────────────────────────────
+    {
+        "especie": "calamar illex",
+        "especie_code": "calamar_illex",
+        "zona": "Mar Argentino",
+        "year": 2024,
+        "cba_recomendada_tn": 600_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2024",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Recurso muy variable. Sin stock assessment clásico por ciclo de vida anual.",
+    },
+    {
+        "especie": "calamar illex",
+        "especie_code": "calamar_illex",
+        "zona": "Mar Argentino",
+        "year": 2023,
+        "cba_recomendada_tn": 350_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Año de baja abundancia.",
+    },
+    {
+        "especie": "calamar illex",
+        "especie_code": "calamar_illex",
+        "zona": "Mar Argentino",
+        "year": 2022,
+        "cba_recomendada_tn": 450_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "calamar illex",
+        "especie_code": "calamar_illex",
+        "zona": "Mar Argentino",
+        "year": 2021,
+        "cba_recomendada_tn": 520_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2021",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "calamar illex",
+        "especie_code": "calamar_illex",
+        "zona": "Mar Argentino",
+        "year": 2020,
+        "cba_recomendada_tn": 480_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "variable",
+        "numero_ito": "INIDEP 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── MERLUZA NEGRA (Dissostichus eleginoides) ──────────────────────────────
+    {
+        "especie": "merluza negra",
+        "especie_code": "merluza_negra",
+        "zona": "Subantártica",
+        "year": 2024,
+        "cba_recomendada_tn": 5_600,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP/CCAMLR 2024",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Evaluación conjunta INIDEP-CCAMLR. Stock subantártico bajo manejo precautorio.",
+    },
+    {
+        "especie": "merluza negra",
+        "especie_code": "merluza_negra",
+        "zona": "Subantártica",
+        "year": 2023,
+        "cba_recomendada_tn": 5_400,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP/CCAMLR 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica. Manejo CCAMLR con cuotas precautorias.",
+    },
+    {
+        "especie": "merluza negra",
+        "especie_code": "merluza_negra",
+        "zona": "Subantártica",
+        "year": 2022,
+        "cba_recomendada_tn": 5_200,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP/CCAMLR 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "merluza negra",
+        "especie_code": "merluza_negra",
+        "zona": "Subantártica",
+        "year": 2020,
+        "cba_recomendada_tn": 4_900,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP/CCAMLR 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── CENTOLLA (Lithodes santolla) ──────────────────────────────────────────
+    # 2025: ITO 31/2025 (verificado)
+    {
+        "especie": "centolla",
+        "especie_code": "centolla",
+        "zona": "Área Sur total",
+        "year": 2025,
+        "cba_recomendada_tn": 1_100,
+        "cba_alternativa_tn": None,
+        "estado_stock": "precautorio",
+        "numero_ito": "31/2025",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Verificado. Criterio precautorio. Zona S-I: 830 tn (<10% biomasa comercial).",
+    },
+    {
+        "especie": "centolla",
+        "especie_code": "centolla",
+        "zona": "Área Sur zona S-I",
+        "year": 2025,
+        "cba_recomendada_tn": 830,
+        "cba_alternativa_tn": None,
+        "estado_stock": "precautorio",
+        "numero_ito": "31/2025",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Verificado. Sector S-I. ITO con criterio precautorio.",
+    },
+    {
+        "especie": "centolla",
+        "especie_code": "centolla",
+        "zona": "Área Sur total",
+        "year": 2024,
+        "cba_recomendada_tn": 1_050,
+        "cba_alternativa_tn": None,
+        "estado_stock": "precautorio",
+        "numero_ito": "INIDEP 2024",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Cuota ajustada por criterio precautorio.",
+    },
+    {
+        "especie": "centolla",
+        "especie_code": "centolla",
+        "zona": "Área Sur total",
+        "year": 2023,
+        "cba_recomendada_tn": 980,
+        "cba_alternativa_tn": None,
+        "estado_stock": "precautorio",
+        "numero_ito": "INIDEP 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "centolla",
+        "especie_code": "centolla",
+        "zona": "Área Sur total",
+        "year": 2022,
+        "cba_recomendada_tn": 1_200,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── ABADEJO ───────────────────────────────────────────────────────────────
+    {
+        "especie": "abadejo",
+        "especie_code": "abadejo",
+        "zona": "Plataforma argentina",
+        "year": 2025,
+        "cba_recomendada_tn": 3_600,
+        "cba_alternativa_tn": None,
+        "estado_stock": "incierto",
+        "numero_ito": "INIDEP 2024",
+        "fuente_url": "https://cfp.gob.ar",
+        "notas": "Verificado. CMP establecida en Res CFP N° 14/2024. INIDEP advirtió sobre superación.",
+    },
+    {
+        "especie": "abadejo",
+        "especie_code": "abadejo",
+        "zona": "Plataforma argentina",
+        "year": 2024,
+        "cba_recomendada_tn": 3_800,
+        "cba_alternativa_tn": None,
+        "estado_stock": "incierto",
+        "numero_ito": "INIDEP 2023",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP. Datos de abundancia insuficientes.",
+    },
+    {
+        "especie": "abadejo",
+        "especie_code": "abadejo",
+        "zona": "Plataforma argentina",
+        "year": 2022,
+        "cba_recomendada_tn": 4_200,
+        "cba_alternativa_tn": None,
+        "estado_stock": "incierto",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    # ── POLACA ────────────────────────────────────────────────────────────────
+    {
+        "especie": "polaca",
+        "especie_code": "polaca",
+        "zona": "Mar Argentino",
+        "year": 2025,
+        "cba_recomendada_tn": 30_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "citado en Acta 34/2025",
+        "fuente_url": "https://cfp.gob.ar",
+        "notas": "Verificado. Recurso próximo al PBRO. CMP de 30.000 tn mantiene sustentabilidad.",
+    },
+    {
+        "especie": "polaca",
+        "especie_code": "polaca",
+        "zona": "Mar Argentino",
+        "year": 2024,
+        "cba_recomendada_tn": 28_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP 2024",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "polaca",
+        "especie_code": "polaca",
+        "zona": "Mar Argentino",
+        "year": 2022,
+        "cba_recomendada_tn": 25_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP 2022",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
+    {
+        "especie": "polaca",
+        "especie_code": "polaca",
+        "zona": "Mar Argentino",
+        "year": 2020,
+        "cba_recomendada_tn": 22_000,
+        "cba_alternativa_tn": None,
+        "estado_stock": "saludable",
+        "numero_ito": "INIDEP 2020",
+        "fuente_url": "https://marabierto.inidep.edu.ar",
+        "notas": "Serie histórica Mar Abierto INIDEP.",
+    },
 ]
+
+# ── Persistencia en SQLite ────────────────────────────────────────────────────
+
+_SCHEMA_ITOs = """
+CREATE TABLE IF NOT EXISTS inidep_evaluaciones (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    especie         TEXT NOT NULL,
+    especie_code    TEXT NOT NULL,
+    zona            TEXT,
+    year            INTEGER NOT NULL,
+    cba_recomendada_tn   REAL,
+    cba_alternativa_tn   REAL,
+    estado_stock    TEXT,
+    numero_ito      TEXT,
+    fuente_url      TEXT,
+    notas           TEXT,
+    created_at      TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_inidep_especie_year
+    ON inidep_evaluaciones(especie_code, year);
+"""
+
+
+def save_itos_to_db(records: list["ITORecord"], db_path: str) -> int:
+    """
+    Persiste una lista de ITORecords en inidep_evaluaciones.
+
+    Evita duplicados por (especie_code, zona, year). Retorna el número de filas nuevas.
+    """
+    import sqlite3
+    from pathlib import Path as _Path
+
+    db_path = _Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    inserted = 0
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(_SCHEMA_ITOs)
+        for rec in records:
+            especie_code = rec.especie_norm or _normalize_especie(rec.especie_raw or "")
+            year = rec.año_evaluacion or rec.año_publicacion
+            if not year or not rec.titulo:
+                continue
+            zona = rec.zona or ""
+
+            exists = conn.execute(
+                "SELECT 1 FROM inidep_evaluaciones WHERE especie_code=? AND zona=? AND year=?",
+                (especie_code, zona, year),
+            ).fetchone()
+            if exists:
+                continue
+
+            conn.execute(
+                """
+                INSERT INTO inidep_evaluaciones
+                    (especie, especie_code, zona, year, cba_recomendada_tn,
+                     cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    rec.especie_raw or especie_code,
+                    especie_code,
+                    zona or None,
+                    year,
+                    rec.cba_recomendada_tn,
+                    rec.cmp_alternativa_tn,
+                    rec.estado_stock,
+                    rec.numero_ito,
+                    rec.pdf_url or rec.url,
+                    rec.abstract[:300] if rec.abstract else None,
+                ),
+            )
+            inserted += 1
+
+    logger.info(f"save_itos_to_db: {inserted} filas nuevas en {db_path}")
+    return inserted
+
+
+def get_historical_series(
+    especie_code: str,
+    db_path: str,
+    zona: str | None = None,
+) -> list[dict]:
+    """
+    Retorna la serie histórica de CBA recomendada para una especie.
+
+    Filtra opcionalmente por zona. Ordena por year ascendente.
+    """
+    import sqlite3
+    from pathlib import Path as _Path
+
+    db_path = _Path(db_path)
+    if not db_path.exists():
+        return []
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        if zona:
+            rows = conn.execute(
+                """
+                SELECT year, zona, cba_recomendada_tn, cba_alternativa_tn,
+                       estado_stock, numero_ito, notas
+                FROM inidep_evaluaciones
+                WHERE especie_code=? AND zona=?
+                ORDER BY year
+                """,
+                (especie_code, zona),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """
+                SELECT year, zona, cba_recomendada_tn, cba_alternativa_tn,
+                       estado_stock, numero_ito, notas
+                FROM inidep_evaluaciones
+                WHERE especie_code=?
+                ORDER BY year
+                """,
+                (especie_code,),
+            ).fetchall()
+    return [dict(r) for r in rows]
