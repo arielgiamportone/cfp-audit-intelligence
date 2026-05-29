@@ -8,7 +8,7 @@ Navegación multipágina:
   4. Auditoría   → Análisis con IA y patrones
   5. Reportes    → Exportación y visualización
 """
-import os
+
 import sys
 from pathlib import Path
 
@@ -49,6 +49,7 @@ db_path = ROOT / "data" / "processed" / "catalog.db"
 if db_path.exists():
     try:
         from src.acquisition.catalog_manager import CatalogManager
+
         catalog = CatalogManager(db_path)
         stats = catalog.stats()
 
@@ -62,7 +63,7 @@ if db_path.exists():
             st.metric("Indexadas en KB", stats["embedded"])
         with col5:
             st.metric("Analizadas con IA", stats["analyzed"])
-    except Exception as e:
+    except Exception:
         with col1:
             st.metric("Catálogo", "No inicializado")
 else:

@@ -5,15 +5,14 @@ Permite definir reglas por tipo (exceso de CBA, stock crítico, quórum mínimo,
 reversión de decisiones) y evaluarlas contra los datos disponibles en la BD.
 Las reglas y el historial se persisten en SQLite.
 """
+
 import sqlite3
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 from loguru import logger
-
 
 SCHEMA_ALERTAS = """
 CREATE TABLE IF NOT EXISTS alertas_reglas (
@@ -136,17 +135,17 @@ class AlertaRegla:
     nombre: str
     tipo: str
     severidad: str = SEV_WARNING
-    especie_code: Optional[str] = None
-    zona: Optional[str] = None
-    year_desde: Optional[int] = None
-    year_hasta: Optional[int] = None
-    umbral_pct: Optional[float] = None
-    umbral_estado: Optional[str] = None
-    descripcion: Optional[str] = None
+    especie_code: str | None = None
+    zona: str | None = None
+    year_desde: int | None = None
+    year_hasta: int | None = None
+    umbral_pct: float | None = None
+    umbral_estado: str | None = None
+    descripcion: str | None = None
     activa: bool = True
-    id: Optional[int] = None
+    id: int | None = None
 
-    def aplica_a(self, especie_code: str, zona: Optional[str], year: int) -> bool:
+    def aplica_a(self, especie_code: str, zona: str | None, year: int) -> bool:
         """Comprueba si esta regla aplica a un conjunto especie/zona/año."""
         if self.especie_code and self.especie_code != especie_code:
             return False
@@ -161,20 +160,20 @@ class AlertaRegla:
 
 @dataclass
 class AlertaFired:
-    regla_id: Optional[int]
+    regla_id: int | None
     tipo: str
     mensaje: str
     severidad: str
-    especie: Optional[str] = None
-    especie_code: Optional[str] = None
-    zona: Optional[str] = None
-    year: Optional[int] = None
-    valor_detectado: Optional[float] = None
-    umbral: Optional[float] = None
-    acta_referencia: Optional[str] = None
+    especie: str | None = None
+    especie_code: str | None = None
+    zona: str | None = None
+    year: int | None = None
+    valor_detectado: float | None = None
+    umbral: float | None = None
+    acta_referencia: str | None = None
     resuelta: bool = False
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    id: Optional[int] = None
+    id: int | None = None
 
 
 class AlertEngine:
@@ -332,24 +331,26 @@ class AlertEngine:
                 if not regla.aplica_a(row["especie_code"], row["zona"], row["year"]):
                     continue
                 if regla.umbral_pct and pct >= regla.umbral_pct:
-                    fired.append(AlertaFired(
-                        regla_id=regla.id,
-                        tipo=TIPO_CBA_EXCESO,
-                        especie=row["especie"],
-                        especie_code=row["especie_code"],
-                        zona=row["zona"],
-                        year=row["year"],
-                        valor_detectado=round(pct, 1),
-                        umbral=regla.umbral_pct,
-                        mensaje=(
-                            f"{row['especie']} {row['year']}"
-                            + (f" ({row['zona']})" if row["zona"] else "")
-                            + f": CMP aprobada = {row['cmp_cfp_tn']:,.0f} tn "
-                            + f"({pct:.1f}% de CBA {row['cba_inidep_tn']:,.0f} tn)"
-                        ),
-                        severidad=regla.severidad,
-                        acta_referencia=row["acta_cfp"],
-                    ))
+                    fired.append(
+                        AlertaFired(
+                            regla_id=regla.id,
+                            tipo=TIPO_CBA_EXCESO,
+                            especie=row["especie"],
+                            especie_code=row["especie_code"],
+                            zona=row["zona"],
+                            year=row["year"],
+                            valor_detectado=round(pct, 1),
+                            umbral=regla.umbral_pct,
+                            mensaje=(
+                                f"{row['especie']} {row['year']}"
+                                + (f" ({row['zona']})" if row["zona"] else "")
+                                + f": CMP aprobada = {row['cmp_cfp_tn']:,.0f} tn "
+                                + f"({pct:.1f}% de CBA {row['cba_inidep_tn']:,.0f} tn)"
+                            ),
+                            severidad=regla.severidad,
+                            acta_referencia=row["acta_cfp"],
+                        )
+                    )
 
         return fired
 
@@ -378,23 +379,29 @@ class AlertEngine:
                     continue
                 if regla.umbral_estado and row["estado_stock"] == regla.umbral_estado:
                     tiene_cuota = row["cmp_aprobada_tn"] is not None
-                    fired.append(AlertaFired(
-                        regla_id=regla.id,
-                        tipo=TIPO_STOCK_CRITICO,
-                        especie=row["especie"],
-                        especie_code=row["especie_code"],
-                        zona=row["zona"],
-                        year=row["year"],
-                        valor_detectado=row["cmp_aprobada_tn"],
-                        umbral=None,
-                        mensaje=(
-                            f"{row['especie']} {row['year']}: estado stock = "
-                            f"'{row['estado_stock']}'"
-                            + (f" — CFP asignó {row['cmp_aprobada_tn']:,.0f} tn" if tiene_cuota else "")
-                            + (f" (ITO: {row['numero_ito']})" if row["numero_ito"] else "")
-                        ),
-                        severidad=regla.severidad,
-                    ))
+                    fired.append(
+                        AlertaFired(
+                            regla_id=regla.id,
+                            tipo=TIPO_STOCK_CRITICO,
+                            especie=row["especie"],
+                            especie_code=row["especie_code"],
+                            zona=row["zona"],
+                            year=row["year"],
+                            valor_detectado=row["cmp_aprobada_tn"],
+                            umbral=None,
+                            mensaje=(
+                                f"{row['especie']} {row['year']}: estado stock = "
+                                f"'{row['estado_stock']}'"
+                                + (
+                                    f" — CFP asignó {row['cmp_aprobada_tn']:,.0f} tn"
+                                    if tiene_cuota
+                                    else ""
+                                )
+                                + (f" (ITO: {row['numero_ito']})" if row["numero_ito"] else "")
+                            ),
+                            severidad=regla.severidad,
+                        )
+                    )
 
         return fired
 
@@ -425,20 +432,22 @@ class AlertEngine:
                 for regla in reglas:
                     if not regla.aplica_a("", None, row["year"]):
                         continue
-                    fired.append(AlertaFired(
-                        regla_id=regla.id,
-                        tipo=TIPO_QUORUM_MINIMO,
-                        year=row["year"],
-                        valor_detectado=float(row["votos_favor"]),
-                        umbral=None,
-                        mensaje=(
-                            f"Resolución CFP {row['numero']}/{row['year']} aprobada "
-                            f"por quórum mínimo ({row['votos_favor']}-{row['votos_contra']}) "
-                            f"en acta {row['nombre_acta']}"
-                        ),
-                        severidad=regla.severidad,
-                        acta_referencia=row["nombre_acta"],
-                    ))
+                    fired.append(
+                        AlertaFired(
+                            regla_id=regla.id,
+                            tipo=TIPO_QUORUM_MINIMO,
+                            year=row["year"],
+                            valor_detectado=float(row["votos_favor"]),
+                            umbral=None,
+                            mensaje=(
+                                f"Resolución CFP {row['numero']}/{row['year']} aprobada "
+                                f"por quórum mínimo ({row['votos_favor']}-{row['votos_contra']}) "
+                                f"en acta {row['nombre_acta']}"
+                            ),
+                            severidad=regla.severidad,
+                            acta_referencia=row["nombre_acta"],
+                        )
+                    )
 
         return fired
 
@@ -462,17 +471,19 @@ class AlertEngine:
             for regla in reglas:
                 if not regla.aplica_a("", None, row["year"]):
                     continue
-                fired.append(AlertaFired(
-                    regla_id=regla.id,
-                    tipo=TIPO_REVERSION,
-                    year=row["year"],
-                    mensaje=(
-                        f"Posible reversión de decisión detectada en acta {row['nombre']} "
-                        f"({row['year']}): {(row['texto_resumen'] or '')[:120]}..."
-                    ),
-                    severidad=regla.severidad,
-                    acta_referencia=row["nombre"],
-                ))
+                fired.append(
+                    AlertaFired(
+                        regla_id=regla.id,
+                        tipo=TIPO_REVERSION,
+                        year=row["year"],
+                        mensaje=(
+                            f"Posible reversión de decisión detectada en acta {row['nombre']} "
+                            f"({row['year']}): {(row['texto_resumen'] or '')[:120]}..."
+                        ),
+                        severidad=regla.severidad,
+                        acta_referencia=row["nombre"],
+                    )
+                )
 
         return fired
 
@@ -486,9 +497,17 @@ class AlertEngine:
                         acta_referencia, resuelta)
                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
-                        a.regla_id, a.tipo, a.especie, a.especie_code,
-                        a.zona, a.year, a.valor_detectado, a.umbral,
-                        a.mensaje, a.severidad, a.acta_referencia,
+                        a.regla_id,
+                        a.tipo,
+                        a.especie,
+                        a.especie_code,
+                        a.zona,
+                        a.year,
+                        a.valor_detectado,
+                        a.umbral,
+                        a.mensaje,
+                        a.severidad,
+                        a.acta_referencia,
                         int(a.resuelta),
                     ),
                 )
@@ -498,11 +517,11 @@ class AlertEngine:
 
     def get_historial(
         self,
-        severidad_min: Optional[str] = None,
+        severidad_min: str | None = None,
         solo_abiertas: bool = True,
-        especie_code: Optional[str] = None,
-        year_desde: Optional[int] = None,
-        year_hasta: Optional[int] = None,
+        especie_code: str | None = None,
+        year_desde: int | None = None,
+        year_hasta: int | None = None,
         limit: int = 500,
     ) -> pd.DataFrame:
         """Retorna el historial de alertas como DataFrame."""
@@ -579,7 +598,13 @@ class AlertEngine:
                     "SELECT created_at FROM alertas_historial ORDER BY created_at DESC LIMIT 1"
                 ).fetchone()
         except sqlite3.OperationalError:
-            return {"total": 0, "criticas": 0, "warnings": 0, "n_reglas": 0, "ultima_evaluacion": None}
+            return {
+                "total": 0,
+                "criticas": 0,
+                "warnings": 0,
+                "n_reglas": 0,
+                "ultima_evaluacion": None,
+            }
 
         return {
             "total": total,

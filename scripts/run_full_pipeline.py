@@ -12,6 +12,7 @@ Uso:
   python scripts/run_full_pipeline.py --step download --years 2020-2025
   python scripts/run_full_pipeline.py --step audit --limit 100
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -19,8 +20,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from loguru import logger
 from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv(ROOT / ".env")
 
@@ -35,13 +36,15 @@ def step_download(years: list[int], raw_dir: Path, db_path: Path) -> None:
 
     actas = scraper.scrape_years(years)
     for acta in actas:
-        catalog.upsert_acta({
-            "year": acta.year,
-            "nombre": acta.nombre,
-            "url": acta.url,
-            "filename": acta.filename,
-            "is_anexo": acta.is_anexo,
-        })
+        catalog.upsert_acta(
+            {
+                "year": acta.year,
+                "nombre": acta.nombre,
+                "url": acta.url,
+                "filename": acta.filename,
+                "is_anexo": acta.is_anexo,
+            }
+        )
 
     stats = scraper.bulk_download(actas, raw_dir)
     for acta in actas:
@@ -52,10 +55,9 @@ def step_download(years: list[int], raw_dir: Path, db_path: Path) -> None:
 
 
 def step_process(raw_dir: Path, processed_dir: Path, db_path: Path) -> None:
-    import json
-    from src.processing.pdf_extractor import batch_extract
-    from src.processing.document_parser import batch_parse
     from src.acquisition.catalog_manager import CatalogManager
+    from src.processing.document_parser import batch_parse
+    from src.processing.pdf_extractor import batch_extract
 
     logger.info("=== ETAPA 2: PROCESAMIENTO ===")
     catalog = CatalogManager(db_path)
@@ -107,10 +109,11 @@ def step_knowledge_base(processed_dir: Path, kb_dir: Path) -> None:
 
 
 def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
-    import os
     import json
-    from src.analysis.audit_engine import CFPAuditEngine
+    import os
+
     from src.acquisition.catalog_manager import CatalogManager
+    from src.analysis.audit_engine import CFPAuditEngine
     from src.knowledge_base.vector_store import CFPVectorStore
 
     logger.info(f"=== ETAPA 4: AUDITORÍA IA (límite: {limit or 'sin límite'}) ===")
@@ -150,12 +153,14 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
         analisis_results = []
         for r in results:
             audit = engine.analyze_resolucion(r["id"], r["texto"])
-            analisis_results.append({
-                "id": r["id"],
-                "riesgo_score": audit.riesgo_score,
-                "categoria": audit.categoria_riesgo,
-                "hallazgos": audit.hallazgos,
-            })
+            analisis_results.append(
+                {
+                    "id": r["id"],
+                    "riesgo_score": audit.riesgo_score,
+                    "categoria": audit.categoria_riesgo,
+                    "hallazgos": audit.hallazgos,
+                }
+            )
 
             # Guardar en catálogo
             catalog.insert_analisis(
@@ -171,7 +176,9 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
 
         catalog.mark_analyzed(acta_id)
         max_risk = max((a["riesgo_score"] for a in analisis_results), default=0)
-        logger.info(f"  {filename}: {len(analisis_results)} resoluciones, riesgo máx: {max_risk:.0f}")
+        logger.info(
+            f"  {filename}: {len(analisis_results)} resoluciones, riesgo máx: {max_risk:.0f}"
+        )
 
     logger.success("Auditoría completada")
 
@@ -203,9 +210,7 @@ def main():
         years = [int(args.years)]
 
     steps = (
-        ["download", "process", "knowledge_base", "audit"]
-        if args.step == "all"
-        else [args.step]
+        ["download", "process", "knowledge_base", "audit"] if args.step == "all" else [args.step]
     )
 
     logger.info(f"Pipeline CFP Audit Intelligence | Pasos: {steps}")

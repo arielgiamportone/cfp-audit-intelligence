@@ -4,16 +4,14 @@ Constructor del grafo de relaciones CFP.
 Construye un grafo NetworkX con nodos de especies, empresas y actas,
 y aristas ponderadas por co-menciones en las decisiones del CFP.
 """
-import re
+
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import networkx as nx
 import pandas as pd
 from loguru import logger
-
 
 # ── Tipos de nodos ─────────────────────────────────────────────────────────────
 
@@ -23,9 +21,9 @@ NODE_ACTA = "acta"
 
 # Paleta de colores por tipo de nodo
 NODE_COLORS = {
-    NODE_ESPECIE: "#1976D2",   # azul
-    NODE_EMPRESA: "#E65100",   # naranja
-    NODE_ACTA: "#757575",      # gris
+    NODE_ESPECIE: "#1976D2",  # azul
+    NODE_EMPRESA: "#E65100",  # naranja
+    NODE_ACTA: "#757575",  # gris
 }
 
 # Empresas conocidas con nombres duplicados/ruidosos — normalización manual
@@ -58,22 +56,29 @@ _ALIAS_EMPRESAS = {
 
 # Nombres de empresas que son ruido (extraídos mal por el parser)
 _RUIDO_EMPRESAS = {
-    "la sa", "u. y pesa", "pensa", "gdeba-ssa",
-    "consejo de empresa", "consejo de \nempresa", "luca sa",
-    "vieirasa", "viernes sa",
+    "la sa",
+    "u. y pesa",
+    "pensa",
+    "gdeba-ssa",
+    "consejo de empresa",
+    "consejo de \nempresa",
+    "luca sa",
+    "vieirasa",
+    "viernes sa",
 }
 
 
 @dataclass
 class GrafoStats:
     """Estadísticas básicas del grafo."""
+
     n_nodos: int = 0
     n_aristas: int = 0
     n_especies: int = 0
     n_empresas: int = 0
     n_actas: int = 0
-    especie_mas_conectada: Optional[str] = None
-    empresa_mas_conectada: Optional[str] = None
+    especie_mas_conectada: str | None = None
+    empresa_mas_conectada: str | None = None
     densidad: float = 0.0
     componentes: int = 0
     hhi_por_especie: dict = field(default_factory=dict)
@@ -93,9 +98,7 @@ class CFPGraphBuilder:
     def load_data(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Carga entidades, menciones y resoluciones de la BD."""
         with self._conn() as conn:
-            df_ent = pd.read_sql_query(
-                "SELECT id, tipo, nombre, nombre_norm FROM entidades", conn
-            )
+            df_ent = pd.read_sql_query("SELECT id, tipo, nombre, nombre_norm FROM entidades", conn)
             df_men = pd.read_sql_query(
                 """
                 SELECT m.resolucion_id, m.entidad_id, m.contexto,
@@ -116,7 +119,7 @@ class CFPGraphBuilder:
             )
         return df_ent, df_men, df_res
 
-    def _clean_nombre(self, nombre_norm: str, tipo: str) -> Optional[str]:
+    def _clean_nombre(self, nombre_norm: str, tipo: str) -> str | None:
         """Normaliza y limpia nombre de entidad."""
         if not nombre_norm:
             return None
@@ -188,7 +191,7 @@ class CFPGraphBuilder:
         for rid, nombres in men_por_res.items():
             nombres_uniq = list(set(nombres))
             for i, n1 in enumerate(nombres_uniq):
-                for n2 in nombres_uniq[i + 1:]:
+                for n2 in nombres_uniq[i + 1 :]:
                     t1 = G.nodes.get(n1, {}).get("tipo", "")
                     t2 = G.nodes.get(n2, {}).get("tipo", "")
                     # Solo conectar especie ↔ empresa (no especie-especie ni empresa-empresa)
@@ -209,10 +212,7 @@ class CFPGraphBuilder:
         isolated = [n for n in G.nodes if G.degree(n) == 0]
         G.remove_nodes_from(isolated)
 
-        logger.info(
-            f"Grafo construido: {G.number_of_nodes()} nodos, "
-            f"{G.number_of_edges()} aristas"
-        )
+        logger.info(f"Grafo construido: {G.number_of_nodes()} nodos, {G.number_of_edges()} aristas")
         return G
 
     def compute_stats(self, G: nx.Graph) -> GrafoStats:
@@ -239,7 +239,7 @@ class CFPGraphBuilder:
             if neighbors:
                 total = sum(w for _, w in neighbors)
                 shares = [w / total for _, w in neighbors]
-                hhi[esp] = round(sum(s ** 2 for s in shares) * 10_000, 0)
+                hhi[esp] = round(sum(s**2 for s in shares) * 10_000, 0)
 
         return GrafoStats(
             n_nodos=G.number_of_nodes(),
@@ -278,12 +278,13 @@ class CFPGraphBuilder:
         rows = []
         for n1, n2, data in G.edges(data=True):
             t1 = G.nodes[n1]["tipo"]
-            t2 = G.nodes[n2]["tipo"]
             especie = n1 if t1 == NODE_ESPECIE else n2
             empresa = n1 if t1 == NODE_EMPRESA else n2
-            rows.append({
-                "especie": especie,
-                "empresa": empresa,
-                "co_menciones": data["weight"],
-            })
+            rows.append(
+                {
+                    "especie": especie,
+                    "empresa": empresa,
+                    "co_menciones": data["weight"],
+                }
+            )
         return pd.DataFrame(rows).sort_values("co_menciones", ascending=False)

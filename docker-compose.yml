@@ -1,0 +1,61 @@
+services:
+
+  # ── REST API ────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      target: runtime
+    image: cfp-audit-intelligence:latest
+    container_name: cfp-api
+    command: >
+      uvicorn src.api.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 2
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - PYTHONPATH=/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ── Streamlit Dashboard ─────────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      target: runtime
+    image: cfp-audit-intelligence:latest
+    container_name: cfp-dashboard
+    command: >
+      streamlit run src/dashboard/app.py
+      --server.port=8501
+      --server.address=0.0.0.0
+      --server.headless=true
+      --browser.gatherUsageStats=false
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

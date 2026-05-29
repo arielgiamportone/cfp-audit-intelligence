@@ -10,11 +10,12 @@ Arrancar con:
 o:
     python -m src.api.main
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from src.api.routers import actas, entidades, alertas, inidep, analysis
+from src.api.routers import actas, alertas, analysis, entidades, inidep
 
 app = FastAPI(
     title="CFP Audit Intelligence API",
@@ -60,4 +61,5 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)

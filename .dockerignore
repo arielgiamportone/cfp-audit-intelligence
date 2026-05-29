@@ -1,0 +1,49 @@
+# Version control
+.git
+.gitignore
+
+# Secrets
+.env
+*.env
+*.pem
+*.key
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Test / CI artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+
+# Dev data (mounted via volume in production)
+data/raw/
+data/processed/
+data/knowledge_base/
+data/reports/
+
+# Notebooks / dev tooling
+notebooks/
+logs/
+*.log
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
