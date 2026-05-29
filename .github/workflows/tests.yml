@@ -29,6 +29,8 @@ jobs:
           pip install --upgrade pip
           pip install pytest pytest-cov
           pip install loguru tenacity pandas requests beautifulsoup4 lxml
+          pip install "spacy>=3.7.0"
+          python -m spacy download es_core_news_sm || echo "spacy model download failed - NER will use blank model fallback"
 
       - name: Run tests
         run: |
