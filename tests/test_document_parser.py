@@ -5,8 +5,11 @@ Verifica que el parser identifica correctamente el formato real de las minutas:
 decisiones narrativas, puntos de agenda, entidades extraídas.
 """
 
+import pytest
+
 from src.processing.document_parser import (
     Acta,
+    AsignacionCuota,
     Decision,
     _split_by_agenda,
     build_institucion_votos,
@@ -16,6 +19,7 @@ from src.processing.document_parser import (
     normalizar_institucion,
     parse_abstenciones,
     parse_acta,
+    parse_asignaciones_cuota,
     parse_decisions,
     parse_es_denegada,
     parse_es_diferida,
@@ -994,3 +998,91 @@ class TestParsePeriodoVigencia:
         decisions = parse_decisions(texto)
         inicios = [d.periodo_vigencia_inicio for d in decisions if d.periodo_vigencia_inicio]
         assert "2025" in inicios
+
+
+# ── parse_asignaciones_cuota ──────────────────────────────────────────────────
+
+
+class TestParseAsignacionesCuota:
+    def test_asignacion_directa(self):
+        texto = "se asigna a Pesquera Mar del Sur S.A. 12.345 toneladas de merluza."
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 1
+        assert "Pesquera Mar del Sur S.A." in asig[0].empresa
+        assert asig[0].toneladas_tn == pytest.approx(12_345)
+
+    def test_asignacion_inversa(self):
+        texto = "12.000 toneladas a Pesquera Norte S.A."
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 1
+        assert asig[0].toneladas_tn == pytest.approx(12_000)
+
+    def test_asignacion_tabla_en_citc(self):
+        texto = (
+            "CITC de merluza hubbsi:\n"
+            "Pesquera Sur S.R.L.: 8.500 tn\n"
+            "Pesquera Norte S.A.: 6.000 tn\n"
+        )
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 2
+        empresas = {a.empresa for a in asig}
+        assert any("Sur" in e for e in empresas)
+        assert any("Norte" in e for e in empresas)
+
+    def test_tabla_sin_citc_no_captura(self):
+        # Sin mención de CITC el patrón tabla no corre
+        texto = "Pesquera Sur S.R.L.: 8.500 tn y otras empresas."
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 0
+
+    def test_multiples_directas(self):
+        texto = (
+            "se asigna a Armadores del Sur S.A. 5.000 toneladas "
+            "y se adjudica a Flota Patagónica S.R.L. 3.500 toneladas."
+        )
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 2
+
+    def test_deduplication(self):
+        texto = (
+            "se asigna a Pesquera Sur S.A. 10.000 toneladas. "
+            "se asigna a Pesquera Sur S.A. 10.000 toneladas."
+        )
+        asig = parse_asignaciones_cuota(texto)
+        assert len(asig) == 1
+
+    def test_empresa_sin_sufijo_no_captura(self):
+        texto = "se asigna a Juan Pérez 5.000 toneladas."
+        assert parse_asignaciones_cuota(texto) == []
+
+    def test_tn_fuera_de_rango_ignorada(self):
+        texto = "se asigna a Pesquera X S.A. 10.000.000 toneladas."
+        assert parse_asignaciones_cuota(texto) == []
+
+    def test_texto_vacio(self):
+        assert parse_asignaciones_cuota("") == []
+
+    def test_texto_none(self):
+        assert parse_asignaciones_cuota(None) == []  # type: ignore[arg-type]
+
+    def test_asignacion_cuota_dataclass(self):
+        a = AsignacionCuota(empresa="Pesquera X S.A.", toneladas_tn=5_000.0)
+        assert a.especie is None
+
+    def test_campo_por_defecto_en_decision(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.asignaciones == []
+
+    def test_parse_decisions_popula_asignaciones(self):
+        texto = (
+            "1. MERLUZA HUBBSI — CITC 2025\n"
+            "CITC de merluza hubbsi para el año 2025:\n"
+            "Armadores del Sur S.A.: 25.000 tn\n"
+            "Flota Patagónica S.R.L.: 18.000 tn\n"
+            "Se decide por unanimidad aprobar la distribución.\n"
+        )
+        decisions = parse_decisions(texto)
+        todas_asig = [a for d in decisions for a in d.asignaciones]
+        assert len(todas_asig) >= 2
+        empresas = {a.empresa for a in todas_asig}
+        assert any("Armadores" in e for e in empresas)
