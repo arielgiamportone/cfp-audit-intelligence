@@ -170,6 +170,32 @@ RE_FUNDAMENTO_INIDEP = re.compile(
     re.IGNORECASE,
 )
 
+# Zonas y áreas de pesca del Mar Argentino y Antártico
+RE_ZONA_CAPTURA = re.compile(
+    r"(?:"
+    # Áreas nombradas del CFP/SAGPyA
+    r"[Áá]rea\s+(?:Norpatag[oó]nica|Patag[oó]nica|Bonaerense|Marina|"
+    r"de\s+la\s+Convenci[oó]n\s+CCAMLR|Ant[áa]rtica)|"
+    # Sub-áreas FAO/ICES (ej: subárea 41.3.1, 48.3)
+    r"sub[áa]rea\s+\d+\.\d+(?:\.\d+)?|"
+    # Área estadística FAO
+    r"[áa]rea\s+estad[ií]stica\s+\d+|"
+    # ZEE
+    r"Zona\s+Econ[oó]mica\s+Exclusiva(?:\s+Argentina)?|ZEEA?\b|"
+    # Plataforma/talud/litoral
+    r"plataforma\s+continental|talud\s+continental|litoral\s+patag[oó]nico|"
+    # Mar regional
+    r"Mar\s+(?:Argentino|Austral|Patag[oó]nico)|"
+    # Por paralelo de latitud
+    r"(?:al\s+)?(?:norte|sur)\s+del\s+paralelo\s+\d+°?\s*[SsNn]|"
+    # Aguas jurisdiccionales / franja costera
+    r"aguas?\s+jurisdiccionales|franja\s+costera|"
+    # Aguas de provincia costera
+    r"aguas?\s+de\s+(?:Chubut|Santa\s+Cruz|Buenos\s+Aires|Tierra\s+del\s+Fuego|R[ií]o\s+Negro)"
+    r")",
+    re.IGNORECASE,
+)
+
 RE_ESPECIE = re.compile(
     r"\b(merluza(?:\s+(?:común|hubbsi|de cola|negra|austral))?|"
     r"langostino|calamar(?:\s+(?:illex|loligo))?|abadejo|polaca|"
@@ -232,6 +258,7 @@ class Decision:
     es_diferida: bool = False  # tratamiento postergado para próxima sesión
     es_denegada: bool = False  # solicitud rechazada/no aprobada
     fundamento_inidep: list[str] = field(default_factory=list)  # informes INIDEP citados
+    zona_captura: list[str] = field(default_factory=list)  # zonas/áreas geográficas de pesca
 
 
 @dataclass
@@ -413,6 +440,24 @@ def parse_fundamento_inidep(text: str) -> list[str]:
     return result
 
 
+def parse_zona_captura(text: str) -> list[str]:
+    """
+    Extrae zonas/áreas de pesca mencionadas en el texto de una decisión.
+
+    Cubre áreas nombradas del CFP (Norpatagónica, Patagónica), sub-áreas FAO
+    (41.3.1, 48.3), ZEE Argentina, plataforma/talud continental y aguas provinciales.
+    """
+    seen: set[str] = set()
+    result = []
+    for m in RE_ZONA_CAPTURA.finditer(text or ""):
+        zona = " ".join(m.group(0).split())  # normalizar espacios
+        key = zona.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(zona)
+    return result
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -523,6 +568,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             es_diferida=parse_es_diferida(texto),
             es_denegada=parse_es_denegada(texto),
             fundamento_inidep=parse_fundamento_inidep(ctx),
+            zona_captura=parse_zona_captura(ctx),
         )
         decisions.append(d)
 
@@ -570,6 +616,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 es_diferida=parse_es_diferida(texto_dec),
                 es_denegada=parse_es_denegada(texto_dec),
                 fundamento_inidep=parse_fundamento_inidep(bloque),
+                zona_captura=parse_zona_captura(bloque),
             )
             decisions.append(d)
 
@@ -605,6 +652,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             es_diferida=parse_es_diferida(bloque),
             es_denegada=parse_es_denegada(bloque),
             fundamento_inidep=parse_fundamento_inidep(bloque),
+            zona_captura=parse_zona_captura(bloque),
         )
         decisions.append(d)
 
