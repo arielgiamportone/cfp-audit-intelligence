@@ -232,6 +232,43 @@ MESES = {
     "diciembre": 12,
 }
 
+_SUF_LEGAL = r"(?:S\.A\.C\.I\.|S\.R\.L\.|LTDA\.|COOP\.|S\.A\.|SRL|SA)(?!\w)"
+_NOMBRE_EMP = rf"[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\s\-\.]{{0,55}}?{_SUF_LEGAL}"
+_TN_VAL = r"[\d\.]+(?:,\d+)?"
+
+# Asignación directa: "asignar/adjudicar/otorgar a EMPRESA N toneladas"
+RE_ASIGNACION_DIRECTA = re.compile(
+    r"(?:asigna[rn]?|asignando|adjudica[rn]?|adjudicando|otorga[rn]?|otorgando)\s+a\s+"
+    rf"(?P<empresa>{_NOMBRE_EMP})\s+"
+    r"(?:la\s+suma\s+de\s+|un\s+total\s+de\s+)?"
+    rf"(?P<tn>{_TN_VAL})\s*(?:toneladas?|tn\.?)",
+    re.IGNORECASE,
+)
+
+# Asignación inversa: "N toneladas a/para EMPRESA"
+RE_ASIGNACION_INVERSA = re.compile(
+    rf"(?P<tn>{_TN_VAL})\s*(?:toneladas?|tn\.?)\s+"
+    r"(?:a|para|a\s+favor\s+de)\s+"
+    rf"(?P<empresa>{_NOMBRE_EMP})",
+    re.IGNORECASE,
+)
+
+# Formato tabla: "EMPRESA: N toneladas" — solo en contextos con CITC
+RE_ASIGNACION_TABLA = re.compile(
+    rf"(?P<empresa>{_NOMBRE_EMP})\s*[:\-]\s*"
+    rf"(?P<tn>{_TN_VAL})\s*(?:toneladas?|tn\.?)",
+    re.IGNORECASE,
+)
+
+
+@dataclass
+class AsignacionCuota:
+    """Par empresa → cuota en una distribución de CITC."""
+
+    empresa: str
+    toneladas_tn: float
+    especie: str | None = None  # inferible de especies_mencionadas de la Decision
+
 
 @dataclass
 class Decision:
@@ -263,6 +300,7 @@ class Decision:
         None  # inicio de vigencia ISO parcial: "YYYY", "YYYY-MM", "YYYY-MM-DD"
     )
     periodo_vigencia_fin: str | None = None  # fin de vigencia ISO parcial
+    asignaciones: list[AsignacionCuota] = field(default_factory=list)  # empresa → tn en distribuciones CITC
 
 
 @dataclass
@@ -536,6 +574,54 @@ def parse_periodo_vigencia(text: str) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _tn_str_to_float(s: str) -> float | None:
+    """Convierte "12.345" o "12,5" a float; devuelve None si está fuera de rango."""
+    try:
+        val = float(s.replace(".", "").replace(",", "."))
+        return val if 0 < val < 5_000_000 else None
+    except ValueError:
+        return None
+
+
+def parse_asignaciones_cuota(text: str) -> list[AsignacionCuota]:
+    """
+    Extrae pares empresa → toneladas de distribuciones de CITC.
+
+    Cubre tres patrones:
+    - Directa: "asignar/adjudicar a EMPRESA N toneladas"
+    - Inversa: "N toneladas a/para EMPRESA"
+    - Tabla: "EMPRESA: N toneladas" (solo en bloques que contengan CITC)
+    Requiere sufijo legal (S.A., S.R.L., etc.) para evitar falsos positivos.
+    """
+    if not text:
+        return []
+
+    seen: set[tuple[str, float]] = set()
+    result: list[AsignacionCuota] = []
+
+    def _add(empresa: str, tn_str: str) -> None:
+        empresa = empresa.strip().rstrip(",;")
+        tn = _tn_str_to_float(tn_str)
+        if tn is None or not empresa:
+            return
+        key = (empresa[:30].lower(), tn)
+        if key not in seen:
+            seen.add(key)
+            result.append(AsignacionCuota(empresa=empresa, toneladas_tn=tn))
+
+    for m in RE_ASIGNACION_DIRECTA.finditer(text):
+        _add(m.group("empresa"), m.group("tn"))
+
+    for m in RE_ASIGNACION_INVERSA.finditer(text):
+        _add(m.group("empresa"), m.group("tn"))
+
+    if RE_CITC.search(text):
+        for m in RE_ASIGNACION_TABLA.finditer(text):
+            _add(m.group("empresa"), m.group("tn"))
+
+    return result
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -649,6 +735,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             zona_captura=parse_zona_captura(ctx),
             periodo_vigencia_inicio=parse_periodo_vigencia(ctx)[0],
             periodo_vigencia_fin=parse_periodo_vigencia(ctx)[1],
+            asignaciones=parse_asignaciones_cuota(ctx),
         )
         decisions.append(d)
 
@@ -699,6 +786,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 zona_captura=parse_zona_captura(bloque),
                 periodo_vigencia_inicio=parse_periodo_vigencia(bloque)[0],
                 periodo_vigencia_fin=parse_periodo_vigencia(bloque)[1],
+                asignaciones=parse_asignaciones_cuota(bloque),
             )
             decisions.append(d)
 
@@ -737,6 +825,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             zona_captura=parse_zona_captura(bloque),
             periodo_vigencia_inicio=parse_periodo_vigencia(bloque)[0],
             periodo_vigencia_fin=parse_periodo_vigencia(bloque)[1],
+            asignaciones=parse_asignaciones_cuota(bloque),
         )
         decisions.append(d)
 
