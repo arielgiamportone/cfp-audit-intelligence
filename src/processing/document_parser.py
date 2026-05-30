@@ -45,7 +45,7 @@ RE_VOTO_CONTRA = re.compile(
 
 # Votos explícitamente a favor
 RE_VOTO_FAVOR = re.compile(
-    r"(?:con\s+(?:(?:el|la|los?|las?|un)\s+)?voto[s]?\s+(?:afirmativo[s]?|favorable[s]?)|" 
+    r"(?:con\s+(?:(?:el|la|los?|las?|un)\s+)?voto[s]?\s+(?:afirmativo[s]?|favorable[s]?)|"
     r"votando\s+a\s+favor|vot[oó]\s+a\s+favor|"
     r"a\s+favor(?:\s*:|\s+vot(?:aron|[oó]))\s*)"
     r"(?:\s+de\s+(?:la?s?\s+)?)?(.{5,150}?)(?=[,\.;\n]|\Z)",
