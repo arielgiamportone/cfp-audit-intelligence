@@ -128,6 +128,21 @@ RE_DENEGADA = re.compile(
     re.IGNORECASE,
 )
 
+# Fundamentos científicos del INIDEP citados como base de la decisión
+RE_FUNDAMENTO_INIDEP = re.compile(
+    r"(?:"
+    # "Informe [Técnico] [del] INIDEP" o "dictamen/evaluación/nota [del] INIDEP"
+    r"(?:Informe|dictamen|evaluaci[oó]n|nota)\s+"
+    r"(?:t[eé]cnic[oa]s?\s+|cient[ií]fico[as]?\s+|de\s+evaluaci[oó]n\s+|de\s+stock\s+)?"
+    r"(?:del?\s+)?INIDEP"
+    r"|"
+    # "INIDEP Informe/dictamen [Técnico]"
+    r"INIDEP\s+(?:Informe|dictamen|evaluaci[oó]n|nota)(?:\s+t[eé]cnico[as]?)?"
+    r")"
+    r"\s+N[°º\.ro]{0,4}\s*\d+/\d{4}",
+    re.IGNORECASE,
+)
+
 RE_ESPECIE = re.compile(
     r"\b(merluza(?:\s+(?:común|hubbsi|de cola|negra|austral))?|"
     r"langostino|calamar(?:\s+(?:illex|loligo))?|abadejo|polaca|"
@@ -185,6 +200,7 @@ class Decision:
     numero_resolucion: str | None = None  # "15/2025" — resolución CFP que genera esta decisión
     es_diferida: bool = False  # tratamiento postergado para próxima sesión
     es_denegada: bool = False  # solicitud rechazada/no aprobada
+    fundamento_inidep: list[str] = field(default_factory=list)  # informes INIDEP citados
 
 
 @dataclass
@@ -310,6 +326,23 @@ def parse_es_denegada(text: str) -> bool:
     return bool(RE_DENEGADA.search(text or ""))
 
 
+def parse_fundamento_inidep(text: str) -> list[str]:
+    """
+    Extrae referencias a informes/dictámenes del INIDEP citados como fundamento.
+
+    Retorna lista de strings completos tipo "Informe INIDEP N° 36/2024".
+    Solo captura citas con número identificador (útiles para trazabilidad).
+    """
+    seen: set[str] = set()
+    result = []
+    for m in RE_FUNDAMENTO_INIDEP.finditer(text or ""):
+        ref = m.group(0).strip()
+        if ref not in seen:
+            seen.add(ref)
+            result.append(ref)
+    return result
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -413,6 +446,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             numero_resolucion=parse_numero_resolucion(ctx),
             es_diferida=parse_es_diferida(texto),
             es_denegada=parse_es_denegada(texto),
+            fundamento_inidep=parse_fundamento_inidep(ctx),
         )
         decisions.append(d)
 
@@ -453,6 +487,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 numero_resolucion=parse_numero_resolucion(bloque),
                 es_diferida=parse_es_diferida(texto_dec),
                 es_denegada=parse_es_denegada(texto_dec),
+                fundamento_inidep=parse_fundamento_inidep(bloque),
             )
             decisions.append(d)
 
@@ -481,6 +516,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             numero_resolucion=parse_numero_resolucion(bloque),
             es_diferida=parse_es_diferida(bloque),
             es_denegada=parse_es_denegada(bloque),
+            fundamento_inidep=parse_fundamento_inidep(bloque),
         )
         decisions.append(d)
 

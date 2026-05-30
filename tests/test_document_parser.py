@@ -19,6 +19,7 @@ from src.processing.document_parser import (
     parse_es_diferida,
     parse_fecha,
     parse_fecha_inline,
+    parse_fundamento_inidep,
     parse_miembros,
     parse_numero_acta,
     parse_numero_resolucion,
@@ -641,3 +642,83 @@ class TestParseDiferidaDenegada:
         decisions = parse_decisions(texto)
         tipos = [d.tipo for d in decisions]
         assert "diferida" in tipos
+
+
+# ── parse_fundamento_inidep ───────────────────────────────────────────────────
+
+
+class TestParseFundamentoINIDEP:
+    def test_informe_inidep_con_numero(self):
+        texto = "conforme al Informe INIDEP N° 36/2024 se establece la cuota."
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+        assert "36/2024" in refs[0]
+
+    def test_dictamen_tecnico(self):
+        texto = "según el dictamen técnico INIDEP N° 12/2023 del organismo."
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+        assert "12/2023" in refs[0]
+
+    def test_evaluacion_de_stock(self):
+        texto = "en base a la evaluación de stock INIDEP N° 7/2024."
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+        assert "7/2024" in refs[0]
+
+    def test_inidep_al_inicio(self):
+        texto = "INIDEP Informe N° 33/2024 indica que el recurso está en límite."
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+        assert "33/2024" in refs[0]
+
+    def test_nota_tecnica_del_inidep(self):
+        texto = "conforme a la nota técnica del INIDEP N° 5/2023."
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+
+    def test_multiples_referencias(self):
+        texto = (
+            "Considerando el Informe INIDEP N° 36/2024 para merluza "
+            "y el dictamen INIDEP N° 8/2024 para langostino."
+        )
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 2
+        assert any("36/2024" in r for r in refs)
+        assert any("8/2024" in r for r in refs)
+
+    def test_deduplica_referencias(self):
+        texto = (
+            "el Informe INIDEP N° 36/2024 es claro; "
+            "de acuerdo al Informe INIDEP N° 36/2024 se resuelve."
+        )
+        refs = parse_fundamento_inidep(texto)
+        assert len(refs) == 1
+
+    def test_mencion_inidep_sin_numero_no_captura(self):
+        texto = "el INIDEP recomienda una reducción del esfuerzo pesquero."
+        assert parse_fundamento_inidep(texto) == []
+
+    def test_sin_referencia_inidep(self):
+        texto = "se aprueba por unanimidad la cuota de merluza para 2025."
+        assert parse_fundamento_inidep(texto) == []
+
+    def test_texto_vacio(self):
+        assert parse_fundamento_inidep("") == []
+
+    def test_texto_none(self):
+        assert parse_fundamento_inidep(None) == []  # type: ignore[arg-type]
+
+    def test_campo_por_defecto(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.fundamento_inidep == []
+
+    def test_parse_decisions_popula_fundamento(self):
+        texto = (
+            "1. MERLUZA HUBBSI\n"
+            "Conforme al Informe INIDEP N° 36/2024 se propone fijar 350.000 tn.\n"
+            "Se decide por unanimidad establecer la cuota en 350.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        fundamentos = [f for d in decisions for f in d.fundamento_inidep]
+        assert any("36/2024" in f for f in fundamentos)
