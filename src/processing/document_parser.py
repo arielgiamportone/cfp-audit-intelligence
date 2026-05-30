@@ -97,6 +97,13 @@ RE_EMPRESA = re.compile(
     r"\b([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\s\-\.]{2,50}?\s*(?:S\.A\.|S\.R\.L\.|SRL|SA|S\.A\.C\.I\.|LTDA\.|COOP\.))",
 )
 
+# Número de resolución que GENERA esta decisión (verbo dictar/emitir antes del número)
+RE_NUMERO_RESOLUCION = re.compile(
+    r"(?:dictar?|emitir?|se\s+dicta|se\s+emite)\s+(?:la\s+)?Resoluci[oó]n\s+"
+    r"(?:CFP\s+|del\s+Consejo[^N]{0,40})?N[°º\.]\s*(\d+/\d{4})",
+    re.IGNORECASE,
+)
+
 RE_ESPECIE = re.compile(
     r"\b(merluza(?:\s+(?:común|hubbsi|de cola|negra|austral))?|"
     r"langostino|calamar(?:\s+(?:illex|loligo))?|abadejo|polaca|"
@@ -151,6 +158,7 @@ class Decision:
     referencias_res_cfp: list[str] = field(default_factory=list)
     votos_en_contra: list[str] = field(default_factory=list)  # quiénes votaron en contra
     abstenciones: list[str] = field(default_factory=list)  # quiénes se abstuvieron
+    numero_resolucion: str | None = None  # "15/2025" — resolución CFP que genera esta decisión
 
 
 @dataclass
@@ -254,6 +262,18 @@ def parse_abstenciones(text: str) -> list[str]:
     return resultados
 
 
+def parse_numero_resolucion(text: str) -> str | None:
+    """
+    Extrae el número de la Resolución CFP que genera esta decisión.
+
+    Distingue entre la resolución que SE DICTA en este punto (verbo dictar/emitir)
+    y las resoluciones pasadas que sólo se mencionan como antecedentes.
+    Retorna "15/2025" o None si no se dicta ninguna resolución.
+    """
+    m = RE_NUMERO_RESOLUCION.search(text or "")
+    return m.group(1) if m else None
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -350,6 +370,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             referencias_res_cfp=extract_referencias_cfp(texto),
             votos_en_contra=parse_votos_en_contra(texto),
             abstenciones=parse_abstenciones(texto),
+            numero_resolucion=parse_numero_resolucion(ctx),
         )
         decisions.append(d)
 
@@ -387,6 +408,7 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 referencias_res_cfp=extract_referencias_cfp(bloque),
                 votos_en_contra=parse_votos_en_contra(texto_dec),
                 abstenciones=parse_abstenciones(texto_dec),
+                numero_resolucion=parse_numero_resolucion(bloque),
             )
             decisions.append(d)
 

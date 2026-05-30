@@ -19,6 +19,7 @@ from src.processing.document_parser import (
     parse_fecha_inline,
     parse_miembros,
     parse_numero_acta,
+    parse_numero_resolucion,
     parse_quorum,
     parse_sesiones,
     parse_votos_en_contra,
@@ -478,3 +479,54 @@ Se da por concluida la sesión."""
     def test_n_sesiones_minimo_1(self, sample_acta_text):
         acta = parse_acta(sample_acta_text, "acta_2025.txt")
         assert acta.n_sesiones >= 1
+
+
+# ── parse_numero_resolucion ───────────────────────────────────────────────────
+
+
+class TestParseNumeroResolucion:
+    def test_dictar_resolucion_cfp(self):
+        texto = "se decide dictar la Resolución CFP N° 15/2025 estableciendo la cuota."
+        assert parse_numero_resolucion(texto) == "15/2025"
+
+    def test_dictar_sin_cfp(self):
+        texto = "se decide dictar la Resolución N° 5/2023."
+        assert parse_numero_resolucion(texto) == "5/2023"
+
+    def test_se_dicta(self):
+        texto = "Por ello se dicta la Resolución CFP N° 33/2024."
+        assert parse_numero_resolucion(texto) == "33/2024"
+
+    def test_emitir_resolucion(self):
+        texto = "se decide emitir la Resolución CFP N° 7/2022 autorizando el permiso."
+        assert parse_numero_resolucion(texto) == "7/2022"
+
+    def test_resolucion_solo_referenciada_no_captura(self):
+        # "conforme a la Resolución CFP N° 5/2025" — referencia pasada, sin verbo dictar
+        texto = "conforme a la Resolución CFP N° 5/2025 y el Acta CFP N° 33/2025"
+        assert parse_numero_resolucion(texto) is None
+
+    def test_sin_resolucion(self):
+        assert parse_numero_resolucion("se aprueba por unanimidad la cuota.") is None
+
+    def test_texto_vacio(self):
+        assert parse_numero_resolucion("") is None
+
+    def test_texto_none(self):
+        assert parse_numero_resolucion(None) is None  # type: ignore[arg-type]
+
+    def test_decision_campo_por_defecto(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.numero_resolucion is None
+
+    def test_parse_decisions_popula_numero_resolucion(self):
+        texto = (
+            "1. MERLUZA\n"
+            "Cuota para el año 2025.\n"
+            "Se decide por unanimidad dictar la Resolución CFP N° 12/2025 "
+            "fijando 350.000 toneladas de merluza hubbsi.\n"
+        )
+        decisions = parse_decisions(texto)
+        numeros = [d.numero_resolucion for d in decisions if d.numero_resolucion]
+        assert len(numeros) >= 1
+        assert "12/2025" in numeros
