@@ -29,6 +29,7 @@ from src.processing.document_parser import (
     parse_sesiones,
     parse_votos_en_contra,
     parse_votos_favor,
+    parse_zona_captura,
 )
 
 # ── parse_fecha ───────────────────────────────────────────────────────────────
@@ -836,3 +837,86 @@ class TestVotosNominalesInstitucion:
         assert len(mapas) >= 1
         mapa = mapas[0]
         assert any(v == "contra" for v in mapa.values())
+
+
+# ── parse_zona_captura ────────────────────────────────────────────────────────
+
+
+class TestParseZonaCaptura:
+    def test_area_norpatagonica(self):
+        texto = "La cuota aplica al Área Norpatagónica del Mar Argentino."
+        zonas = parse_zona_captura(texto)
+        assert any("Norpatag" in z for z in zonas)
+
+    def test_area_patagonica(self):
+        texto = "Captura autorizada en el Área Patagónica."
+        assert len(parse_zona_captura(texto)) >= 1
+
+    def test_subarea_fao(self):
+        texto = "pesca en subárea 41.3.1 del Atlántico Sudoccidental."
+        zonas = parse_zona_captura(texto)
+        assert any("41.3.1" in z for z in zonas)
+
+    def test_subarea_ccamlr(self):
+        texto = "operaciones en subárea 48.3 bajo el régimen CCAMLR."
+        zonas = parse_zona_captura(texto)
+        assert any("48.3" in z for z in zonas)
+
+    def test_zee_completa(self):
+        texto = "dentro de la Zona Económica Exclusiva Argentina."
+        assert len(parse_zona_captura(texto)) >= 1
+
+    def test_zeea_acronimo(self):
+        texto = "pesca dentro de la ZEEA conforme al permiso."
+        zonas = parse_zona_captura(texto)
+        assert any("ZEEA" in z.upper() for z in zonas)
+
+    def test_plataforma_continental(self):
+        texto = "recurso distribuido en la plataforma continental."
+        assert len(parse_zona_captura(texto)) >= 1
+
+    def test_paralelo_latitud(self):
+        texto = "al sur del paralelo 41°S hasta el paralelo 55°S."
+        zonas = parse_zona_captura(texto)
+        assert len(zonas) >= 1
+        assert any("41" in z for z in zonas)
+
+    def test_aguas_de_provincia(self):
+        texto = "pesca artesanal en aguas de Chubut."
+        zonas = parse_zona_captura(texto)
+        assert any("Chubut" in z for z in zonas)
+
+    def test_multiples_zonas(self):
+        texto = "La cuota rige para el Área Norpatagónica y la plataforma continental."
+        zonas = parse_zona_captura(texto)
+        assert len(zonas) >= 2
+
+    def test_deduplica(self):
+        texto = "Área Norpatagónica y nuevamente Área Norpatagónica."
+        zonas = parse_zona_captura(texto)
+        norpat = [z for z in zonas if "Norpatag" in z]
+        assert len(norpat) == 1
+
+    def test_sin_zona(self):
+        texto = "se aprueba por unanimidad la cuota de merluza para 2025."
+        assert parse_zona_captura(texto) == []
+
+    def test_texto_vacio(self):
+        assert parse_zona_captura("") == []
+
+    def test_texto_none(self):
+        assert parse_zona_captura(None) == []  # type: ignore[arg-type]
+
+    def test_campo_por_defecto(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.zona_captura == []
+
+    def test_parse_decisions_popula_zona(self):
+        texto = (
+            "1. MERLUZA HUBBSI\n"
+            "Pesca en el Área Norpatagónica conforme al Informe INIDEP N° 36/2024.\n"
+            "Se decide por unanimidad fijar 350.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        zonas = [z for d in decisions for z in d.zona_captura]
+        assert any("Norpatag" in z for z in zonas)
