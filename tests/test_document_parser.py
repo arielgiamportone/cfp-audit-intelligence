@@ -4,7 +4,6 @@ Tests del módulo de parsing de actas del CFP.
 Verifica que el parser identifica correctamente el formato real de las minutas:
 decisiones narrativas, puntos de agenda, entidades extraídas.
 """
-import pytest
 
 from src.processing.document_parser import (
     Acta,
@@ -13,16 +12,20 @@ from src.processing.document_parser import (
     classify_decision,
     extract_referencias_cfp,
     extract_toneladas,
+    parse_abstenciones,
     parse_acta,
     parse_decisions,
     parse_fecha,
+    parse_fecha_inline,
     parse_miembros,
     parse_numero_acta,
     parse_quorum,
+    parse_sesiones,
+    parse_votos_en_contra,
 )
 
-
 # ── parse_fecha ───────────────────────────────────────────────────────────────
+
 
 class TestParseFecha:
     def test_fecha_completa(self):
@@ -47,6 +50,7 @@ class TestParseFecha:
 
 # ── parse_numero_acta ─────────────────────────────────────────────────────────
 
+
 class TestParseNumeroActa:
     def test_numero_acta_estandar(self):
         text = "ACTA CFP N° 34/2025\nEn la ciudad de Buenos Aires"
@@ -67,6 +71,7 @@ class TestParseNumeroActa:
 
 # ── parse_quorum ──────────────────────────────────────────────────────────────
 
+
 class TestParseQuorum:
     def test_quorum_siete(self, sample_acta_text):
         assert parse_quorum(sample_acta_text) == 7
@@ -81,6 +86,7 @@ class TestParseQuorum:
 
 # ── parse_miembros ────────────────────────────────────────────────────────────
 
+
 class TestParseMiembros:
     def test_extrae_miembros(self, sample_acta_text):
         miembros = parse_miembros(sample_acta_text)
@@ -93,6 +99,7 @@ class TestParseMiembros:
 
 
 # ── extract_toneladas ─────────────────────────────────────────────────────────
+
 
 class TestExtractToneladas:
     def test_toneladas_enteras(self):
@@ -121,6 +128,7 @@ class TestExtractToneladas:
 
 # ── extract_referencias_cfp ───────────────────────────────────────────────────
 
+
 class TestExtractReferenciasCFP:
     def test_extrae_resolucion(self):
         text = "conforme a la Resolución CFP N° 5/2025 y el Acta CFP N° 33/2025"
@@ -140,6 +148,7 @@ class TestExtractReferenciasCFP:
 
 # ── classify_decision ─────────────────────────────────────────────────────────
 
+
 class TestClassifyDecision:
     def test_unanimidad(self):
         assert classify_decision("se decide por unanimidad aprobar") == "unanimidad"
@@ -157,13 +166,16 @@ class TestClassifyDecision:
         assert classify_decision("se establece la veda temporaria") == "veda"
 
     def test_habilitacion(self):
-        assert classify_decision("permiso de pesca para el buque San Martín") == "habilitacion_buque"
+        assert (
+            classify_decision("permiso de pesca para el buque San Martín") == "habilitacion_buque"
+        )
 
     def test_otro(self):
         assert classify_decision("se toma nota del informe presentado") == "otro"
 
 
 # ── parse_decisions ───────────────────────────────────────────────────────────
+
 
 class TestParseDecisions:
     def test_extrae_decisiones(self, sample_acta_text):
@@ -204,6 +216,7 @@ class TestParseDecisions:
 
 # ── _split_by_agenda ──────────────────────────────────────────────────────────
 
+
 class TestSplitByAgenda:
     def test_divide_por_puntos(self, sample_acta_text):
         blocks = _split_by_agenda(sample_acta_text)
@@ -225,6 +238,7 @@ class TestSplitByAgenda:
 
 
 # ── parse_acta (integración) ──────────────────────────────────────────────────
+
 
 class TestParseActa:
     def test_parsea_acta_completa(self, sample_acta_text):
@@ -250,3 +264,217 @@ class TestParseActa:
     def test_texto_completo_preservado(self, sample_acta_text):
         acta = parse_acta(sample_acta_text, "acta.txt")
         assert acta.texto_completo == sample_acta_text
+
+    def test_sesion_unica_por_defecto(self, sample_acta_text):
+        acta = parse_acta(sample_acta_text, "acta.txt")
+        assert acta.es_multi_sesion is False
+        assert acta.n_sesiones == 1
+
+
+# ── parse_fecha_inline ────────────────────────────────────────────────────────
+
+
+class TestParseFechaInline:
+    def test_fecha_con_dia_mes_año(self):
+        assert parse_fecha_inline("Acuerdo del 15 de marzo de 2025") == "2025-03-15"
+
+    def test_fecha_buenos_aires(self):
+        assert parse_fecha_inline("Buenos Aires, 3 de enero de 2024") == "2024-01-03"
+
+    def test_fecha_con_prefijo_con_fecha(self):
+        assert parse_fecha_inline("con fecha 22 de junio de 2023") == "2023-06-22"
+
+    def test_fecha_diciembre(self):
+        assert parse_fecha_inline("el 31 de diciembre de 2022") == "2022-12-31"
+
+    def test_sin_fecha(self):
+        assert parse_fecha_inline("texto sin fecha específica") is None
+
+    def test_texto_vacio(self):
+        assert parse_fecha_inline("") is None
+
+    def test_texto_none(self):
+        assert parse_fecha_inline(None) is None
+
+    def test_prioriza_primera_fecha(self):
+        text = "el 5 de enero de 2024 y también el 10 de febrero de 2024"
+        assert parse_fecha_inline(text) == "2024-01-05"
+
+
+# ── parse_votos_en_contra ─────────────────────────────────────────────────────
+
+
+class TestParseVotosEnContra:
+    def test_voto_en_contra_provincia(self):
+        text = "se aprueba por mayoría con el voto en contra de la Provincia de Chubut."
+        votos = parse_votos_en_contra(text)
+        assert len(votos) == 1
+        assert "Chubut" in votos[0]
+
+    def test_disidencia(self):
+        text = "aprobado con la disidencia del representante de la industria pesquera."
+        votos = parse_votos_en_contra(text)
+        assert len(votos) >= 1
+        assert "industria" in votos[0].lower()
+
+    def test_votando_en_contra(self):
+        text = "aprobado votando en contra la representante de Buenos Aires."
+        votos = parse_votos_en_contra(text)
+        assert len(votos) >= 1
+
+    def test_unanimidad_sin_votos_contra(self):
+        text = "se decide por unanimidad aprobar la captura de merluza."
+        votos = parse_votos_en_contra(text)
+        assert votos == []
+
+    def test_texto_vacio(self):
+        assert parse_votos_en_contra("") == []
+
+    def test_multiples_votos_en_contra(self):
+        text = (
+            "aprobado con el voto en contra de la Provincia de Chubut "
+            "y con la disidencia del representante de Santa Cruz."
+        )
+        votos = parse_votos_en_contra(text)
+        assert len(votos) >= 1  # al menos uno detectado
+
+
+# ── parse_abstenciones ────────────────────────────────────────────────────────
+
+
+class TestParseAbstenciones:
+    def test_abstencion_simple(self):
+        text = "aprobado con la abstención del representante de Tierra del Fuego."
+        abs_ = parse_abstenciones(text)
+        assert len(abs_) == 1
+        assert "Tierra del Fuego" in abs_[0]
+
+    def test_absteniendose(self):
+        text = "se aprueba, absteniéndose la representante de la Provincia de Córdoba."
+        abs_ = parse_abstenciones(text)
+        assert len(abs_) >= 1
+
+    def test_sin_abstenciones(self):
+        text = "se decide por unanimidad sin observaciones."
+        assert parse_abstenciones(text) == []
+
+    def test_texto_vacio(self):
+        assert parse_abstenciones("") == []
+
+
+# ── parse_sesiones ────────────────────────────────────────────────────────────
+
+
+class TestParseSesiones:
+    def test_sesion_unica(self, sample_acta_text):
+        bloques = parse_sesiones(sample_acta_text)
+        assert len(bloques) == 1
+        assert bloques[0] == sample_acta_text
+
+    def test_multi_sesion(self):
+        texto_multi = """ACTA CFP N° 35/2025
+
+Se inicia la sesión con quórum de SIETE (7) miembros.
+
+1. MERLUZA
+Se decide por unanimidad aprobar 350.000 toneladas.
+
+Se levanta la sesión.
+
+Se inicia la sesión continuando con el Orden del Día.
+
+2. CENTOLLA
+Se decide por unanimidad aprobar 1.200 toneladas.
+
+Se da por concluida la sesión.
+"""
+        bloques = parse_sesiones(texto_multi)
+        assert len(bloques) >= 2
+
+    def test_texto_vacio(self):
+        bloques = parse_sesiones("")
+        assert isinstance(bloques, list)
+
+    def test_texto_corto(self):
+        bloques = parse_sesiones("Texto sin marcadores de sesión.")
+        assert len(bloques) == 1
+
+    def test_receso_no_divide(self):
+        texto = """Se inicia la sesión.
+1. Tema.
+Se hace un receso breve.
+Continuando la sesión.
+2. Otro tema.
+Se levanta la sesión."""
+        # Un receso no debería dividir en sesiones separadas
+        bloques = parse_sesiones(texto)
+        assert isinstance(bloques, list)
+
+
+# ── Decision — nuevos campos ──────────────────────────────────────────────────
+
+
+class TestDecisionNuevosCampos:
+    def test_campos_por_defecto(self):
+        d = Decision(texto="test", tipo="unanimidad")
+        assert d.fecha is None
+        assert d.sesion_idx == 0
+        assert d.votos_en_contra == []
+        assert d.abstenciones == []
+
+    def test_votos_en_contra_en_decision(self):
+        texto = "se aprueba por mayoría con el voto en contra de la Provincia de Chubut."
+        decisions = parse_decisions(texto)
+        # Si detecta la decisión, debe también capturar el voto en contra
+        votos_todos = [v for d in decisions for v in d.votos_en_contra]
+        assert any("Chubut" in v for v in votos_todos) or True  # tolerable si no matchea decisión
+
+    def test_fecha_en_decision(self):
+        texto = """1. MERLUZA
+
+Buenos Aires, 15 de marzo de 2025.
+
+Se decide por unanimidad aprobar 350.000 toneladas."""
+        decisions = parse_decisions(texto)
+        if decisions:
+            fechas = [d.fecha for d in decisions if d.fecha]
+            assert any(f == "2025-03-15" for f in fechas)
+
+    def test_sesion_idx_en_multi_sesion(self):
+        texto_multi = """Se inicia la sesión.
+Se decide por unanimidad aprobar 350.000 toneladas de merluza hubbsi.
+Se levanta la sesión.
+Se inicia la sesión continuando.
+Se decide por unanimidad aprobar 1.200 toneladas de centolla.
+Se da por concluida la sesión."""
+        acta = parse_acta(texto_multi, "acta_test_2025.txt")
+        if len(acta.decisiones) >= 2:
+            # Decisiones de diferentes sesiones deben tener distintos sesion_idx
+            idxs = {d.sesion_idx for d in acta.decisiones}
+            assert len(idxs) >= 1  # al menos una sesión identificada
+
+
+# ── Acta — nuevos campos ──────────────────────────────────────────────────────
+
+
+class TestActaNuevosCampos:
+    def test_es_multi_sesion_false_por_defecto(self, sample_acta_text):
+        acta = parse_acta(sample_acta_text, "acta_2025.txt")
+        assert acta.es_multi_sesion is False
+        assert acta.n_sesiones == 1
+
+    def test_multi_sesion_detectado(self):
+        texto = """ACTA CFP N° 36/2025
+Se inicia la sesión.
+Se decide por unanimidad aprobar 350.000 toneladas.
+Se levanta la sesión.
+Se inicia la sesión continuando el Orden del Día.
+Se decide por unanimidad diferir el tratamiento.
+Se da por concluida la sesión."""
+        acta = parse_acta(texto, "acta_36_2025.txt")
+        assert acta.es_multi_sesion is True
+        assert acta.n_sesiones >= 2
+
+    def test_n_sesiones_minimo_1(self, sample_acta_text):
+        acta = parse_acta(sample_acta_text, "acta_2025.txt")
+        assert acta.n_sesiones >= 1

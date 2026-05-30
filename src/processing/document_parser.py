@@ -18,10 +18,58 @@ from loguru import logger
 
 # ── Patrones regex ajustados al formato real del CFP ─────────────────────────
 
+_MESES_PAT = (
+    r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|"
+    r"septiembre|octubre|noviembre|diciembre"
+)
+
 RE_FECHA = re.compile(
     r"A los (\d{1,2}) días del mes de "
-    r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|"
-    r"septiembre|octubre|noviembre|diciembre) de (\d{4})",
+    rf"({_MESES_PAT}) de (\d{{4}})",
+    re.IGNORECASE,
+)
+
+# Fecha inline dentro del cuerpo de un punto (ej: "Buenos Aires, 15 de marzo de 2025")
+RE_FECHA_INLINE = re.compile(
+    rf"(?:Buenos Aires,?\s+)?(?:con fecha\s+|del día\s+|el día\s+|el\s+)?"
+    rf"(\d{{1,2}})\s+de\s+({_MESES_PAT})\s+de\s+(\d{{4}})",
+    re.IGNORECASE,
+)
+
+# Votos en contra — extrae quién votó contra
+RE_VOTO_CONTRA = re.compile(
+    r"(?:con el voto en contra|votando en contra|vot[oó] en contra|"
+    r"con la disidencia|en disidencia)\s+(?:de\s+(?:la?|los|las)\s+)?(.{5,120}?)(?=[,\.;\n]|\Z)",
+    re.IGNORECASE,
+)
+
+# Abstenciones
+RE_ABSTENCION = re.compile(
+    r"(?:con la abstenci[oó]n|abstenién?dose|se abstienen?)\s+(?:de\s+(?:la?|los|las)\s+)?(.{5,120}?)(?=[,\.;\n]|\Z)",
+    re.IGNORECASE,
+)
+
+# Inicio de sesión
+RE_INICIO_SESION = re.compile(
+    r"(?:se\s+inicia\s+la\s+sesi[oó]n|dando\s+inicio\s+a\s+la\s+sesi[oó]n|"
+    r"se\s+da\s+inicio\s+a\s+la\s+sesi[oó]n|se\s+retoma\s+la\s+sesi[oó]n|"
+    r"continuando\s+con\s+la\s+sesi[oó]n)",
+    re.IGNORECASE,
+)
+
+# Cierre de sesión
+RE_CIERRE_SESION = re.compile(
+    r"(?:se\s+levanta\s+la\s+sesi[oó]n|se\s+da\s+por\s+concluida|"
+    r"sin\s+m[aá]s\s+temas?\s+(?:que\s+)?tratar|"
+    r"se\s+da\s+por\s+finalizada\s+la\s+sesi[oó]n|"
+    r"se\s+cierra\s+la\s+sesi[oó]n)",
+    re.IGNORECASE,
+)
+
+# Receso dentro de la sesión
+RE_RECESO = re.compile(
+    r"(?:se\s+hace?\s+un?\s+receso|se\s+suspende\s+(?:brevemente|la\s+sesi[oó]n)|"
+    r"cuarto\s+intermedio)",
     re.IGNORECASE,
 )
 
@@ -94,11 +142,15 @@ class Decision:
     tipo: str  # unanimidad | mayoria | aprobacion | otro
     agenda_punto: str | None = None  # "1.1.3" etc.
     tema: str | None = None  # descripción del punto de agenda
+    fecha: str | None = None  # fecha específica de la resolución (ISO 8601)
+    sesion_idx: int = 0  # índice de sesión (0 = primera, >0 = multi-sesión)
     especies_mencionadas: list[str] = field(default_factory=list)
     empresas_mencionadas: list[str] = field(default_factory=list)
     toneladas: list[float] = field(default_factory=list)
     tiene_citc: bool = False
     referencias_res_cfp: list[str] = field(default_factory=list)
+    votos_en_contra: list[str] = field(default_factory=list)  # quiénes votaron en contra
+    abstenciones: list[str] = field(default_factory=list)  # quiénes se abstuvieron
 
 
 @dataclass
@@ -114,6 +166,9 @@ class Acta:
     decisiones: list[Decision] = field(default_factory=list)
     # Alias para compatibilidad con el resto del sistema
     resoluciones: list[Decision] = field(default_factory=list)
+    # Multi-sesión
+    es_multi_sesion: bool = False
+    n_sesiones: int = 1
 
 
 def parse_fecha(text: str) -> str | None:
@@ -158,6 +213,82 @@ def parse_miembros(text: str) -> list[str]:
     return miembros[:15]
 
 
+def parse_fecha_inline(text: str) -> str | None:
+    """
+    Extrae fecha específica del cuerpo de una resolución.
+
+    Detecta formatos como "15 de marzo de 2025" o "Buenos Aires, 15 de marzo de 2025".
+    Retorna ISO 8601 (YYYY-MM-DD) o None.
+    """
+    m = RE_FECHA_INLINE.search(text or "")
+    if m:
+        day, month_name, year = m.groups()
+        month = MESES.get(month_name.lower())
+        if month:
+            return f"{year}-{month:02d}-{int(day):02d}"
+    return None
+
+
+def parse_votos_en_contra(text: str) -> list[str]:
+    """
+    Extrae las representaciones o nombres que votaron en contra.
+
+    Detecta: "con el voto en contra de la Provincia de Chubut",
+    "con la disidencia del representante de la industria", etc.
+    """
+    resultados = []
+    for m in RE_VOTO_CONTRA.finditer(text or ""):
+        frag = m.group(1).strip().rstrip(".,;")
+        if 3 < len(frag) < 120:
+            resultados.append(frag)
+    return resultados
+
+
+def parse_abstenciones(text: str) -> list[str]:
+    """Extrae abstenciones nombradas en el texto de una decisión."""
+    resultados = []
+    for m in RE_ABSTENCION.finditer(text or ""):
+        frag = m.group(1).strip().rstrip(".,;")
+        if 3 < len(frag) < 120:
+            resultados.append(frag)
+    return resultados
+
+
+def parse_sesiones(text: str) -> list[str]:
+    """
+    Divide el texto de un acta en bloques por sesión.
+
+    Detecta marcadores de inicio/cierre de sesión para identificar plenarios
+    que se extienden a múltiples jornadas o incluyen sesiones extraordinarias.
+    Retorna lista de bloques de texto, uno por sesión.
+    """
+    # Buscar posiciones de inicio y cierre de sesión
+    inicios = [m.start() for m in RE_INICIO_SESION.finditer(text)]
+    cierres = [m.start() for m in RE_CIERRE_SESION.finditer(text)]
+
+    if len(inicios) <= 1 and len(cierres) <= 1:
+        return [text]  # Sesión única
+
+    # Construir bloques entre inicio y cierre
+    puntos_corte = sorted(set(inicios + cierres))
+    if not puntos_corte:
+        return [text]
+
+    bloques = []
+    prev = 0
+    for corte in puntos_corte[1:]:
+        bloque = text[prev:corte].strip()
+        if len(bloque) > 100:
+            bloques.append(bloque)
+        prev = corte
+    # Último bloque
+    ultimo = text[prev:].strip()
+    if len(ultimo) > 100:
+        bloques.append(ultimo)
+
+    return bloques if bloques else [text]
+
+
 def classify_decision(texto: str) -> str:
     """Clasifica el tipo de decisión."""
     tl = texto.lower()
@@ -195,23 +326,30 @@ def extract_toneladas(texto: str) -> list[float]:
     return result
 
 
-def parse_decisions(text: str) -> list[Decision]:
-    """Extrae todas las decisiones del texto de un acta."""
+def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
+    """Extrae todas las decisiones del texto de un acta (o bloque de sesión)."""
     decisions = []
 
     # Estrategia 1: buscar patrones "se decide por unanimidad"
     for m in RE_DECISION.finditer(text):
+        # Incluir contexto previo (200 chars) para capturar fecha y votos
+        ctx_start = max(0, m.start() - 200)
+        ctx = text[ctx_start : m.end()]
         texto = m.group(1).strip()[:800]
         especies = list({x.lower() for x in RE_ESPECIE.findall(texto)})
         empresas = list({e.strip() for e in RE_EMPRESA.findall(texto)})
         d = Decision(
             texto=texto,
             tipo="unanimidad",
+            fecha=parse_fecha_inline(ctx),
+            sesion_idx=sesion_idx,
             especies_mencionadas=especies,
             empresas_mencionadas=empresas,
             toneladas=extract_toneladas(texto),
             tiene_citc=bool(RE_CITC.search(texto)),
             referencias_res_cfp=extract_referencias_cfp(texto),
+            votos_en_contra=parse_votos_en_contra(texto),
+            abstenciones=parse_abstenciones(texto),
         )
         decisions.append(d)
 
@@ -223,7 +361,6 @@ def parse_decisions(text: str) -> list[Decision]:
             for kw in ["unanimidad", "aprueba", "acuerda", "resuelve", "autoriza", "instruye"]
         ):
             continue
-        # Extraer la parte de la decisión (después del contexto)
         decisiones_en_bloque = re.findall(
             r"se (?:decide|aprueba|acuerda|resuelve|autoriza|establece|instruye)"
             r"(?:\s+por unanimidad)?[,\s]*(.{10,600}?)(?=\n\n|\nA continuación|\Z)",
@@ -241,11 +378,15 @@ def parse_decisions(text: str) -> list[Decision]:
                 tipo=classify_decision(texto_dec),
                 agenda_punto=punto,
                 tema=tema[:150] if tema else None,
+                fecha=parse_fecha_inline(bloque),
+                sesion_idx=sesion_idx,
                 especies_mencionadas=especies,
                 empresas_mencionadas=empresas,
                 toneladas=extract_toneladas(bloque),
                 tiene_citc=bool(RE_CITC.search(bloque)),
                 referencias_res_cfp=extract_referencias_cfp(bloque),
+                votos_en_contra=parse_votos_en_contra(texto_dec),
+                abstenciones=parse_abstenciones(texto_dec),
             )
             decisions.append(d)
 
@@ -274,7 +415,17 @@ def parse_acta(text: str, filename: str) -> Acta:
     year_match = re.search(r"(\d{4})", filename)
     year = int(year_match.group(1)) if year_match else 0
 
-    decisiones = parse_decisions(text)
+    # Detectar multi-sesión antes de parsear decisiones
+    bloques_sesion = parse_sesiones(text)
+    inicios_count = len(RE_INICIO_SESION.findall(text))
+    cierres_count = len(RE_CIERRE_SESION.findall(text))
+    es_multi = len(bloques_sesion) > 1 or inicios_count > 1 or cierres_count > 1
+    n_sesiones = max(len(bloques_sesion), inicios_count if inicios_count > 1 else 1)
+
+    # Parsear decisiones por bloque de sesión para etiquetar sesion_idx
+    decisiones: list[Decision] = []
+    for idx, bloque in enumerate(bloques_sesion):
+        decisiones.extend(parse_decisions(bloque, sesion_idx=idx))
 
     acta = Acta(
         filename=filename,
@@ -286,6 +437,8 @@ def parse_acta(text: str, filename: str) -> Acta:
         miembros_presentes=parse_miembros(text),
         decisiones=decisiones,
         resoluciones=decisiones,  # alias para compatibilidad
+        es_multi_sesion=es_multi,
+        n_sesiones=n_sesiones,
     )
 
     return acta
