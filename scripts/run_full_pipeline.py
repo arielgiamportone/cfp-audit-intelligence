@@ -108,6 +108,27 @@ def step_knowledge_base(processed_dir: Path, kb_dir: Path) -> None:
     logger.success(f"Knowledge Base construida: {count:,} resoluciones indexadas")
 
 
+def step_inidep(db_path: Path, max_items: int | None = None, enrich_pdf: bool = False) -> None:
+    """Scrapea los ITOs de INIDEP Mar Abierto y los persiste en inidep_evaluaciones."""
+    from src.acquisition.inidep_scraper import INIDEPScraper, get_scrape_status
+
+    logger.info("=== ETAPA INIDEP: SCRAPING MAR ABIERTO (492 ITOs) ===")
+    scraper = INIDEPScraper(delay=1.5)
+
+    if enrich_pdf:
+        logger.info("Modo enrichment PDF activado (más lento, mayor cobertura CBA)")
+
+    n = scraper.scrape_and_save(str(db_path), max_items=max_items)
+    status = get_scrape_status(db_path)
+
+    logger.success(
+        f"INIDEP completado: {n} ITOs nuevos | "
+        f"Total en DB: {status['n_total']} | "
+        f"Con CBA: {status['n_con_cba']} | "
+        f"Especies: {len(status['especies_cubiertas'])}"
+    )
+
+
 def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
     import json
     import os
@@ -187,9 +208,14 @@ def main():
     parser = argparse.ArgumentParser(description="CFP Audit Intelligence Pipeline")
     parser.add_argument(
         "--step",
-        choices=["download", "process", "knowledge_base", "audit", "all"],
+        choices=["download", "process", "knowledge_base", "audit", "inidep", "all"],
         default="all",
         help="Etapa del pipeline a ejecutar",
+    )
+    parser.add_argument(
+        "--enrich-pdf",
+        action="store_true",
+        help="[--step inidep] Descargar PDFs para enriquecer CBA cuando no está en abstract",
     )
     parser.add_argument("--years", default="1998-2025", help="Rango de años (ej: 2020-2025)")
     parser.add_argument("--limit", type=int, default=0, help="Límite de documentos a procesar")
@@ -223,6 +249,12 @@ def main():
         step_knowledge_base(processed_dir, kb_dir)
     if "audit" in steps:
         step_audit(db_path, kb_dir, limit=args.limit)
+    if "inidep" in steps:
+        step_inidep(
+            db_path,
+            max_items=args.limit or None,
+            enrich_pdf=args.enrich_pdf,
+        )
 
     logger.success("Pipeline completado.")
 
