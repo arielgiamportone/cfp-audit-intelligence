@@ -104,6 +104,30 @@ RE_NUMERO_RESOLUCION = re.compile(
     re.IGNORECASE,
 )
 
+# Decisiones diferidas / postergadas
+RE_DIFERIDA = re.compile(
+    r"se\s+difiere?\s+(?:el\s+)?(?:tratamiento|consideraci[oó]n|an[aá]lisis)|"
+    r"se\s+posterga|"
+    r"queda\s+(?:en\s+suspenso|pendiente\s+de\s+tratamiento)|"
+    r"cuarto\s+intermedio|"
+    r"pasa\s+(?:al?\s+pr[oó]ximo|a\s+la\s+pr[oó]xima)\s+(?:orden|reuni[oó]n|sesi[oó]n)|"
+    r"no\s+se\s+trata\s+en\s+esta\s+sesi[oó]n|"
+    r"se\s+reserva\s+(?:su\s+)?tratamiento",
+    re.IGNORECASE,
+)
+
+# Decisiones denegadas / rechazadas
+RE_DENEGADA = re.compile(
+    r"no\s+se\s+hace\s+lugar|"
+    r"se\s+rechaza\b|"
+    r"se\s+deniega\b|"
+    r"no\s+prospera\b|"
+    r"se\s+desestima\b|"
+    r"no\s+se\s+(?:aprueba|autoriza|otorga)\b|"
+    r"se\s+niega\s+(?:el\s+)?(?:pedido|solicitud|permiso)",
+    re.IGNORECASE,
+)
+
 RE_ESPECIE = re.compile(
     r"\b(merluza(?:\s+(?:común|hubbsi|de cola|negra|austral))?|"
     r"langostino|calamar(?:\s+(?:illex|loligo))?|abadejo|polaca|"
@@ -159,6 +183,8 @@ class Decision:
     votos_en_contra: list[str] = field(default_factory=list)  # quiénes votaron en contra
     abstenciones: list[str] = field(default_factory=list)  # quiénes se abstuvieron
     numero_resolucion: str | None = None  # "15/2025" — resolución CFP que genera esta decisión
+    es_diferida: bool = False  # tratamiento postergado para próxima sesión
+    es_denegada: bool = False  # solicitud rechazada/no aprobada
 
 
 @dataclass
@@ -274,6 +300,16 @@ def parse_numero_resolucion(text: str) -> str | None:
     return m.group(1) if m else None
 
 
+def parse_es_diferida(text: str) -> bool:
+    """Indica si el punto fue postergado/diferido para otra sesión."""
+    return bool(RE_DIFERIDA.search(text or ""))
+
+
+def parse_es_denegada(text: str) -> bool:
+    """Indica si la solicitud fue rechazada o no aprobada."""
+    return bool(RE_DENEGADA.search(text or ""))
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -312,6 +348,10 @@ def parse_sesiones(text: str) -> list[str]:
 def classify_decision(texto: str) -> str:
     """Clasifica el tipo de decisión."""
     tl = texto.lower()
+    if RE_DENEGADA.search(texto):
+        return "denegada"
+    if RE_DIFERIDA.search(texto):
+        return "diferida"
     if "unanimidad" in tl:
         return "unanimidad"
     if "mayoría" in tl or "mayoria" in tl:
@@ -371,6 +411,8 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             votos_en_contra=parse_votos_en_contra(texto),
             abstenciones=parse_abstenciones(texto),
             numero_resolucion=parse_numero_resolucion(ctx),
+            es_diferida=parse_es_diferida(texto),
+            es_denegada=parse_es_denegada(texto),
         )
         decisions.append(d)
 
@@ -409,8 +451,38 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 votos_en_contra=parse_votos_en_contra(texto_dec),
                 abstenciones=parse_abstenciones(texto_dec),
                 numero_resolucion=parse_numero_resolucion(bloque),
+                es_diferida=parse_es_diferida(texto_dec),
+                es_denegada=parse_es_denegada(texto_dec),
             )
             decisions.append(d)
+
+    # Estrategia 3: puntos de agenda diferidos o denegados (no capturados aún)
+    for punto, tema, bloque in agenda_blocks:
+        if any(d.agenda_punto == punto for d in decisions):
+            continue  # ya capturado por estrategia 2
+        if not (RE_DIFERIDA.search(bloque) or RE_DENEGADA.search(bloque)):
+            continue
+        especies = list({x.lower() for x in RE_ESPECIE.findall(bloque)})
+        empresas = list({e.strip() for e in RE_EMPRESA.findall(bloque)})
+        d = Decision(
+            texto=bloque.strip()[:800],
+            tipo=classify_decision(bloque),
+            agenda_punto=punto,
+            tema=tema[:150] if tema else None,
+            fecha=parse_fecha_inline(bloque),
+            sesion_idx=sesion_idx,
+            especies_mencionadas=especies,
+            empresas_mencionadas=empresas,
+            toneladas=extract_toneladas(bloque),
+            tiene_citc=bool(RE_CITC.search(bloque)),
+            referencias_res_cfp=extract_referencias_cfp(bloque),
+            votos_en_contra=parse_votos_en_contra(bloque),
+            abstenciones=parse_abstenciones(bloque),
+            numero_resolucion=parse_numero_resolucion(bloque),
+            es_diferida=parse_es_diferida(bloque),
+            es_denegada=parse_es_denegada(bloque),
+        )
+        decisions.append(d)
 
     return decisions
 
