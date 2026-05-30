@@ -43,11 +43,38 @@ RE_VOTO_CONTRA = re.compile(
     re.IGNORECASE,
 )
 
+# Votos explícitamente a favor
+RE_VOTO_FAVOR = re.compile(
+    r"(?:con\s+(?:(?:el|la|los?|las?|un)\s+)?voto[s]?\s+(?:afirmativo[s]?|favorable[s]?)|"
+    r"votando\s+a\s+favor|vot[oó]\s+a\s+favor|"
+    r"a\s+favor(?:\s*:|\s+vot(?:aron|[oó]))\s*)"
+    r"(?:\s+de\s+(?:la?s?\s+)?)?(.{5,150}?)(?=[,\.;\n]|\Z)",
+    re.IGNORECASE,
+)
+
 # Abstenciones
 RE_ABSTENCION = re.compile(
     r"(?:con la abstenci[oó]n|abstenién?dose|se abstienen?)\s+(?:de\s+(?:la?|los|las)\s+)?(.{5,120}?)(?=[,\.;\n]|\Z)",
     re.IGNORECASE,
 )
+
+# Mapa de normalización: fragmento en minúsculas → nombre canónico de institución CFP
+_NORM_INSTITUCIONES: dict[str, str] = {
+    "buenos aires": "Prov. Buenos Aires",
+    "chubut": "Prov. Chubut",
+    "santa cruz": "Prov. Santa Cruz",
+    "río negro": "Prov. Río Negro",
+    "rio negro": "Prov. Río Negro",
+    "tierra del fuego": "Prov. Tierra del Fuego",
+    "secretaría de pesca": "Sec. Pesca (Nación)",
+    "secretaria de pesca": "Sec. Pesca (Nación)",
+    "subsecretaría de pesca": "Sec. Pesca (Nación)",
+    "subsecretaria de pesca": "Sec. Pesca (Nación)",
+    "poder ejecutivo nacional": "P.E.N.",
+    "inidep": "INIDEP",
+    "armada": "Armada Argentina",
+    "prefectura": "Prefectura Naval",
+}
 
 # Inicio de sesión
 RE_INICIO_SESION = re.compile(
@@ -195,8 +222,12 @@ class Decision:
     toneladas: list[float] = field(default_factory=list)
     tiene_citc: bool = False
     referencias_res_cfp: list[str] = field(default_factory=list)
+    votos_favor: list[str] = field(default_factory=list)  # quiénes votaron a favor (explícito)
     votos_en_contra: list[str] = field(default_factory=list)  # quiénes votaron en contra
     abstenciones: list[str] = field(default_factory=list)  # quiénes se abstuvieron
+    institucion_votos: dict[str, str] = field(
+        default_factory=dict
+    )  # institución → "favor"|"contra"|"abstencion"
     numero_resolucion: str | None = None  # "15/2025" — resolución CFP que genera esta decisión
     es_diferida: bool = False  # tratamiento postergado para próxima sesión
     es_denegada: bool = False  # solicitud rechazada/no aprobada
@@ -302,6 +333,45 @@ def parse_abstenciones(text: str) -> list[str]:
         if 3 < len(frag) < 120:
             resultados.append(frag)
     return resultados
+
+
+def parse_votos_favor(text: str) -> list[str]:
+    """Extrae votos explícitamente a favor mencionados en el texto de una decisión."""
+    resultados = []
+    for m in RE_VOTO_FAVOR.finditer(text or ""):
+        frag = m.group(1).strip().rstrip(".,;")
+        if 3 < len(frag) < 150:
+            resultados.append(frag)
+    return resultados
+
+
+def normalizar_institucion(texto: str) -> str:
+    """Normaliza un fragmento de texto al nombre canónico de institución CFP."""
+    tl = texto.lower().strip()
+    for key, canon in _NORM_INSTITUCIONES.items():
+        if key in tl:
+            return canon
+    return texto.strip().title()
+
+
+def build_institucion_votos(
+    votos_favor: list[str],
+    votos_contra: list[str],
+    abstenciones: list[str],
+) -> dict[str, str]:
+    """
+    Construye mapa institución → sentido de voto.
+
+    El orden de prioridad en caso de solapamiento: contra > abstencion > favor.
+    """
+    result: dict[str, str] = {}
+    for v in votos_favor:
+        result[normalizar_institucion(v)] = "favor"
+    for v in abstenciones:
+        result[normalizar_institucion(v)] = "abstencion"
+    for v in votos_contra:
+        result[normalizar_institucion(v)] = "contra"
+    return result
 
 
 def parse_numero_resolucion(text: str) -> str | None:
@@ -441,8 +511,14 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             toneladas=extract_toneladas(texto),
             tiene_citc=bool(RE_CITC.search(texto)),
             referencias_res_cfp=extract_referencias_cfp(texto),
+            votos_favor=parse_votos_favor(ctx),
             votos_en_contra=parse_votos_en_contra(texto),
             abstenciones=parse_abstenciones(texto),
+            institucion_votos=build_institucion_votos(
+                parse_votos_favor(ctx),
+                parse_votos_en_contra(texto),
+                parse_abstenciones(texto),
+            ),
             numero_resolucion=parse_numero_resolucion(ctx),
             es_diferida=parse_es_diferida(texto),
             es_denegada=parse_es_denegada(texto),
@@ -482,8 +558,14 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 toneladas=extract_toneladas(bloque),
                 tiene_citc=bool(RE_CITC.search(bloque)),
                 referencias_res_cfp=extract_referencias_cfp(bloque),
+                votos_favor=parse_votos_favor(bloque),
                 votos_en_contra=parse_votos_en_contra(texto_dec),
                 abstenciones=parse_abstenciones(texto_dec),
+                institucion_votos=build_institucion_votos(
+                    parse_votos_favor(bloque),
+                    parse_votos_en_contra(texto_dec),
+                    parse_abstenciones(texto_dec),
+                ),
                 numero_resolucion=parse_numero_resolucion(bloque),
                 es_diferida=parse_es_diferida(texto_dec),
                 es_denegada=parse_es_denegada(texto_dec),
@@ -511,8 +593,14 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             toneladas=extract_toneladas(bloque),
             tiene_citc=bool(RE_CITC.search(bloque)),
             referencias_res_cfp=extract_referencias_cfp(bloque),
+            votos_favor=parse_votos_favor(bloque),
             votos_en_contra=parse_votos_en_contra(bloque),
             abstenciones=parse_abstenciones(bloque),
+            institucion_votos=build_institucion_votos(
+                parse_votos_favor(bloque),
+                parse_votos_en_contra(bloque),
+                parse_abstenciones(bloque),
+            ),
             numero_resolucion=parse_numero_resolucion(bloque),
             es_diferida=parse_es_diferida(bloque),
             es_denegada=parse_es_denegada(bloque),

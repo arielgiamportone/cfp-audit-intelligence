@@ -9,9 +9,11 @@ from src.processing.document_parser import (
     Acta,
     Decision,
     _split_by_agenda,
+    build_institucion_votos,
     classify_decision,
     extract_referencias_cfp,
     extract_toneladas,
+    normalizar_institucion,
     parse_abstenciones,
     parse_acta,
     parse_decisions,
@@ -26,6 +28,7 @@ from src.processing.document_parser import (
     parse_quorum,
     parse_sesiones,
     parse_votos_en_contra,
+    parse_votos_favor,
 )
 
 # ── parse_fecha ───────────────────────────────────────────────────────────────
@@ -722,3 +725,114 @@ class TestParseFundamentoINIDEP:
         decisions = parse_decisions(texto)
         fundamentos = [f for d in decisions for f in d.fundamento_inidep]
         assert any("36/2024" in f for f in fundamentos)
+
+
+# ── parse_votos_favor / normalizar_institucion / build_institucion_votos ──────
+
+
+class TestVotosNominalesInstitucion:
+    # ── parse_votos_favor ─────────────────────────────────────────────────────
+
+    def test_voto_afirmativo(self):
+        texto = "con el voto afirmativo de la Provincia de Buenos Aires."
+        assert len(parse_votos_favor(texto)) == 1
+        assert "Buenos Aires" in parse_votos_favor(texto)[0]
+
+    def test_voto_favorable(self):
+        texto = "con votos favorables de Chubut y Santa Cruz."
+        assert len(parse_votos_favor(texto)) >= 1
+
+    def test_votando_a_favor(self):
+        texto = "votando a favor la Secretaría de Pesca de la Nación."
+        assert len(parse_votos_favor(texto)) == 1
+
+    def test_sin_voto_favor_explicito(self):
+        texto = "se decide por unanimidad fijar 350.000 toneladas."
+        assert parse_votos_favor(texto) == []
+
+    def test_texto_vacio(self):
+        assert parse_votos_favor("") == []
+
+    def test_texto_none(self):
+        assert parse_votos_favor(None) == []  # type: ignore[arg-type]
+
+    # ── normalizar_institucion ────────────────────────────────────────────────
+
+    def test_normaliza_provincia_buenos_aires(self):
+        assert normalizar_institucion("Provincia de Buenos Aires") == "Prov. Buenos Aires"
+
+    def test_normaliza_chubut(self):
+        assert normalizar_institucion("la Provincia del Chubut") == "Prov. Chubut"
+
+    def test_normaliza_tierra_del_fuego(self):
+        assert normalizar_institucion("Tierra del Fuego") == "Prov. Tierra del Fuego"
+
+    def test_normaliza_secretaria_pesca(self):
+        assert normalizar_institucion("Secretaría de Pesca") == "Sec. Pesca (Nación)"
+
+    def test_normaliza_subsecretaria(self):
+        assert (
+            normalizar_institucion("Subsecretaría de Pesca y Acuicultura") == "Sec. Pesca (Nación)"
+        )
+
+    def test_normaliza_inidep(self):
+        assert normalizar_institucion("el INIDEP") == "INIDEP"
+
+    def test_normaliza_armada(self):
+        assert normalizar_institucion("Armada Argentina") == "Armada Argentina"
+
+    def test_fallback_capitaliza(self):
+        resultado = normalizar_institucion("organismo desconocido")
+        assert resultado == "Organismo Desconocido"
+
+    # ── build_institucion_votos ───────────────────────────────────────────────
+
+    def test_build_basico(self):
+        mapa = build_institucion_votos(
+            votos_favor=["Provincia de Buenos Aires"],
+            votos_contra=["Provincia de Chubut"],
+            abstenciones=[],
+        )
+        assert mapa["Prov. Buenos Aires"] == "favor"
+        assert mapa["Prov. Chubut"] == "contra"
+
+    def test_contra_tiene_prioridad_sobre_favor(self):
+        mapa = build_institucion_votos(
+            votos_favor=["INIDEP"],
+            votos_contra=["INIDEP"],
+            abstenciones=[],
+        )
+        assert mapa["INIDEP"] == "contra"
+
+    def test_abstencion_sobreescribe_favor(self):
+        mapa = build_institucion_votos(
+            votos_favor=["Santa Cruz"],
+            votos_contra=[],
+            abstenciones=["Santa Cruz"],
+        )
+        assert mapa["Prov. Santa Cruz"] == "abstencion"
+
+    def test_vacio_retorna_dict_vacio(self):
+        assert build_institucion_votos([], [], {}) == {}  # type: ignore[arg-type]
+
+    # ── campos por defecto en Decision ───────────────────────────────────────
+
+    def test_campos_por_defecto(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.votos_favor == []
+        assert d.institucion_votos == {}
+
+    # ── integración: parse_decisions popula ambos campos ─────────────────────
+
+    def test_parse_decisions_popula_institucion_votos(self):
+        texto = (
+            "1. MERLUZA\n"
+            "Se aprueba por mayoría con el voto afirmativo de Buenos Aires y Santa Cruz "
+            "y con el voto en contra de la Provincia de Chubut.\n"
+            "Se decide aprobar 350.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        mapas = [d.institucion_votos for d in decisions if d.institucion_votos]
+        assert len(mapas) >= 1
+        mapa = mapas[0]
+        assert any(v == "contra" for v in mapa.values())
