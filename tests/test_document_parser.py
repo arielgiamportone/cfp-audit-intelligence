@@ -15,6 +15,8 @@ from src.processing.document_parser import (
     parse_abstenciones,
     parse_acta,
     parse_decisions,
+    parse_es_denegada,
+    parse_es_diferida,
     parse_fecha,
     parse_fecha_inline,
     parse_miembros,
@@ -530,3 +532,112 @@ class TestParseNumeroResolucion:
         numeros = [d.numero_resolucion for d in decisions if d.numero_resolucion]
         assert len(numeros) >= 1
         assert "12/2025" in numeros
+
+
+# ── parse_es_diferida / parse_es_denegada ─────────────────────────────────────
+
+
+class TestParseDiferidaDenegada:
+    # ── diferidas ──────────────────────────────────────────────────────────────
+
+    def test_se_difiere_tratamiento(self):
+        assert parse_es_diferida("se difiere el tratamiento del punto solicitado.") is True
+
+    def test_se_posterga(self):
+        assert (
+            parse_es_diferida("se posterga el análisis hasta contar con más información.") is True
+        )
+
+    def test_cuarto_intermedio(self):
+        assert parse_es_diferida("el punto pasa a cuarto intermedio.") is True
+
+    def test_pasa_proxima_sesion(self):
+        assert parse_es_diferida("pasa a la próxima sesión para su tratamiento.") is True
+
+    def test_no_diferida_en_texto_normal(self):
+        assert parse_es_diferida("se aprueba por unanimidad la cuota de merluza.") is False
+
+    def test_diferida_texto_vacio(self):
+        assert parse_es_diferida("") is False
+
+    def test_diferida_none(self):
+        assert parse_es_diferida(None) is False  # type: ignore[arg-type]
+
+    # ── denegadas ──────────────────────────────────────────────────────────────
+
+    def test_no_se_hace_lugar(self):
+        assert parse_es_denegada("no se hace lugar al pedido de ampliación de cuota.") is True
+
+    def test_se_rechaza(self):
+        assert parse_es_denegada("se rechaza la solicitud presentada por la empresa.") is True
+
+    def test_se_deniega(self):
+        assert parse_es_denegada("se deniega el permiso de pesca solicitado.") is True
+
+    def test_no_se_aprueba(self):
+        assert parse_es_denegada("no se aprueba el pedido por falta de documentación.") is True
+
+    def test_no_denegada_en_texto_normal(self):
+        assert parse_es_denegada("se decide por unanimidad aprobar 350.000 toneladas.") is False
+
+    def test_denegada_texto_vacio(self):
+        assert parse_es_denegada("") is False
+
+    # ── classify_decision con nuevos tipos ─────────────────────────────────────
+
+    def test_classify_diferida(self):
+        assert classify_decision("se difiere el tratamiento del punto.") == "diferida"
+
+    def test_classify_denegada(self):
+        assert classify_decision("no se hace lugar al pedido de captura adicional.") == "denegada"
+
+    def test_classify_denegada_precede_unanimidad(self):
+        # "denegada" tiene prioridad sobre "unanimidad" si ambos aparecen
+        assert classify_decision("no se hace lugar; la decisión fue unánime.") == "denegada"
+
+    # ── campos en Decision ────────────────────────────────────────────────────
+
+    def test_decision_campos_por_defecto(self):
+        d = Decision(texto="texto", tipo="otro")
+        assert d.es_diferida is False
+        assert d.es_denegada is False
+
+    # ── integración con parse_decisions (Estrategia 3) ───────────────────────
+
+    def test_parse_decisions_captura_punto_diferido(self):
+        texto = (
+            "1. MERLUZA SUR\n"
+            "Solicitud de ampliación de cuota.\n"
+            "Se difiere el tratamiento hasta la próxima sesión.\n\n"
+            "2. LANGOSTINO\n"
+            "Cuota para el año 2025.\n"
+            "Se decide por unanimidad fijar 220.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        diferidas = [d for d in decisions if d.es_diferida]
+        assert len(diferidas) >= 1
+        assert diferidas[0].agenda_punto == "1"
+
+    def test_parse_decisions_captura_punto_denegado(self):
+        texto = (
+            "1. CALAMAR ILLEX\n"
+            "Pedido de permiso especial de pesca.\n"
+            "No se hace lugar al pedido por exceder los límites biológicos.\n\n"
+            "2. POLACA\n"
+            "Cuota anual.\n"
+            "Se acuerda fijar 30.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        denegadas = [d for d in decisions if d.es_denegada]
+        assert len(denegadas) >= 1
+        assert denegadas[0].agenda_punto == "1"
+
+    def test_tipo_diferida_en_parse_decisions(self):
+        texto = (
+            "1. MERLUZA NEGRA\n"
+            "Análisis de cuota austral.\n"
+            "Se posterga el análisis hasta recibir el informe INIDEP.\n"
+        )
+        decisions = parse_decisions(texto)
+        tipos = [d.tipo for d in decisions]
+        assert "diferida" in tipos
