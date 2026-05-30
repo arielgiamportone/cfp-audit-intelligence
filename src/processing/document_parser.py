@@ -259,6 +259,10 @@ class Decision:
     es_denegada: bool = False  # solicitud rechazada/no aprobada
     fundamento_inidep: list[str] = field(default_factory=list)  # informes INIDEP citados
     zona_captura: list[str] = field(default_factory=list)  # zonas/áreas geográficas de pesca
+    periodo_vigencia_inicio: str | None = (
+        None  # inicio de vigencia ISO parcial: "YYYY", "YYYY-MM", "YYYY-MM-DD"
+    )
+    periodo_vigencia_fin: str | None = None  # fin de vigencia ISO parcial
 
 
 @dataclass
@@ -458,6 +462,80 @@ def parse_zona_captura(text: str) -> list[str]:
     return result
 
 
+def parse_periodo_vigencia(text: str) -> tuple[str | None, str | None]:
+    """
+    Extrae el período de vigencia de una decisión.
+
+    Retorna (inicio, fin) en formato ISO parcial: "YYYY", "YYYY-MM" o "YYYY-MM-DD".
+    El primer patrón que hace match gana; el resto se ignora para evitar conflictos.
+    """
+    if not text:
+        return None, None
+
+    # "temporada 2024/2025" o "período 2024-2025"
+    m = re.search(r"(?:temporada|per[ií]odo)\s+(\d{4})[-/](\d{4})", text, re.IGNORECASE)
+    if m:
+        return m.group(1), m.group(2)
+
+    # "para el año 2025" / "por el ejercicio 2025"
+    m = re.search(
+        r"(?:para|por|durante|en)\s+el\s+(?:año|per[ií]odo|ejercicio)\s+(\d{4})\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        anio = m.group(1)
+        return anio, anio
+
+    # "primer semestre de 2025"
+    m = re.search(r"primer\s+semestre\s+(?:del?\s+)?(\d{4})", text, re.IGNORECASE)
+    if m:
+        return f"{m.group(1)}-01", f"{m.group(1)}-06"
+
+    # "segundo semestre de 2025"
+    m = re.search(r"segundo\s+semestre\s+(?:del?\s+)?(\d{4})", text, re.IGNORECASE)
+    if m:
+        return f"{m.group(1)}-07", f"{m.group(1)}-12"
+
+    # "enero a junio de 2025" / "enero-junio 2025"
+    _m_pat = r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)"
+    m = re.search(
+        _m_pat + r"\s+(?:a|al?|hasta|-)\s+" + _m_pat + r"\s+(?:de\s+)?(\d{4})",
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        mes_ini = MESES.get(m.group(1).lower())
+        mes_fin = MESES.get(m.group(2).lower())
+        anio = m.group(3)
+        if mes_ini and mes_fin:
+            return f"{anio}-{mes_ini:02d}", f"{anio}-{mes_fin:02d}"
+
+    # "hasta el 31 de marzo de 2025"
+    m = re.search(
+        rf"(?:vigente\s+)?hasta\s+el\s+(\d{{1,2}})\s+de\s+({_MESES_PAT})\s+de\s+(\d{{4}})",
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        mes = MESES.get(m.group(2).lower())
+        if mes:
+            return None, f"{m.group(3)}-{mes:02d}-{int(m.group(1)):02d}"
+
+    # "a partir del 1 de enero de 2025"
+    m = re.search(
+        rf"a\s+partir\s+del?\s+(\d{{1,2}})°?\s+de\s+({_MESES_PAT})\s+de\s+(\d{{4}})",
+        text,
+        re.IGNORECASE,
+    )
+    if m:
+        mes = MESES.get(m.group(2).lower())
+        if mes:
+            return f"{m.group(3)}-{mes:02d}-{int(m.group(1)):02d}", None
+
+    return None, None
+
+
 def parse_sesiones(text: str) -> list[str]:
     """
     Divide el texto de un acta en bloques por sesión.
@@ -569,6 +647,8 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             es_denegada=parse_es_denegada(texto),
             fundamento_inidep=parse_fundamento_inidep(ctx),
             zona_captura=parse_zona_captura(ctx),
+            periodo_vigencia_inicio=parse_periodo_vigencia(ctx)[0],
+            periodo_vigencia_fin=parse_periodo_vigencia(ctx)[1],
         )
         decisions.append(d)
 
@@ -617,6 +697,8 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
                 es_denegada=parse_es_denegada(texto_dec),
                 fundamento_inidep=parse_fundamento_inidep(bloque),
                 zona_captura=parse_zona_captura(bloque),
+                periodo_vigencia_inicio=parse_periodo_vigencia(bloque)[0],
+                periodo_vigencia_fin=parse_periodo_vigencia(bloque)[1],
             )
             decisions.append(d)
 
@@ -653,6 +735,8 @@ def parse_decisions(text: str, sesion_idx: int = 0) -> list[Decision]:
             es_denegada=parse_es_denegada(bloque),
             fundamento_inidep=parse_fundamento_inidep(bloque),
             zona_captura=parse_zona_captura(bloque),
+            periodo_vigencia_inicio=parse_periodo_vigencia(bloque)[0],
+            periodo_vigencia_fin=parse_periodo_vigencia(bloque)[1],
         )
         decisions.append(d)
 

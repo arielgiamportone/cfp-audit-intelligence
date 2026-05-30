@@ -25,6 +25,7 @@ from src.processing.document_parser import (
     parse_miembros,
     parse_numero_acta,
     parse_numero_resolucion,
+    parse_periodo_vigencia,
     parse_quorum,
     parse_sesiones,
     parse_votos_en_contra,
@@ -920,3 +921,76 @@ class TestParseZonaCaptura:
         decisions = parse_decisions(texto)
         zonas = [z for d in decisions for z in d.zona_captura]
         assert any("Norpatag" in z for z in zonas)
+
+
+# ── parse_periodo_vigencia ────────────────────────────────────────────────────
+
+
+class TestParsePeriodoVigencia:
+    def test_para_el_año(self):
+        inicio, fin = parse_periodo_vigencia("cuota fijada para el año 2025.")
+        assert inicio == "2025"
+        assert fin == "2025"
+
+    def test_temporada(self):
+        inicio, fin = parse_periodo_vigencia("rige para la temporada 2024/2025.")
+        assert inicio == "2024"
+        assert fin == "2025"
+
+    def test_periodo_con_guion(self):
+        inicio, fin = parse_periodo_vigencia("período 2023-2024 de pesca.")
+        assert inicio == "2023"
+        assert fin == "2024"
+
+    def test_primer_semestre(self):
+        inicio, fin = parse_periodo_vigencia("para el primer semestre de 2025.")
+        assert inicio == "2025-01"
+        assert fin == "2025-06"
+
+    def test_segundo_semestre(self):
+        inicio, fin = parse_periodo_vigencia("cuota del segundo semestre de 2024.")
+        assert inicio == "2024-07"
+        assert fin == "2024-12"
+
+    def test_mes_a_mes(self):
+        inicio, fin = parse_periodo_vigencia(
+            "pesca habilitada para el período enero a junio de 2025."
+        )
+        assert inicio == "2025-01"
+        assert fin == "2025-06"
+
+    def test_hasta_fecha(self):
+        inicio, fin = parse_periodo_vigencia("vigente hasta el 31 de marzo de 2025.")
+        assert inicio is None
+        assert fin == "2025-03-31"
+
+    def test_a_partir_de(self):
+        inicio, fin = parse_periodo_vigencia("a partir del 1 de enero de 2025.")
+        assert inicio == "2025-01-01"
+        assert fin is None
+
+    def test_sin_periodo(self):
+        inicio, fin = parse_periodo_vigencia("se aprueba la cuota de merluza.")
+        assert inicio is None
+        assert fin is None
+
+    def test_texto_vacio(self):
+        assert parse_periodo_vigencia("") == (None, None)
+
+    def test_texto_none(self):
+        assert parse_periodo_vigencia(None) == (None, None)  # type: ignore[arg-type]
+
+    def test_campos_por_defecto(self):
+        d = Decision(texto="texto", tipo="unanimidad")
+        assert d.periodo_vigencia_inicio is None
+        assert d.periodo_vigencia_fin is None
+
+    def test_parse_decisions_popula_periodo(self):
+        texto = (
+            "1. MERLUZA\n"
+            "Cuota para el año 2025 en el Área Norpatagónica.\n"
+            "Se decide por unanimidad fijar 350.000 toneladas.\n"
+        )
+        decisions = parse_decisions(texto)
+        inicios = [d.periodo_vigencia_inicio for d in decisions if d.periodo_vigencia_inicio]
+        assert "2025" in inicios
