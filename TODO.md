@@ -1,6 +1,6 @@
 # CFP Audit Intelligence — Backlog y Roadmap
 
-> Estado: 2026-05-29 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `claude/cfp-fisheries-audit-project-lLMib`
+> Estado: 2026-05-30 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `main`
 
 ---
 
@@ -14,8 +14,8 @@
 - [x] Vector store ChromaDB con embeddings multilingües (`paraphrase-multilingual-MiniLM-L12-v2`)
 - [x] Motor de auditoría con Claude API + prompt caching
 - [x] Detector de patrones estadísticos (HHI concentración, votaciones, reversiones)
-- [x] Dashboard Streamlit multipágina (11 páginas activas)
-- [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit`)
+- [x] Dashboard Streamlit multipágina (12 páginas activas)
+- [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit|inidep`)
 - [x] Makefile con targets clave
 - [x] ADRs (001–004), CLAUDE.md, AGENTS.md
 
@@ -76,19 +76,23 @@
 - [x] Página `11_CONICET.py`: 3 tabs (por especie, búsqueda live, tabla completa)
 - [x] 40 tests en `test_conicet_scraper.py`
 
+### Scraping completo INIDEP Mar Abierto (Issue #9)
+- [x] Scraping de los 492 ITOs disponibles en marabierto.inidep.edu.ar (DSpace 7 REST API)
+- [x] 8 patrones `_CBA_PATTERNS` + `_parse_tn_value()` para formato argentino
+- [x] `get_scrape_status()` — estadísticas de cobertura desde DB
+- [x] Fix idempotencia NULL vs "" en zona (SQLite)
+- [x] `--step inidep` + `--enrich-pdf` en pipeline CLI
+- [x] 44 tests con fixtures HTTP mockeadas (sin llamadas reales)
+
 ### Tests y CI
-- [x] 350 tests totales, todos verdes
+- [x] 609 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ---
 
 ## 🔴 Prioridad Alta
 
-### [FEAT] Scraping completo INIDEP Mar Abierto (Issue #9)
-- [ ] Scraping de los 492 ITOs disponibles en marabierto.inidep.edu.ar
-- [ ] Extracción automática de valores CBA desde texto de ITOs
-- [ ] Enriquecer `inidep_evaluaciones` con series históricas por especie
-- [ ] Tests con fixtures HTTP mockeadas (no llamadas reales)
+*(sin tareas pendientes de alta prioridad — ver Prioridad Media)*
 
 ---
 
@@ -99,7 +103,7 @@
 - [ ] Detectar miembros que votaron en contra por nombre
 - [ ] Manejo de actas multi-sesión (plenarios largos)
 
-### [FEAT] Capturas reales SIPA/SAGPyA
+### [FEAT] Capturas reales SIPA/SAGPyA integradas
 - [ ] Validar cuotas CFP vs capturas efectivas por especie/año
 - [ ] Integrar en comparador para detectar sub-utilización de cuotas
 
@@ -121,7 +125,7 @@
 ## 📌 Decisiones Pendientes
 
 | Decisión | Opciones | Deadline |
-|----------|---------|---------|
+|----------|---------|----------|
 | ¿Dónde hospedar el dashboard? | Streamlit Cloud / HuggingFace Spaces / VPS | Sprint 4 |
 | ¿Publicar datos procesados? | Dataset abierto en Hugging Face / Zenodo | Sprint 4 |
 | ¿Framework de anotación NER? | Prodigy (pago) / Label Studio (libre) / Doccano | Sprint 4 |
