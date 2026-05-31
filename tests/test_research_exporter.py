@@ -435,3 +435,138 @@ class TestLinkedInFormatter(unittest.TestCase):
         r = self.fmt.generar_todos()
         for post in r["personal"]:
             self.assertLessEqual(len(post.render_corto(700)), 700)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# PatternExporter
+# ─────────────────────────────────────────────────────────────────────
+
+class TestPatternExporter(unittest.TestCase):
+    def setUp(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        self.det = MagicMock()
+        self.det.resolution_timeline.return_value = pd.DataFrame()
+        self.det.top_beneficiaries.return_value = pd.DataFrame()
+        self.det.hhi_concentration.return_value = {"hhi": 0, "interpretation": "sin datos", "empresas_analizadas": 0}
+        self.det.risk_evolution.return_value = pd.DataFrame()
+        self.det.reversals_detection.return_value = []
+        self.det.high_risk_resolutions.return_value = pd.DataFrame()
+        self.det.voting_patterns.return_value = {}
+        self.out = Path("/tmp/test_pattern_exporter")
+        self.pexp = PatternExporter(self.det, self.out)
+        self.plt = plt
+
+    def tearDown(self):
+        self.plt.close("all")
+
+    def test_figura_timeline_vacia_no_falla(self):
+        fig = self.pexp.figura_timeline_resoluciones(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_hhi_vacia_no_falla(self):
+        fig = self.pexp.figura_hhi(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_riesgo_vacia_no_falla(self):
+        fig = self.pexp.figura_riesgo_temporal(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_reversiones_vacias_no_falla(self):
+        fig = self.pexp.figura_reversiones(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_timeline_con_datos(self):
+        self.det.resolution_timeline.return_value = pd.DataFrame({
+            "year": [2020, 2020, 2021, 2021],
+            "tipo": ["cuota_captura", "veda", "cuota_captura", "veda"],
+            "cantidad": [5, 2, 7, 1],
+            "riesgo_promedio": [50.0, 60.0, 55.0, 70.0],
+        })
+        fig = self.pexp.figura_timeline_resoluciones(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_hhi_con_datos(self):
+        self.det.top_beneficiaries.return_value = pd.DataFrame({
+            "nombre": ["Empresa A", "Empresa B", "Empresa C"],
+            "menciones": [50, 30, 20],
+            "actas_distintas": [10, 8, 5],
+            "primer_anio": [2010, 2015, 2018],
+            "ultimo_anio": [2024, 2024, 2024],
+        })
+        self.det.hhi_concentration.return_value = {
+            "hhi": 3800.0,
+            "interpretation": "Alta concentración",
+            "empresas_analizadas": 3,
+        }
+        fig = self.pexp.figura_hhi(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_reversiones_con_datos(self):
+        self.det.reversals_detection.return_value = [
+            {"especie": "Merluza", "anio_veda": 2015, "anio_cuota_posterior": 2016, "alerta": "Revisar"}
+        ]
+        fig = self.pexp.figura_reversiones(save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_test_concentracion_sin_datos(self):
+        t = self.pexp.test_concentracion_hhi()
+        self.assertIsInstance(t, TestResult)
+        self.assertEqual(t.p_value, 1.0)
+
+    def test_test_concentracion_con_datos(self):
+        self.det.top_beneficiaries.return_value = pd.DataFrame({
+            "nombre": [f"Empresa {i}" for i in range(5)],
+            "menciones": [100, 10, 5, 3, 2],
+            "actas_distintas": [20, 5, 3, 2, 1],
+            "primer_anio": [2000]*5,
+            "ultimo_anio": [2024]*5,
+        })
+        self.det.hhi_concentration.return_value = {"hhi": 8200.0, "empresas_analizadas": 5}
+        t = self.pexp.test_concentracion_hhi()
+        self.assertIsInstance(t, TestResult)
+        self.assertIn("Chi", t.nombre)
+
+    def test_test_tendencia_riesgo_sin_datos(self):
+        t = self.pexp.test_tendencia_riesgo()
+        self.assertIsInstance(t, TestResult)
+        self.assertEqual(t.p_value, 1.0)
+
+    def test_test_tendencia_riesgo_con_datos(self):
+        self.det.risk_evolution.return_value = pd.DataFrame({
+            "year": [2018, 2019, 2020, 2021, 2022],
+            "riesgo_promedio": [40.0, 45.0, 55.0, 62.0, 70.0],
+            "riesgo_maximo": [70.0, 75.0, 80.0, 85.0, 90.0],
+            "resoluciones": [10, 12, 11, 13, 14],
+        })
+        t = self.pexp.test_tendencia_riesgo()
+        self.assertIsInstance(t, TestResult)
+        self.assertIn("Kendall", t.nombre)
+
+    def test_exportar_patrones_csv_crea_archivo(self):
+        path = self.pexp.exportar_patrones_csv()
+        self.assertIsInstance(path, Path)
+        self.assertTrue(path.parent.exists())
+
+    def test_exportar_latex_beneficiarios_sin_datos(self):
+        latex = self.pexp.exportar_latex_beneficiarios()
+        self.assertIsInstance(latex, str)
+        self.assertIn(r"\begin{table}", latex)
+
+    def test_exportar_latex_beneficiarios_con_datos(self):
+        self.det.top_beneficiaries.return_value = pd.DataFrame({
+            "nombre": ["Empresa A", "Empresa B"],
+            "menciones": [50, 30],
+            "actas_distintas": [10, 8],
+            "primer_anio": [2010, 2015],
+            "ultimo_anio": [2024, 2024],
+        })
+        latex = self.pexp.exportar_latex_beneficiarios(top_n=2)
+        self.assertIn("FisheriesAudit ALG", latex)
+        self.assertIn("Empresa A", latex)
+
+
+# necesario para importar PatternExporter en los tests
+from src.analysis.research_exporter import PatternExporter

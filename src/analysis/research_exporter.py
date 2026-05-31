@@ -624,3 +624,312 @@ class ResearchExporter:
         logger.info(f"Exportación completada en {self.out}")
         logger.info(f"Hallazgos generados: {len(hallazgos)}")
         return resultados
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PatternExporter — figuras y tests para PatternDetector (Entrega #02)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class PatternExporter:
+    """
+    Genera outputs científicos a partir del PatternDetector.
+
+    Uso:
+        from src.analysis.pattern_detector import PatternDetector
+        pd_det = PatternDetector(DB_PATH)
+        pexp = PatternExporter(pd_det, output_dir="outputs/FisheriesAudit_ALG")
+        pexp.figura_timeline_resoluciones()
+        pexp.figura_hhi()
+        pexp.figura_riesgo_temporal()
+    """
+
+    def __init__(self, detector, output_dir: str | Path = "outputs/FisheriesAudit_ALG") -> None:
+        self.det = detector
+        self.out = Path(output_dir)
+        (self.out / "figuras").mkdir(parents=True, exist_ok=True)
+        (self.out / "datos").mkdir(exist_ok=True)
+        (self.out / "tablas_latex").mkdir(exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # Figuras de patrones históricos
+    # ------------------------------------------------------------------
+
+    def figura_timeline_resoluciones(self, save: bool = True) -> plt.Figure:
+        """Serie temporal de resoluciones CFP por año y tipo (1998–2025)."""
+        df = self.det.resolution_timeline()
+
+        if df.empty:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.text(0.5, 0.5, "Sin datos de resoluciones procesadas.\nEjecutá el pipeline primero.",
+                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.set_title("Serie temporal de resoluciones CFP (sin datos)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "timeline_resoluciones.png")
+            return fig
+
+        pivot = df.pivot_table(index="year", columns="tipo", values="cantidad", aggfunc="sum").fillna(0)
+
+        fig, ax = plt.subplots(figsize=(12, 5))
+        colors = plt.cm.Set2(np.linspace(0, 1, len(pivot.columns)))
+
+        bottom = np.zeros(len(pivot))
+        for col, color in zip(pivot.columns, colors):
+            ax.bar(pivot.index, pivot[col], bottom=bottom, label=col, color=color, alpha=0.85)
+            bottom += pivot[col].values
+
+        ax.set_xlabel("Año")
+        ax.set_ylabel("Número de resoluciones")
+        ax.set_title("Resoluciones CFP por año y tipo (1998–2025)\nFuente: Actas Públicas CFP + FisheriesAudit ALG")
+        ax.legend(loc="upper left", fontsize=8, ncol=2)
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "timeline_resoluciones.png")
+            fig.savefig(self.out / "figuras" / "timeline_resoluciones.svg")
+        return fig
+
+    def figura_hhi(self, top_n: int = 15, save: bool = True) -> plt.Figure:
+        """Concentración de beneficiarios (HHI) — top empresas por menciones."""
+        df = self.det.top_beneficiaries(limit=top_n)
+
+        if df.empty:
+            fig, ax = plt.subplots(figsize=(9, 5))
+            ax.text(0.5, 0.5, "Sin datos de entidades.\nEjecutá el pipeline primero.",
+                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.set_title("Concentración de beneficiarios (sin datos)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "hhi_beneficiarios.png")
+            return fig
+
+        hhi_data = self.det.hhi_concentration()
+        hhi_val = hhi_data.get("hhi", 0)
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
+
+        # Barras horizontales — top empresas
+        df_plot = df.sort_values("menciones", ascending=True).tail(top_n)
+        ax1.barh(df_plot["nombre"], df_plot["menciones"], color=COLOR_CMP, alpha=0.8)
+        ax1.set_xlabel("Menciones en resoluciones CFP")
+        ax1.set_title(f"Top {top_n} actores por frecuencia en resoluciones")
+
+        # Gauge HHI
+        theta = np.linspace(0, np.pi, 200)
+        ax2.set_aspect("equal")
+        ax2.fill_between(np.cos(theta[:67]), np.sin(theta[:67]) * 0, np.sin(theta[:67]),
+                         color=COLOR_VERDE, alpha=0.3)
+        ax2.fill_between(np.cos(theta[67:134]), np.sin(theta[67:134]) * 0, np.sin(theta[67:134]),
+                         color=COLOR_AMARILLO, alpha=0.3)
+        ax2.fill_between(np.cos(theta[134:]), np.sin(theta[134:]) * 0, np.sin(theta[134:]),
+                         color=COLOR_CRITICO, alpha=0.3)
+
+        hhi_norm = min(hhi_val / 10000, 1.0)
+        needle_angle = np.pi * (1 - hhi_norm)
+        ax2.annotate("", xy=(np.cos(needle_angle) * 0.7, np.sin(needle_angle) * 0.7),
+                     xytext=(0, 0),
+                     arrowprops=dict(arrowstyle="->", color="black", lw=2.5))
+        ax2.text(0, -0.25, f"HHI = {hhi_val:.0f}", ha="center", fontsize=14, fontweight="bold")
+        ax2.text(-1, -0.4, "<1000\nBaja", ha="center", fontsize=8, color=COLOR_VERDE)
+        ax2.text(0, -0.5, "1000–2500\nModerada", ha="center", fontsize=8, color=COLOR_AMARILLO)
+        ax2.text(1, -0.4, ">2500\nAlta", ha="center", fontsize=8, color=COLOR_CRITICO)
+        ax2.set_xlim(-1.2, 1.2)
+        ax2.set_ylim(-0.6, 1.1)
+        ax2.axis("off")
+        ax2.set_title(f"Índice HHI de concentración\n{hhi_data.get('interpretation', '')}")
+
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "hhi_beneficiarios.png")
+            fig.savefig(self.out / "figuras" / "hhi_beneficiarios.svg")
+        return fig
+
+    def figura_riesgo_temporal(self, save: bool = True) -> plt.Figure:
+        """Evolución del score de riesgo promedio por año."""
+        df = self.det.risk_evolution()
+
+        if df.empty:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.text(0.5, 0.5, "Sin datos de riesgo.\nEjecutá el pipeline + auditoría IA primero.",
+                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.set_title("Riesgo temporal (sin datos)")
+            if save:
+                fig.savefig(self.out / "figuras" / "riesgo_temporal.png")
+            return fig
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.fill_between(df["year"], df["riesgo_promedio"], alpha=0.2, color=COLOR_ROJO)
+        ax.plot(df["year"], df["riesgo_promedio"], "o-", color=COLOR_ROJO,
+                lw=2, ms=5, label="Riesgo promedio")
+        ax.plot(df["year"], df["riesgo_maximo"], "--", color=COLOR_CRITICO,
+                lw=1, alpha=0.6, label="Riesgo máximo")
+
+        ax.axhline(70, color=COLOR_AMARILLO, lw=0.8, ls=":", label="Umbral alto (70)")
+        ax.set_xlabel("Año")
+        ax.set_ylabel("Score de riesgo (0–100)")
+        ax.set_title("Evolución del riesgo en resoluciones CFP (1998–2025)\nAnálisis IA — FisheriesAudit ALG")
+        ax.legend()
+        ax.set_ylim(0, 105)
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "riesgo_temporal.png")
+            fig.savefig(self.out / "figuras" / "riesgo_temporal.svg")
+        return fig
+
+    def figura_reversiones(self, save: bool = True) -> plt.Figure:
+        """Visualiza reversiones de veda detectadas (veda → cuota en <2 años)."""
+        reversiones = self.det.reversals_detection()
+
+        fig, ax = plt.subplots(figsize=(10, max(3, len(reversiones) * 0.6 + 2)))
+
+        if not reversiones:
+            ax.text(0.5, 0.5,
+                    "Sin reversiones detectadas en los datos disponibles.\n"
+                    "Con el corpus completo (400+ actas) este análisis\nmuestra patrones de veda→cuota.",
+                    ha="center", va="center", transform=ax.transAxes, fontsize=10, color="gray")
+            ax.set_title("Detección de reversiones de veda (sin datos suficientes)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "reversiones_veda.png")
+            return fig
+
+        especies = [r["especie"] for r in reversiones]
+        anios_veda = [r["anio_veda"] for r in reversiones]
+        anios_cuota = [r["anio_cuota_posterior"] for r in reversiones]
+        delta = [c - v for v, c in zip(anios_veda, anios_cuota)]
+
+        y_pos = range(len(reversiones))
+        ax.barh(y_pos, delta, left=anios_veda, color=COLOR_AMARILLO, alpha=0.7, label="Período veda→cuota")
+        ax.scatter(anios_veda, y_pos, color=COLOR_ROJO, zorder=3, s=60, label="Año veda")
+        ax.scatter(anios_cuota, y_pos, color=COLOR_VERDE, zorder=3, s=60, marker="D", label="Año cuota posterior")
+
+        ax.set_yticks(list(y_pos))
+        ax.set_yticklabels(especies)
+        ax.set_xlabel("Año")
+        ax.set_title(f"Reversiones veda → cuota detectadas ({len(reversiones)} casos)\nFisheriesAudit ALG")
+        ax.legend(loc="lower right")
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "reversiones_veda.png")
+            fig.savefig(self.out / "figuras" / "reversiones_veda.svg")
+        return fig
+
+    # ------------------------------------------------------------------
+    # Tests estadísticos de concentración
+    # ------------------------------------------------------------------
+
+    def test_concentracion_hhi(self) -> TestResult:
+        """Evalúa si la concentración HHI supera el umbral de preocupación (2500)."""
+        hhi_data = self.det.hhi_concentration()
+        hhi = hhi_data.get("hhi", 0)
+        n = hhi_data.get("empresas_analizadas", 0)
+        if n < 2:
+            return TestResult("HHI umbral", hhi, 1.0, "Datos insuficientes", n)
+
+        # Comparar distribución de menciones contra distribución uniforme (chi-squared)
+        df = self.det.top_beneficiaries(limit=100)
+        if df.empty or len(df) < 2:
+            return TestResult("HHI umbral", hhi, 1.0, "Datos insuficientes", 0)
+
+        observed = df["menciones"].values
+        expected = np.full_like(observed, observed.mean(), dtype=float)
+        stat, p = stats.chisquare(observed, expected)
+        interp = (
+            f"Distribución de menciones significativamente concentrada (HHI={hhi:.0f})"
+            if p < 0.05
+            else f"Sin concentración estadísticamente significativa (HHI={hhi:.0f})"
+        )
+        return TestResult("Chi-cuadrado concentración beneficiarios", stat, p, interp, len(df))
+
+    def test_tendencia_riesgo(self) -> TestResult:
+        """Kendall tau: ¿el riesgo de las resoluciones aumenta con el tiempo?"""
+        df = self.det.risk_evolution()
+        if len(df) < 4:
+            return TestResult("Kendall tau riesgo temporal", float("nan"), 1.0, "Datos insuficientes", len(df))
+        tau, p = stats.kendalltau(df["year"], df["riesgo_promedio"])
+        direccion = "creciente" if tau > 0 else "decreciente"
+        interp = (
+            f"Riesgo {direccion} a lo largo del tiempo (τ={tau:.3f})"
+            if p < 0.05
+            else f"Sin tendencia temporal en riesgo (τ={tau:.3f})"
+        )
+        return TestResult("Kendall tau riesgo temporal", tau, p, interp, len(df))
+
+    def exportar_patrones_csv(self) -> Path:
+        """Exporta CSV con datos de patrones históricos."""
+        frames = {}
+        try:
+            frames["timeline"] = self.det.resolution_timeline()
+        except Exception:
+            frames["timeline"] = pd.DataFrame()
+        try:
+            frames["beneficiarios"] = self.det.top_beneficiaries(100)
+        except Exception:
+            frames["beneficiarios"] = pd.DataFrame()
+        try:
+            frames["riesgo"] = self.det.risk_evolution()
+        except Exception:
+            frames["riesgo"] = pd.DataFrame()
+
+        out_path = self.out / "datos" / "patrones_historicos.csv"
+        # Guardar la más completa como CSV principal
+        for name, df in frames.items():
+            if not df.empty:
+                df["tabla_origen"] = name
+                df["serie"] = SERIES_NAME
+                df.to_csv(out_path, index=False, encoding="utf-8-sig")
+                logger.info(f"CSV patrones guardado: {out_path} ({len(df)} filas de '{name}')")
+                break
+        else:
+            pd.DataFrame().to_csv(out_path, index=False)
+
+        return out_path
+
+    def exportar_latex_beneficiarios(self, top_n: int = 10) -> str:
+        """Tabla LaTeX de top beneficiarios."""
+        df = self.det.top_beneficiaries(limit=top_n)
+        if df.empty:
+            return r"\begin{table}[ht]\centering\caption{Sin datos}\end{table}"
+
+        cols_map = {
+            "nombre": "Empresa / Actor",
+            "menciones": "Menciones",
+            "actas_distintas": "Actas",
+            "primer_anio": "Desde",
+            "ultimo_anio": "Hasta",
+        }
+        df_l = df[[c for c in cols_map if c in df.columns]].rename(columns=cols_map)
+
+        rows = []
+        for _, row in df_l.iterrows():
+            rows.append(" & ".join(str(v) for v in row) + r" \\")
+
+        header = " & ".join(df_l.columns) + r" \\"
+        latex = textwrap.dedent(
+            rf"""
+            \begin{{table}}[ht]
+            \centering
+            \caption{{Top {top_n} actores más frecuentes en resoluciones CFP (1998–2025). Fuente: {SERIES_NAME}.}}
+            \label{{tab:top_beneficiarios}}
+            \begin{{tabular}}{{{'l' + 'r' * (len(df_l.columns) - 1)}}}
+            \hline
+            {header}
+            \hline
+            {chr(10).join(rows)}
+            \hline
+            \end{{tabular}}
+            \end{{table}}
+            """
+        ).strip()
+
+        out_path = self.out / "tablas_latex" / "tabla_beneficiarios.tex"
+        out_path.write_text(latex, encoding="utf-8")
+        return latex
