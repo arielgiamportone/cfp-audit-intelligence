@@ -1387,3 +1387,605 @@ class GraphExporter:
         out_path.write_text(latex, encoding="utf-8")
         logger.info(f"LaTeX HHI especies guardado: {out_path}")
         return latex
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FAOExporter — figuras y tests para FAOFIRMSScraper (Entrega #04)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Colores estándar FAO para estado de stocks
+COLOR_FULLY_EXPLOITED = "#4CAF50"   # verde — plena explotación (dentro de límites)
+COLOR_MODERATELY = "#FFC107"        # amarillo — explotación moderada
+COLOR_OVER_EXPLOITED = "#E53935"    # rojo — sobrexplotado
+COLOR_DEPLETED = "#B71C1C"          # rojo oscuro — agotado
+COLOR_UNKNOWN = "#9E9E9E"           # gris — sin evaluación
+
+
+def _fao_status_color(codigo: str) -> str:
+    """Retorna el color hex para un código de estado FAO FIRMS."""
+    mapa = {
+        "F": COLOR_FULLY_EXPLOITED,
+        "O": COLOR_OVER_EXPLOITED,
+        "U": COLOR_MODERATELY,
+        "R": COLOR_MODERATELY,
+        "D": COLOR_DEPLETED,
+    }
+    return mapa.get(str(codigo).upper(), COLOR_UNKNOWN)
+
+
+class FAOExporter:
+    """
+    Genera outputs científicos a partir del FAOFIRMSScraper.
+
+    Visualiza el contexto internacional de las capturas argentinas en el Área
+    FAO 41 (Atlántico Sudoccidental) y el estado de los stocks según FAO FIRMS.
+
+    Uso:
+        from src.acquisition.fao_firms_scraper import FAOFIRMSScraper
+        scraper = FAOFIRMSScraper(DB_PATH)
+        scraper.seed_data()
+        fexp = FAOExporter(scraper, output_dir="outputs/FisheriesAudit_ALG")
+        fexp.figura_capturas_argentina_vs_mundo("HKP")
+        fexp.figura_share_argentina_historico()
+        fexp.figura_estado_stocks_mundo()
+    """
+
+    def __init__(
+        self,
+        scraper,
+        output_dir: str | Path = "outputs/FisheriesAudit_ALG",
+    ) -> None:
+        self.scraper = scraper
+        self.out = Path(output_dir)
+        self.out.mkdir(parents=True, exist_ok=True)
+        (self.out / "figuras").mkdir(exist_ok=True)
+        (self.out / "datos").mkdir(exist_ok=True)
+        (self.out / "tablas_latex").mkdir(exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # Figuras
+    # ------------------------------------------------------------------
+
+    def figura_capturas_argentina_vs_mundo(
+        self, especie_fao_code: str, save: bool = True
+    ) -> plt.Figure:
+        """
+        Gráfico de líneas: Argentina vs Total Área 41 para una especie.
+
+        Eje Y en miles de toneladas. Muestra placeholder si no hay datos.
+
+        Args:
+            especie_fao_code: Código FAO 3-alpha (ej. "HKP")
+            save: Si True, guarda PNG y SVG en outputs/figuras/
+        """
+        df = self.scraper.get_capturas_df()
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        if df.empty or especie_fao_code not in df.get("especie_fao_code", pd.Series()).values:
+            ax.text(
+                0.5, 0.5,
+                f"Sin datos de capturas para especie {especie_fao_code}.\n"
+                "Ejecutá scraper.seed_data() para cargar datos FAO.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=11, color="gray",
+            )
+            ax.set_title(f"Capturas FAO — {especie_fao_code} (sin datos)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                stem = f"capturas_fao_{especie_fao_code.lower()}"
+                fig.savefig(self.out / "figuras" / f"{stem}.png")
+            return fig
+
+        df_esp = df[df["especie_fao_code"] == especie_fao_code].copy()
+        especie_nombre = df_esp["especie"].iloc[0] if "especie" in df_esp.columns else especie_fao_code
+
+        df_arg = df_esp[df_esp["pais"] == "Argentina"].sort_values("year")
+        df_total = df_esp[df_esp["pais"] == "Total"].sort_values("year")
+
+        # Países adicionales (no Argentina, no Total)
+        otros_paises = [p for p in df_esp["pais"].unique() if p not in ("Argentina", "Total")]
+
+        if not df_arg.empty:
+            ax.plot(
+                df_arg["year"], df_arg["captura_tn"] / 1000,
+                "o-", color=COLOR_CBA, lw=2.2, ms=6, label="Argentina", zorder=4,
+            )
+
+        if not df_total.empty:
+            ax.plot(
+                df_total["year"], df_total["captura_tn"] / 1000,
+                "s--", color=COLOR_CRITICO, lw=1.8, ms=5, alpha=0.8,
+                label="Total Área FAO 41", zorder=3,
+            )
+
+        for pais in otros_paises[:4]:
+            df_pais = df_esp[df_esp["pais"] == pais].sort_values("year")
+            if not df_pais.empty:
+                ax.plot(
+                    df_pais["year"], df_pais["captura_tn"] / 1000,
+                    "^:", lw=1.5, ms=4, alpha=0.7, label=pais,
+                )
+
+        ax.set_xlabel("Año")
+        ax.set_ylabel("Captura (miles de toneladas)")
+        ax.set_title(
+            f"Capturas FAO — {especie_nombre} ({especie_fao_code})\n"
+            "Argentina vs Total Área FAO 41 (Atlántico Sudoccidental)"
+        )
+        ax.legend(loc="best", fontsize=9)
+        ax.yaxis.set_major_formatter(
+            mticker.FuncFormatter(lambda v, _: f"{v:.0f}k t")
+        )
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            stem = f"capturas_fao_{especie_fao_code.lower()}"
+            fig.savefig(self.out / "figuras" / f"{stem}.png")
+            fig.savefig(self.out / "figuras" / f"{stem}.svg")
+            logger.info(f"Figura guardada: {stem}.png/.svg")
+
+        return fig
+
+    def figura_share_argentina_historico(self, save: bool = True) -> plt.Figure:
+        """
+        Gráfico de barras horizontales: share% de Argentina en captura mundial
+        por especie (último año disponible). Coloreado por estado de stock FAO.
+
+        Muestra placeholder si no hay datos.
+        """
+        try:
+            from src.acquisition.fao_firms_scraper import calcular_share_argentina
+        except ImportError:
+            def calcular_share_argentina(df_cap):
+                total = df_cap[df_cap["pais"] == "Total"].set_index(
+                    ["especie_fao_code", "year"]
+                )["captura_tn"]
+                arg = df_cap[df_cap["pais"] == "Argentina"].copy()
+
+                def _sh(row):
+                    key = (row["especie_fao_code"], row["year"])
+                    t = total.get(key)
+                    return round(row["captura_tn"] / t * 100, 1) if t and t > 0 else None
+
+                arg["share_arg_pct"] = arg.apply(_sh, axis=1)
+                return arg
+
+        df_cap = self.scraper.get_capturas_df()
+        df_status = self.scraper.get_stock_status_df()
+
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+        if df_cap.empty:
+            ax.text(
+                0.5, 0.5,
+                "Sin datos de capturas FAO.\nEjecutá scraper.seed_data() primero.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=11, color="gray",
+            )
+            ax.set_title("Share Argentina en capturas mundiales (sin datos)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "share_argentina_historico.png")
+            return fig
+
+        df_arg = calcular_share_argentina(df_cap)
+        if df_arg.empty or "share_arg_pct" not in df_arg.columns:
+            ax.text(
+                0.5, 0.5,
+                "No se pudo calcular share% de Argentina.\n"
+                "Verificá que haya datos de Total Área 41.",
+                ha="center", va="center", transform=ax.transAxes, fontsize=10, color="gray",
+            )
+            ax.set_title("Share Argentina — datos insuficientes")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "share_argentina_historico.png")
+            return fig
+
+        # Tomar el último año disponible por especie
+        df_latest = (
+            df_arg.dropna(subset=["share_arg_pct"])
+            .sort_values("year")
+            .groupby("especie_fao_code")
+            .last()
+            .reset_index()
+        )
+
+        # Combinar con estado de stock para colorear
+        status_map: dict[str, str] = {}
+        if not df_status.empty and "especie_fao_code" in df_status.columns:
+            for _, row in df_status.iterrows():
+                status_map[row["especie_fao_code"]] = row.get("estado_stock", "")
+
+        colores = [
+            _fao_status_color(status_map.get(code, ""))
+            for code in df_latest["especie_fao_code"]
+        ]
+
+        especie_labels = np.array(
+            df_latest["especie"].values
+            if "especie" in df_latest.columns
+            else df_latest["especie_fao_code"].values
+        )
+        shares = df_latest["share_arg_pct"].values
+
+        # Ordenar descendente
+        order = np.argsort(shares)[::-1]
+        especie_labels = especie_labels[order]
+        shares = shares[order]
+        colores = [colores[i] for i in order]
+
+        y_pos = np.arange(len(especie_labels))
+        bars = ax.barh(y_pos, shares, color=colores, alpha=0.85, edgecolor="white", height=0.6)
+
+        for bar, val in zip(bars, shares):
+            ax.text(
+                val + 0.5, bar.get_y() + bar.get_height() / 2,
+                f"{val:.1f}%", va="center", fontsize=9,
+            )
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(especie_labels)
+        ax.set_xlabel("Share Argentina en captura total Área FAO 41 (%)")
+        ax.set_title(
+            "Participación de Argentina en capturas mundiales\n"
+            "Color: estado del stock FAO (verde=plena explotación, rojo=sobrexplotado)"
+        )
+        ax.set_xlim(0, float(max(shares)) * 1.2 + 5)
+
+        # Leyenda estado de stock
+        from matplotlib.patches import Patch
+        leyenda = [
+            Patch(facecolor=COLOR_FULLY_EXPLOITED, label="Plena explotación (F)"),
+            Patch(facecolor=COLOR_MODERATELY, label="Moderada / Recuperación (U/R)"),
+            Patch(facecolor=COLOR_OVER_EXPLOITED, label="Sobrexplotado (O)"),
+            Patch(facecolor=COLOR_DEPLETED, label="Agotado (D)"),
+            Patch(facecolor=COLOR_UNKNOWN, label="Sin evaluación"),
+        ]
+        ax.legend(handles=leyenda, loc="lower right", fontsize=8)
+
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "share_argentina_historico.png")
+            fig.savefig(self.out / "figuras" / "share_argentina_historico.svg")
+            logger.info("Figura share_argentina_historico guardada")
+
+        return fig
+
+    def figura_estado_stocks_mundo(self, save: bool = True) -> plt.Figure:
+        """
+        Gráfico lollipop horizontal: estado de stock FAO para todas las especies.
+
+        Colores semáforo: verde=plena, amarillo=moderado/recuperando, rojo=sobrexplotado.
+        Muestra placeholder si no hay datos.
+        """
+        df_status = self.scraper.get_stock_status_df()
+
+        fig, ax = plt.subplots(figsize=(10, max(4, len(df_status) * 0.7 + 2)))
+
+        if df_status.empty:
+            ax.text(
+                0.5, 0.5,
+                "Sin datos de estado de stocks FAO FIRMS.\n"
+                "Ejecutá scraper.seed_data() para cargar datos.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=11, color="gray",
+            )
+            ax.set_title("Estado de stocks FAO FIRMS (sin datos)")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "estado_stocks_mundo.png")
+            return fig
+
+        # Mapeo numérico para ordenar por riesgo (mayor riesgo = mayor número)
+        riesgo_num = {"D": 4, "O": 3, "F": 2, "R": 1, "U": 0}
+
+        df_plot = df_status.copy()
+        df_plot["riesgo_num"] = df_plot["estado_stock"].map(riesgo_num).fillna(2)
+        df_plot = df_plot.sort_values("riesgo_num", ascending=True)
+
+        colores = [_fao_status_color(c) for c in df_plot["estado_stock"]]
+        especie_labels = (
+            df_plot["especie"].values
+            if "especie" in df_plot.columns
+            else df_plot["especie_fao_code"].values
+        )
+        riesgo_vals = df_plot["riesgo_num"].values
+        y_pos = np.arange(len(df_plot))
+
+        try:
+            from src.acquisition.fao_firms_scraper import estado_stock_label
+        except ImportError:
+            def estado_stock_label(c):
+                labels = {
+                    "F": "Plena explotación", "O": "Sobrexplotado",
+                    "U": "Subexplotado", "R": "En recuperación", "D": "Agotado",
+                }
+                return labels.get(str(c).upper(), str(c))
+
+        # Lollipop: línea + círculo
+        ax.hlines(y_pos, 0, riesgo_vals, colors=colores, lw=3, alpha=0.7)
+        ax.scatter(riesgo_vals, y_pos, color=colores, s=140, zorder=4, edgecolors="white", lw=1.5)
+
+        tendencias = (
+            df_plot["tendencia"].values
+            if "tendencia" in df_plot.columns
+            else [""] * len(df_plot)
+        )
+        for i, (estado, tendencia) in enumerate(zip(df_plot["estado_stock"], tendencias)):
+            lbl = estado_stock_label(str(estado))
+            tend_str = f" ({tendencia})" if pd.notna(tendencia) and str(tendencia) != "" else ""
+            ax.text(
+                riesgo_vals[i] + 0.08, y_pos[i],
+                f"{lbl}{tend_str}", va="center", fontsize=9,
+            )
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(especie_labels)
+        ax.set_xlim(-0.2, 5.0)
+        ax.set_xticks([0, 1, 2, 3, 4])
+        ax.set_xticklabels(
+            ["Subexplotado\n(U)", "Recuperando\n(R)", "Plena\n(F)", "Sobrex.\n(O)", "Agotado\n(D)"],
+            fontsize=8,
+        )
+        ax.set_title(
+            "Semáforo FAO FIRMS — Estado de stocks pesqueros argentinos\n"
+            "Atlántico Sudoccidental (Área FAO 41)"
+        )
+        ax.axvline(2.5, color=COLOR_ROJO, lw=1, ls="--", alpha=0.5, label="Límite de riesgo")
+        ax.legend(fontsize=8, loc="lower right")
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "estado_stocks_mundo.png")
+            fig.savefig(self.out / "figuras" / "estado_stocks_mundo.svg")
+            logger.info("Figura estado_stocks_mundo guardada")
+
+        return fig
+
+    # ------------------------------------------------------------------
+    # Tests estadísticos
+    # ------------------------------------------------------------------
+
+    def test_tendencia_captura_argentina(self, especie_fao_code: str) -> TestResult:
+        """
+        Kendall tau sobre las capturas de Argentina para una especie a lo largo del tiempo.
+
+        H0: no hay tendencia monótona en las capturas argentinas.
+        Un τ negativo significativo indica declive sistemático de capturas.
+
+        Args:
+            especie_fao_code: Código FAO 3-alpha (ej. "HKP")
+
+        Returns:
+            TestResult con interpretación de tendencia
+        """
+        df = self.scraper.get_capturas_df()
+        if df.empty:
+            return TestResult(
+                f"Kendall tau capturas Argentina — {especie_fao_code}",
+                np.nan, 1.0, "Sin datos de capturas FAO disponibles.", 0,
+            )
+
+        df_esp = df[
+            (df["especie_fao_code"] == especie_fao_code) & (df["pais"] == "Argentina")
+        ].dropna(subset=["captura_tn"]).sort_values("year")
+
+        n = len(df_esp)
+        if n < 3:
+            return TestResult(
+                f"Kendall tau capturas Argentina — {especie_fao_code}",
+                np.nan, 1.0,
+                f"Datos insuficientes (n={n}, se requieren ≥3 años).",
+                n,
+            )
+
+        tau, p = stats.kendalltau(df_esp["year"], df_esp["captura_tn"])
+        direccion = "creciente" if tau > 0 else "decreciente"
+        if p < 0.05:
+            delta = df_esp["captura_tn"].iloc[-1] - df_esp["captura_tn"].iloc[0]
+            interp = (
+                f"Tendencia {direccion} significativa en capturas argentinas de {especie_fao_code} "
+                f"(τ={tau:.3f}, p={p:.4f}). "
+                f"Variación estimada: {delta:+,.0f} t "
+                f"entre {int(df_esp['year'].iloc[0])} y {int(df_esp['year'].iloc[-1])}."
+            )
+        else:
+            interp = (
+                f"Sin tendencia temporal significativa en capturas de {especie_fao_code} "
+                f"(τ={tau:.3f}, p={p:.4f}). Las capturas se mantienen relativamente estables."
+            )
+
+        return TestResult(
+            f"Kendall tau capturas Argentina — {especie_fao_code}",
+            tau, p, interp, n,
+        )
+
+    def test_sobrexplotacion_global(self) -> TestResult:
+        """
+        Test de proporciones: fracción de stocks argentinos monitoreados que están
+        sobrexplotados o agotados (O/D), comparada con la referencia FAO global
+        (aprox. 34.2% sobrexplotados según FAO 2022 The State of World Fisheries).
+
+        H0: la proporción de sobrexplotación en stocks argentinos <= promedio global FAO.
+
+        Returns:
+            TestResult con comparación Argentina vs referencia FAO global
+        """
+        df_status = self.scraper.get_stock_status_df()
+        n = len(df_status)
+
+        if n == 0:
+            return TestResult(
+                "Test proporciones sobrexplotación — Argentina vs FAO global",
+                np.nan, 1.0,
+                "Sin datos de estado de stocks FAO disponibles.",
+                0,
+            )
+
+        # Referencia FAO global 2022: 34.2% sobrexplotados
+        FAO_GLOBAL_PROP = 0.342
+
+        n_sobre = int((df_status["estado_stock"].isin(["O", "D"])).sum())
+        prop_arg = n_sobre / n
+
+        # Test binomial exacto de una muestra: H0: p <= FAO_GLOBAL_PROP
+        result = stats.binomtest(n_sobre, n, FAO_GLOBAL_PROP, alternative="greater")
+        p = result.pvalue
+
+        if p < 0.05:
+            interp = (
+                f"La proporción de stocks sobrexplotados/agotados en Argentina "
+                f"({prop_arg*100:.1f}%, n_sobre={n_sobre}/{n}) es significativamente "
+                f"mayor que el promedio global FAO ({FAO_GLOBAL_PROP*100:.1f}%). "
+                f"(p={p:.4f}, test binomial exacto, H₁: prop_arg > {FAO_GLOBAL_PROP:.3f})"
+            )
+        else:
+            interp = (
+                f"No hay evidencia suficiente de que Argentina supere el promedio global FAO "
+                f"de sobrexplotación ({FAO_GLOBAL_PROP*100:.1f}%). "
+                f"Argentina: {prop_arg*100:.1f}% ({n_sobre}/{n} stocks). "
+                f"(p={p:.4f}, test binomial exacto)"
+            )
+
+        return TestResult(
+            "Test proporciones sobrexplotación — Argentina vs FAO global",
+            prop_arg,
+            p,
+            interp,
+            n,
+        )
+
+    # ------------------------------------------------------------------
+    # Exportación de datos
+    # ------------------------------------------------------------------
+
+    def exportar_fao_csv(self) -> Path:
+        """
+        Exporta CSV combinado con capturas + estado de stock FAO y metadatos FAIR.
+
+        Returns:
+            Path al archivo CSV exportado
+        """
+        df_cap = self.scraper.get_capturas_df()
+        df_status = self.scraper.get_stock_status_df()
+
+        for df in [df_cap, df_status]:
+            if not df.empty:
+                df["serie"] = SERIES_NAME
+                df["fecha_exportacion"] = datetime.now().strftime("%Y-%m-%d")
+
+        out_path = self.out / "datos" / "fao_contexto_internacional.csv"
+
+        if not df_cap.empty:
+            df_cap.to_csv(out_path, index=False, encoding="utf-8-sig")
+            logger.info(f"FAO capturas CSV exportado: {out_path} ({len(df_cap)} registros)")
+        else:
+            pd.DataFrame().to_csv(out_path, index=False)
+            logger.warning("FAO capturas vacías — CSV exportado vacío")
+
+        if not df_status.empty:
+            status_path = self.out / "datos" / "fao_stock_status.csv"
+            df_status.to_csv(status_path, index=False, encoding="utf-8-sig")
+            logger.info(f"FAO stock status CSV exportado: {status_path} ({len(df_status)} registros)")
+
+        return out_path
+
+    def exportar_latex_stocks(self) -> str:
+        """
+        Genera tabla LaTeX con especies, estado FAO, tendencia y share% de Argentina.
+
+        Returns:
+            String con código LaTeX de la tabla
+        """
+        df_status = self.scraper.get_stock_status_df()
+        df_cap = self.scraper.get_capturas_df()
+
+        if df_status.empty:
+            return (
+                r"\begin{table}[ht]\centering"
+                r"\caption{Sin datos de stocks FAO disponibles}"
+                r"\end{table}"
+            )
+
+        # Calcular share% si hay capturas
+        share_map: dict[str, str] = {}
+        if not df_cap.empty and "pais" in df_cap.columns:
+            try:
+                from src.acquisition.fao_firms_scraper import calcular_share_argentina
+                df_arg = calcular_share_argentina(df_cap)
+                if not df_arg.empty and "share_arg_pct" in df_arg.columns:
+                    latest = (
+                        df_arg.dropna(subset=["share_arg_pct"])
+                        .sort_values("year")
+                        .groupby("especie_fao_code")
+                        .last()
+                        .reset_index()
+                    )
+                    for _, row in latest.iterrows():
+                        share_map[row["especie_fao_code"]] = f"{row['share_arg_pct']:.1f}\\%"
+            except Exception as e:
+                logger.warning(f"No se pudo calcular share% para LaTeX: {e}")
+
+        try:
+            from src.acquisition.fao_firms_scraper import estado_stock_label
+        except ImportError:
+            def estado_stock_label(c):
+                labels = {
+                    "F": "Plena explotación", "O": "Sobrexplotado",
+                    "U": "Subexplotado", "R": "En recuperación", "D": "Agotado",
+                }
+                return labels.get(str(c).upper(), str(c))
+
+        latex_rows = []
+        for _, row in df_status.iterrows():
+            especie = row.get("especie", row.get("especie_fao_code", ""))
+            fao_code = row.get("especie_fao_code", "")
+            estado = estado_stock_label(str(row.get("estado_stock", "")))
+            tendencia = row.get("tendencia", "---")
+            year_eval = (
+                str(int(row["year_evaluacion"]))
+                if pd.notna(row.get("year_evaluacion"))
+                else "---"
+            )
+            share = share_map.get(fao_code, "---")
+
+            especie_esc = str(especie).replace("_", r"\_")
+            tendencia_esc = str(tendencia) if pd.notna(tendencia) else "---"
+
+            latex_rows.append(
+                f"{especie_esc} & {fao_code} & {estado} & {tendencia_esc} & {year_eval} & {share}"
+                + r" \\"
+            )
+
+        header = r"Especie & Cód. FAO & Estado & Tendencia & Año eval. & Share Arg. \\"
+
+        latex = textwrap.dedent(
+            rf"""
+            \begin{{table}}[ht]
+            \centering
+            \caption{{Estado de stocks pesqueros argentinos según FAO FIRMS.
+            Share Argentina = participación en captura total Área FAO 41 (último año disponible).
+            Fuente: FAO FIRMS 2022--2024. Elaboración: {SERIES_NAME}.}}
+            \label{{tab:fao_stocks}}
+            \begin{{tabular}}{{lllllr}}
+            \hline
+            {header}
+            \hline
+            {chr(10).join(latex_rows)}
+            \hline
+            \multicolumn{{6}}{{l}}{{\small F=Plena explotación; O=Sobrexplotado; U=Subexplotado; R=En recuperación; D=Agotado}} \\
+            \end{{tabular}}
+            \end{{table}}
+            """
+        ).strip()
+
+        out_path = self.out / "tablas_latex" / "tabla_fao_stocks.tex"
+        out_path.write_text(latex, encoding="utf-8")
+        logger.info(f"LaTeX FAO stocks guardado: {out_path}")
+        return latex
