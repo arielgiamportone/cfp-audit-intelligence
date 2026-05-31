@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 632 tests totales, todos verdes
+- [x] 588 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ---
@@ -108,9 +108,16 @@
 ## 🟡 Prioridad Media
 
 ### [IMPROVEMENT] Mejoras al parser
-- [ ] Extraer fecha exacta de cada resolución (no solo del acta)
-- [ ] Detectar miembros que votaron en contra por nombre
-- [ ] Manejo de actas multi-sesión (plenarios largos)
+- [x] Extraer fecha exacta de cada resolución (no solo del acta)
+- [x] Detectar miembros que votaron en contra por nombre
+- [x] Manejo de actas multi-sesión (plenarios largos)
+- [x] Extraer número de resolución CFP por decisión
+- [x] Detectar decisiones diferidas y denegadas
+- [x] Extraer fundamentos científicos INIDEP citados
+- [x] Votos nominales por institución + normalización canónica
+- [x] Extraer zonas y áreas geográficas de pesca
+- [x] Extraer período de vigencia de cada decisión
+- [x] Extraer asignaciones empresa→cuota
 
 ### [FEAT] Capturas reales SIPA/SAGPyA integradas
 - [x] Validar cuotas CFP vs capturas efectivas por especie/año
