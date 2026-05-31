@@ -570,3 +570,131 @@ class TestPatternExporter(unittest.TestCase):
 
 # necesario para importar PatternExporter en los tests
 from src.analysis.research_exporter import PatternExporter
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ModelExporter
+# ─────────────────────────────────────────────────────────────────────
+
+class TestModelExporter(unittest.TestCase):
+    def setUp(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        self.plt = plt
+
+        self.comp = MagicMock()
+        # INIDEP evaluations con CBA real
+        self.comp.get_inidep_data.return_value = pd.DataFrame({
+            "especie_code": ["merluza_comun"] * 6 + ["centolla"] * 4,
+            "year": [2019, 2020, 2021, 2022, 2023, 2024, 2020, 2021, 2022, 2023],
+            "cba_recomendada_tn": [250000., 255000., 248000., 252000., 245000., 250000.,
+                                   15000., 14000., 13000., 14500.],
+            "cba_alternativa_tn": [220000., 225000., 218000., 222000., 215000., 220000.,
+                                   12000., 11000., 10000., 11500.],
+            "estado_stock": ["O", "O", "O", "O", "O", "O", "F", "F", "F", "F"],
+        })
+        self.comp.get_capturas_data.return_value = pd.DataFrame({
+            "especie_code": ["merluza_comun", "merluza_comun", "centolla"],
+            "year": [2018, 2019, 2019],
+            "captura_tn": [230000., 240000., 12000.],
+        })
+        self.comp.get_triangulo_completo.return_value = pd.DataFrame()
+
+        self.fao = MagicMock()
+        self.fao.get_stock_status_df.return_value = pd.DataFrame({
+            "especie": ["merluza hubbsi", "centolla"],
+            "estado_stock": ["O", "F"],
+            "tendencia": ["declinando", "estable"],
+        })
+
+        self.mexp = ModelExporter(self.comp, self.fao, "/tmp/test_modelexporter")
+
+    def tearDown(self):
+        self.plt.close("all")
+
+    def test_build_feature_matrix_shape(self):
+        X, y, fnames = self.mexp.build_feature_matrix()
+        self.assertGreater(len(X), 0)
+        self.assertEqual(len(X), len(y))
+        self.assertEqual(len(fnames), X.shape[1])
+
+    def test_build_feature_matrix_target_binary(self):
+        _, y, _ = self.mexp.build_feature_matrix()
+        self.assertTrue(set(y.unique()).issubset({0, 1}))
+
+    def test_build_feature_matrix_no_nan(self):
+        X, _, _ = self.mexp.build_feature_matrix()
+        self.assertFalse(X.isnull().any().any(), "Feature matrix has NaN values")
+
+    def test_train_and_evaluate_returns_dict(self):
+        X, y, fnames = self.mexp.build_feature_matrix()
+        result = self.mexp.train_and_evaluate(X, y, fnames)
+        self.assertIsInstance(result, dict)
+        for key in ["rf", "lr_pipe", "rf_auc_cv", "lr_auc_cv", "confusion_matrix"]:
+            self.assertIn(key, result)
+
+    def test_train_auc_in_range(self):
+        X, y, fnames = self.mexp.build_feature_matrix()
+        result = self.mexp.train_and_evaluate(X, y, fnames)
+        self.assertGreaterEqual(result["rf_auc_cv"], 0.0)
+        self.assertLessEqual(result["rf_auc_cv"], 1.0)
+
+    def _get_result(self):
+        X, y, fnames = self.mexp.build_feature_matrix()
+        return self.mexp.train_and_evaluate(X, y, fnames), X
+
+    def test_figura_feature_importance(self):
+        result, _ = self._get_result()
+        fig = self.mexp.figura_feature_importance(result, save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_roc_curve(self):
+        result, _ = self._get_result()
+        fig = self.mexp.figura_roc_curve(result, save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_confusion_matrix(self):
+        result, _ = self._get_result()
+        fig = self.mexp.figura_confusion_matrix(result, save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_calibracion(self):
+        result, _ = self._get_result()
+        fig = self.mexp.figura_calibracion(result, save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_figura_shap_summary(self):
+        result, _ = self._get_result()
+        fig = self.mexp.figura_shap_summary(result, save=False)
+        self.assertIsInstance(fig, self.plt.Figure)
+
+    def test_exportar_predicciones_csv(self):
+        result, X = self._get_result()
+        path = self.mexp.exportar_predicciones_csv(result, X)
+        self.assertTrue(path.exists())
+        df = pd.read_csv(path)
+        self.assertIn("p_sobreasignacion_rf", df.columns)
+        self.assertIn("pred_sobreasignacion", df.columns)
+
+    def test_exportar_latex_metricas(self):
+        result, _ = self._get_result()
+        latex = self.mexp.exportar_latex_metricas(result)
+        self.assertIn(r"\begin{table}", latex)
+        self.assertIn("Random Forest", latex)
+        self.assertIn("AUC-ROC", latex)
+
+    def test_generar_hallazgo_modelo(self):
+        result, _ = self._get_result()
+        h = self.mexp.generar_hallazgo_modelo(result)
+        self.assertIsInstance(h, HallazgoPublicable)
+        self.assertIn(h.nivel_evidencia, ["alto", "medio", "exploratorio"])
+        self.assertTrue(h.titulo)
+
+    def test_sin_fao_no_falla(self):
+        mexp_sin_fao = ModelExporter(self.comp, None, "/tmp/test_modelexporter_nofao")
+        X, y, fnames = mexp_sin_fao.build_feature_matrix()
+        self.assertGreater(len(X), 0)
+
+
+from src.analysis.research_exporter import ModelExporter

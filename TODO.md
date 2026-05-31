@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 650 tests totales, todos verdes
+- [x] 664 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
@@ -105,6 +105,7 @@
 - [x] `notebooks/FisheriesAudit_ALG_02_patrones_historicos.ipynb` — Entrega #02: HHI, riesgo temporal, reversiones de veda
 - [x] `notebooks/FisheriesAudit_ALG_03_red_relaciones.ipynb` — Entrega #03: red de relaciones empresas-especies-CFP
 - [x] `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb` — Entrega #04: FAO FIRMS, share Argentina, estado de stocks
+- [x] `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb` — Entrega #05: RF + LR + SHAP, predicción sobreasignación CFP
 
 ---
 
