@@ -97,6 +97,15 @@
 - [x] 650 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
+### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
+- [x] `src/analysis/research_exporter.py` — motor de exportación científica (ResearchExporter, PatternExporter, GraphExporter, FAOExporter)
+- [x] `src/analysis/linkedin_formatter.py` — generador Serie FisheriesAudit ALG 2026
+- [x] `src/dashboard/pages/13_Investigacion.py` — hub de publicación (figuras, tests, exports, posts LinkedIn)
+- [x] `notebooks/FisheriesAudit_ALG_01_triangulo_auditoria.ipynb` — Entrega #01: CBA · CMP · Captura real
+- [x] `notebooks/FisheriesAudit_ALG_02_patrones_historicos.ipynb` — Entrega #02: HHI, riesgo temporal, reversiones de veda
+- [x] `notebooks/FisheriesAudit_ALG_03_red_relaciones.ipynb` — Entrega #03: red de relaciones empresas-especies-CFP
+- [x] `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb` — Entrega #04: FAO FIRMS, share Argentina, estado de stocks
+
 ---
 
 ## 🔴 Prioridad Alta
