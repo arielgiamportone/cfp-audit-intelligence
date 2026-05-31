@@ -933,3 +933,457 @@ class PatternExporter:
         out_path = self.out / "tablas_latex" / "tabla_beneficiarios.tex"
         out_path.write_text(latex, encoding="utf-8")
         return latex
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# GraphExporter — figuras y tests para CFPGraphBuilder (Entrega #03)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+class GraphExporter:
+    """
+    Genera outputs científicos a partir del CFPGraphBuilder.
+
+    Uso:
+        from src.analysis.graph_builder import CFPGraphBuilder
+        builder = CFPGraphBuilder(DB_PATH)
+        gexp = GraphExporter(builder, output_dir="outputs/FisheriesAudit_ALG")
+        G = builder.build_graph()
+        gexp.figura_grafo_completo(G)
+        gexp.figura_hhi_por_especie(builder.compute_stats(G))
+    """
+
+    COLOR_ESPECIE = "#2196F3"   # azul
+    COLOR_EMPRESA = "#FF5722"   # naranja
+
+    def __init__(
+        self,
+        builder,
+        output_dir: str | Path = "outputs/FisheriesAudit_ALG",
+    ) -> None:
+        self.builder = builder
+        self.out = Path(output_dir)
+        (self.out / "figuras").mkdir(parents=True, exist_ok=True)
+        (self.out / "datos").mkdir(exist_ok=True)
+        (self.out / "tablas_latex").mkdir(exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # Figuras
+    # ------------------------------------------------------------------
+
+    def figura_grafo_completo(
+        self, G, save: bool = True
+    ) -> plt.Figure:
+        """
+        Visualiza el grafo completo especie ↔ empresa con spring layout.
+
+        Nodos azules = especies, nodos naranjas = empresas.
+        Grosor de aristas proporcional al peso (co-menciones).
+        Degrada graciosamente si el grafo está vacío.
+        """
+        import networkx as nx
+
+        fig, ax = plt.subplots(figsize=(14, 10))
+
+        if G is None or G.number_of_nodes() == 0:
+            ax.text(
+                0.5, 0.5,
+                "Grafo vacío — ejecutá el pipeline primero.\n"
+                "python scripts/run_full_pipeline.py --step process",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=12, color="gray",
+            )
+            ax.set_title("Red de relaciones CFP (sin datos)", fontsize=13)
+            ax.axis("off")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "grafo_completo.png")
+            return fig
+
+        pos = nx.spring_layout(G, seed=42, k=1.5 / (G.number_of_nodes() ** 0.5))
+
+        node_colors = [
+            self.COLOR_ESPECIE if d.get("tipo") == "especie" else self.COLOR_EMPRESA
+            for _, d in G.nodes(data=True)
+        ]
+        node_sizes = [
+            400 + G.degree(n) * 60
+            for n in G.nodes()
+        ]
+
+        weights = [G[u][v].get("weight", 1) for u, v in G.edges()]
+        max_w = max(weights) if weights else 1
+        edge_widths = [0.5 + 3.5 * (w / max_w) for w in weights]
+        edge_alphas = [0.3 + 0.6 * (w / max_w) for w in weights]
+
+        # Dibujar aristas
+        for (u, v), lw, alpha in zip(G.edges(), edge_widths, edge_alphas):
+            ax.plot(
+                [pos[u][0], pos[v][0]], [pos[u][1], pos[v][1]],
+                color="#BDBDBD", lw=lw, alpha=alpha, zorder=1,
+            )
+
+        # Dibujar nodos
+        nx.draw_networkx_nodes(
+            G, pos, ax=ax,
+            node_color=node_colors,
+            node_size=node_sizes,
+            alpha=0.9,
+        )
+
+        # Etiquetas solo para nodos con grado alto (top 20% o mínimo top 15)
+        degree_threshold = sorted(
+            [G.degree(n) for n in G.nodes()], reverse=True
+        )[min(14, G.number_of_nodes() - 1)]
+        labels = {n: n for n in G.nodes() if G.degree(n) >= degree_threshold}
+        nx.draw_networkx_labels(G, pos, labels=labels, ax=ax, font_size=7.5, font_weight="bold")
+
+        # Leyenda
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor=self.COLOR_ESPECIE, label="Especie"),
+            Patch(facecolor=self.COLOR_EMPRESA, label="Empresa"),
+        ]
+        ax.legend(handles=legend_elements, loc="upper left", fontsize=9)
+
+        n_esp = sum(1 for _, d in G.nodes(data=True) if d.get("tipo") == "especie")
+        n_emp = sum(1 for _, d in G.nodes(data=True) if d.get("tipo") == "empresa")
+        ax.set_title(
+            f"Red de co-menciones CFP — {G.number_of_nodes()} nodos "
+            f"({n_esp} especies · {n_emp} empresas) · {G.number_of_edges()} conexiones\n"
+            "Aristas ponderadas por frecuencia de co-mención en decisiones CFP",
+            fontsize=11,
+        )
+        ax.axis("off")
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "grafo_completo.png")
+            fig.savefig(self.out / "figuras" / "grafo_completo.svg")
+            logger.info("Figura grafo_completo guardada")
+
+        return fig
+
+    def figura_ego_especie(
+        self, G, especie: str, radio: int = 1, save: bool = True
+    ) -> plt.Figure:
+        """
+        Ego graph centrado en una especie (radio 1 o 2).
+
+        Muestra las empresas directamente conectadas a la especie seleccionada.
+        Degrada graciosamente si el grafo está vacío o la especie no existe.
+        """
+        import networkx as nx
+
+        fig, ax = plt.subplots(figsize=(10, 7))
+
+        especie_lower = especie.lower()
+        nodo_especie = None
+        if G is not None and G.number_of_nodes() > 0:
+            for n in G.nodes():
+                if especie_lower in n.lower():
+                    nodo_especie = n
+                    break
+
+        if G is None or G.number_of_nodes() == 0 or nodo_especie is None:
+            ax.text(
+                0.5, 0.5,
+                f"Especie '{especie}' no encontrada en el grafo.\n"
+                "Ejecutá el pipeline para poblar el corpus.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=11, color="gray",
+            )
+            ax.set_title(f"Ego graph — {especie} (sin datos)", fontsize=12)
+            ax.axis("off")
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                stem = f"ego_{especie.lower().replace(' ', '_')}"
+                fig.savefig(self.out / "figuras" / f"{stem}.png")
+            return fig
+
+        ego = nx.ego_graph(G, nodo_especie, radius=radio)
+        pos = nx.spring_layout(ego, seed=42, k=2.0 / max(ego.number_of_nodes() ** 0.5, 1))
+
+        node_colors = [
+            self.COLOR_ESPECIE if d.get("tipo") == "especie" else self.COLOR_EMPRESA
+            for _, d in ego.nodes(data=True)
+        ]
+        node_sizes = [
+            700 if n == nodo_especie else (300 + ego.degree(n) * 40)
+            for n in ego.nodes()
+        ]
+
+        weights = [ego[u][v].get("weight", 1) for u, v in ego.edges()]
+        max_w = max(weights) if weights else 1
+        edge_widths = [0.8 + 4.0 * (w / max_w) for w in weights]
+
+        nx.draw_networkx_nodes(ego, pos, ax=ax, node_color=node_colors,
+                               node_size=node_sizes, alpha=0.9)
+        nx.draw_networkx_edges(ego, pos, ax=ax, width=edge_widths,
+                               edge_color="#78909C", alpha=0.7)
+        nx.draw_networkx_labels(ego, pos, ax=ax, font_size=8,
+                                font_weight="bold",
+                                labels={n: n for n in ego.nodes()})
+
+        # Anotaciones de peso en aristas
+        edge_labels = {(u, v): str(ego[u][v].get("weight", "")) for u, v in ego.edges()}
+        nx.draw_networkx_edge_labels(ego, pos, edge_labels=edge_labels, ax=ax,
+                                     font_size=7, label_pos=0.35)
+
+        n_emp = ego.number_of_nodes() - 1
+        ax.set_title(
+            f"Ego graph — {nodo_especie}\n"
+            f"{n_emp} empresas conectadas (radio={radio}) | pesos = co-menciones en decisiones CFP",
+            fontsize=11,
+        )
+        ax.axis("off")
+
+        from matplotlib.patches import Patch
+        ax.legend(
+            handles=[
+                Patch(facecolor=self.COLOR_ESPECIE, label="Especie"),
+                Patch(facecolor=self.COLOR_EMPRESA, label="Empresa"),
+            ],
+            loc="upper left", fontsize=9,
+        )
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            stem = f"ego_{especie.lower().replace(' ', '_')}"
+            fig.savefig(self.out / "figuras" / f"{stem}.png")
+            fig.savefig(self.out / "figuras" / f"{stem}.svg")
+            logger.info(f"Figura ego_{especie} guardada")
+
+        return fig
+
+    def figura_hhi_por_especie(
+        self, stats, save: bool = True
+    ) -> plt.Figure:
+        """
+        Gráfico de barras del HHI de concentración por especie.
+
+        Verde < 1000 (baja concentración), amarillo 1000–2500 (moderada),
+        rojo > 2500 (alta concentración / posible captura regulatoria).
+        Degrada graciosamente si stats.hhi_por_especie está vacío.
+        """
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        hhi_data = getattr(stats, "hhi_por_especie", {}) if stats is not None else {}
+
+        if not hhi_data:
+            ax.text(
+                0.5, 0.5,
+                "Sin datos de HHI por especie.\n"
+                "Ejecutá el pipeline para poblar el corpus.",
+                ha="center", va="center", transform=ax.transAxes,
+                fontsize=11, color="gray",
+            )
+            ax.set_title("HHI de concentración por especie (sin datos)", fontsize=12)
+            fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+            if save:
+                fig.savefig(self.out / "figuras" / "hhi_por_especie.png")
+            return fig
+
+        especies = sorted(hhi_data.keys(), key=lambda e: hhi_data[e], reverse=True)
+        valores = [hhi_data[e] for e in especies]
+
+        colores = [
+            COLOR_VERDE if v < 1000 else (COLOR_AMARILLO if v < 2500 else COLOR_ROJO)
+            for v in valores
+        ]
+
+        bars = ax.bar(range(len(especies)), valores, color=colores, alpha=0.85, edgecolor="white")
+
+        # Líneas de umbral
+        ax.axhline(1000, color=COLOR_AMARILLO, lw=1.2, ls="--", label="Umbral moderado (1000)")
+        ax.axhline(2500, color=COLOR_ROJO, lw=1.2, ls="--", label="Umbral alto (2500)")
+
+        # Valores sobre barras
+        for bar, val in zip(bars, valores):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 50,
+                f"{val:.0f}",
+                ha="center", va="bottom", fontsize=8.5, fontweight="bold",
+            )
+
+        ax.set_xticks(range(len(especies)))
+        ax.set_xticklabels(especies, rotation=30, ha="right")
+        ax.set_ylabel("HHI (0 – 10.000)")
+        ax.set_title(
+            "Concentración de empresas por especie — Índice HHI\n"
+            "Verde=baja (<1000) · Amarillo=moderada (1000–2500) · Rojo=alta (>2500)",
+            fontsize=11,
+        )
+        ax.legend(fontsize=8)
+        ax.set_ylim(0, max(valores) * 1.15)
+        fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
+        fig.tight_layout()
+
+        if save:
+            fig.savefig(self.out / "figuras" / "hhi_por_especie.png")
+            fig.savefig(self.out / "figuras" / "hhi_por_especie.svg")
+            logger.info("Figura hhi_por_especie guardada")
+
+        return fig
+
+    # ------------------------------------------------------------------
+    # Tests estadísticos
+    # ------------------------------------------------------------------
+
+    def test_centralidad(self, G) -> TestResult:
+        """
+        Evalúa si la distribución de betweenness centrality es significativamente
+        no-uniforme (concentración de intermediación en pocos nodos).
+
+        Usa coeficiente de Gini sobre la distribución de centralidad y un
+        test chi-cuadrado de bondad de ajuste contra distribución uniforme.
+
+        Returns:
+            TestResult con interpretación de la concentración de centralidad.
+        """
+        import networkx as nx
+
+        if G is None or G.number_of_nodes() < 3:
+            return TestResult(
+                "Chi-cuadrado centralidad betweenness",
+                float("nan"), 1.0,
+                "Grafo insuficiente (n<3 nodos) — ejecutá el pipeline primero.",
+                0,
+            )
+
+        bc = nx.betweenness_centrality(G)
+        valores = np.array(list(bc.values()), dtype=float)
+        n = len(valores)
+
+        if valores.sum() == 0:
+            return TestResult(
+                "Chi-cuadrado centralidad betweenness",
+                float("nan"), 1.0,
+                "Centralidad uniforme: todos los nodos tienen betweenness = 0 (grafo sin intermediación).",
+                n,
+            )
+
+        # Coeficiente de Gini
+        sorted_vals = np.sort(valores)
+        cum_vals = np.cumsum(sorted_vals)
+        gini = 1 - 2 * cum_vals.sum() / (n * cum_vals[-1]) + 1 / n
+
+        # Test chi-cuadrado contra distribución uniforme
+        expected = np.full(n, valores.mean())
+        # Evitar división por cero si expected es 0
+        if expected[0] > 0:
+            stat, p = stats.chisquare(valores, expected)
+        else:
+            stat, p = float("nan"), 1.0
+
+        concentrada = gini > 0.5 or (not np.isnan(p) and p < 0.05)
+        nivel = (
+            "alta" if gini > 0.7 else
+            "moderada" if gini > 0.4 else
+            "baja"
+        )
+
+        interp = (
+            f"Concentración {nivel} de intermediación (Gini={gini:.3f}): "
+            + ("pocos nodos actúan como puentes críticos entre especies y empresas"
+               if concentrada else
+               "la intermediación está distribuida sin actores dominantes")
+        )
+
+        return TestResult(
+            "Chi-cuadrado centralidad betweenness",
+            float("nan") if np.isnan(stat) else stat,
+            p,
+            interp,
+            n,
+        )
+
+    # ------------------------------------------------------------------
+    # Exportación de datos
+    # ------------------------------------------------------------------
+
+    def exportar_grafo_csv(self, G) -> Path:
+        """
+        Exporta la lista de aristas del grafo como CSV con metadatos.
+
+        Columnas: especie, empresa, co_menciones, serie, fecha_exportacion.
+
+        Returns:
+            Path al archivo CSV exportado.
+        """
+        df = self.builder.to_dataframe(G) if G is not None else pd.DataFrame()
+
+        if df.empty:
+            df = pd.DataFrame(columns=["especie", "empresa", "co_menciones"])
+
+        df["serie"] = SERIES_NAME
+        df["fecha_exportacion"] = datetime.now().strftime("%Y-%m-%d")
+
+        out_path = self.out / "datos" / "grafo_relaciones.csv"
+        df.to_csv(out_path, index=False, encoding="utf-8-sig")
+        logger.info(f"CSV grafo exportado: {out_path} ({len(df)} aristas)")
+        return out_path
+
+    def exportar_latex_top_empresas(
+        self, stats, top_n: int = 10
+    ) -> str:
+        """
+        Genera tabla LaTeX de las top empresas por grado/conexiones en el grafo.
+
+        Args:
+            stats: GrafoStats con atributo hhi_por_especie y empresa_mas_conectada.
+            top_n: número de empresas a incluir.
+
+        Returns:
+            String con el código LaTeX de la tabla.
+        """
+        # Construir tabla desde stats.hhi_por_especie y empresa_mas_conectada
+        hhi_data = getattr(stats, "hhi_por_especie", {}) if stats is not None else {}
+
+        if not hhi_data:
+            return (
+                r"\begin{table}[ht]\centering"
+                r"\caption{Sin datos de grafo disponibles}"
+                r"\end{table}"
+            )
+
+        rows_data = [
+            {"especie": esp, "hhi": round(hhi, 0)}
+            for esp, hhi in sorted(hhi_data.items(), key=lambda x: x[1], reverse=True)
+        ][:top_n]
+
+        df_l = pd.DataFrame(rows_data)
+        df_l.columns = ["Especie", "HHI Concentración"]
+
+        latex_rows = []
+        for _, row in df_l.iterrows():
+            latex_rows.append(
+                f"{row['Especie']} & {row['HHI Concentración']:.0f}" + r" \\"
+            )
+
+        header = r"Especie & HHI Concentración \\"
+        latex = textwrap.dedent(
+            rf"""
+            \begin{{table}}[ht]
+            \centering
+            \caption{{Top {top_n} especies por concentración HHI en red de relaciones CFP (1998–2025).
+            HHI: Índice de Herfindahl-Hirschman. >2500 = alta concentración. Fuente: {SERIES_NAME}.}}
+            \label{{tab:hhi_especies}}
+            \begin{{tabular}}{{lr}}
+            \hline
+            {header}
+            \hline
+            {chr(10).join(latex_rows)}
+            \hline
+            \end{{tabular}}
+            \end{{table}}
+            """
+        ).strip()
+
+        out_path = self.out / "tablas_latex" / "tabla_hhi_especies.tex"
+        out_path.write_text(latex, encoding="utf-8")
+        logger.info(f"LaTeX HHI especies guardado: {out_path}")
+        return latex
