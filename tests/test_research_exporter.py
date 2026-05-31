@@ -11,7 +11,7 @@ from src.analysis.linkedin_formatter import LinkedInFormatter, LinkedInPost
 from src.analysis.research_exporter import (
     HallazgoPublicable,
     ResearchExporter,
-    TestResult,
+    ResultadoEstadistico,
 )
 
 
@@ -74,20 +74,20 @@ def _make_comparator_mock(triangulo_df=None, alertas_df=None):
 
 
 # ─────────────────────────────────────────────────────────────────────
-# TestResult
+# ResultadoEstadistico
 # ─────────────────────────────────────────────────────────────────────
 
 class TestTestResult(unittest.TestCase):
     def test_significativo_true(self):
-        t = TestResult("Wilcoxon", 2.5, 0.03, "sig", 10)
+        t = ResultadoEstadistico("Wilcoxon", 2.5, 0.03, "sig", 10)
         self.assertTrue(t.significativo)
 
     def test_significativo_false(self):
-        t = TestResult("Wilcoxon", 1.2, 0.2, "no sig", 10)
+        t = ResultadoEstadistico("Wilcoxon", 1.2, 0.2, "no sig", 10)
         self.assertFalse(t.significativo)
 
     def test_to_dict_keys(self):
-        t = TestResult("Kendall", 0.5, 0.04, "tendencia", 8)
+        t = ResultadoEstadistico("Kendall", 0.5, 0.04, "tendencia", 8)
         d = t.to_dict()
         self.assertIn("test", d)
         self.assertIn("p_valor", d)
@@ -95,7 +95,7 @@ class TestTestResult(unittest.TestCase):
         self.assertIn("n", d)
 
     def test_alpha_personalizable(self):
-        t = TestResult("Test", 1.0, 0.06, "borderline", 5, alpha=0.1)
+        t = ResultadoEstadistico("Test", 1.0, 0.06, "borderline", 5, alpha=0.1)
         self.assertTrue(t.significativo)
 
 
@@ -125,7 +125,7 @@ class TestHallazgoPublicable(unittest.TestCase):
 
     def test_con_tests(self):
         h = self._make()
-        h.tests = [TestResult("Wilcoxon", 3.5, 0.02, "sig", 10)]
+        h.tests = [ResultadoEstadistico("Wilcoxon", 3.5, 0.02, "sig", 10)]
         r = h.resumen_ejecutivo()
         self.assertIn("p<0.05", r)
 
@@ -141,7 +141,7 @@ class TestResearchExporterStats(unittest.TestCase):
 
     def test_test_sobreasignacion_retorna_testresult(self):
         r = self.exp.test_sobreasignacion()
-        self.assertIsInstance(r, TestResult)
+        self.assertIsInstance(r, ResultadoEstadistico)
         self.assertIn("Wilcoxon", r.nombre)
 
     def test_test_sobreasignacion_con_datos_sobre(self):
@@ -153,7 +153,7 @@ class TestResearchExporterStats(unittest.TestCase):
 
     def test_test_tendencia_temporal_retorna_testresult(self):
         r = self.exp.test_tendencia_temporal()
-        self.assertIsInstance(r, TestResult)
+        self.assertIsInstance(r, ResultadoEstadistico)
 
     def test_test_tendencia_por_especie(self):
         r = self.exp.test_tendencia_temporal("merluza_comun")
@@ -161,12 +161,12 @@ class TestResearchExporterStats(unittest.TestCase):
 
     def test_test_kruskal(self):
         r = self.exp.test_diferencia_entre_especies()
-        self.assertIsInstance(r, TestResult)
+        self.assertIsInstance(r, ResultadoEstadistico)
         self.assertIn("Kruskal", r.nombre)
 
     def test_test_spearman(self):
         r = self.exp.test_correlacion_captura_cba()
-        self.assertIsInstance(r, TestResult)
+        self.assertIsInstance(r, ResultadoEstadistico)
         self.assertIn("Spearman", r.nombre)
 
     def test_ejecutar_todos_retorna_lista(self):
@@ -176,13 +176,13 @@ class TestResearchExporterStats(unittest.TestCase):
 
     def test_todos_son_testresult(self):
         for t in self.exp.ejecutar_todos_los_tests():
-            self.assertIsInstance(t, TestResult)
+            self.assertIsInstance(t, ResultadoEstadistico)
 
     def test_insuficientes_datos_no_falla(self):
         comp_empty = _make_comparator_mock(triangulo_df=pd.DataFrame())
         exp_empty = ResearchExporter(comp_empty, "/tmp/test_empty")
         r = exp_empty.test_sobreasignacion()
-        self.assertIsInstance(r, TestResult)
+        self.assertIsInstance(r, ResultadoEstadistico)
         self.assertEqual(r.p_value, 1.0)
 
 
@@ -362,7 +362,7 @@ class TestLinkedInFormatter(unittest.TestCase):
                 descripcion="El CFP supera la CBA en el 80% de los casos.",
                 datos_clave={"% casos sobre CBA": "80%", "Mediana ratio CMP/CBA": "1.15", "N comparaciones": 10},
                 nivel_evidencia="alto",
-                tests=[TestResult("Wilcoxon", 3.2, 0.02, "sig", 10)],
+                tests=[ResultadoEstadistico("Wilcoxon", 3.2, 0.02, "sig", 10)],
                 fuentes=["INIDEP", "CFP"],
             ),
             HallazgoPublicable(
@@ -401,7 +401,7 @@ class TestLinkedInFormatter(unittest.TestCase):
         self.assertIn("80%", txt)
 
     def test_post_sobreasignacion_con_test(self):
-        t = TestResult("Wilcoxon", 3.2, 0.02, "sig", 10)
+        t = ResultadoEstadistico("Wilcoxon", 3.2, 0.02, "sig", 10)
         post = self.fmt.post_sobreasignacion(
             {"% casos sobre CBA": "80%", "Mediana ratio CMP/CBA": "1.15"}, test_result=t
         )
@@ -513,7 +513,7 @@ class TestPatternExporter(unittest.TestCase):
 
     def test_test_concentracion_sin_datos(self):
         t = self.pexp.test_concentracion_hhi()
-        self.assertIsInstance(t, TestResult)
+        self.assertIsInstance(t, ResultadoEstadistico)
         self.assertEqual(t.p_value, 1.0)
 
     def test_test_concentracion_con_datos(self):
@@ -526,12 +526,12 @@ class TestPatternExporter(unittest.TestCase):
         })
         self.det.hhi_concentration.return_value = {"hhi": 8200.0, "empresas_analizadas": 5}
         t = self.pexp.test_concentracion_hhi()
-        self.assertIsInstance(t, TestResult)
+        self.assertIsInstance(t, ResultadoEstadistico)
         self.assertIn("Chi", t.nombre)
 
     def test_test_tendencia_riesgo_sin_datos(self):
         t = self.pexp.test_tendencia_riesgo()
-        self.assertIsInstance(t, TestResult)
+        self.assertIsInstance(t, ResultadoEstadistico)
         self.assertEqual(t.p_value, 1.0)
 
     def test_test_tendencia_riesgo_con_datos(self):
@@ -542,7 +542,7 @@ class TestPatternExporter(unittest.TestCase):
             "resoluciones": [10, 12, 11, 13, 14],
         })
         t = self.pexp.test_tendencia_riesgo()
-        self.assertIsInstance(t, TestResult)
+        self.assertIsInstance(t, ResultadoEstadistico)
         self.assertIn("Kendall", t.nombre)
 
     def test_exportar_patrones_csv_crea_archivo(self):
