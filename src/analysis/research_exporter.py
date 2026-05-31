@@ -14,8 +14,8 @@ Salidas soportadas:
 
 from __future__ import annotations
 
-import io
 import textwrap
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -58,7 +58,7 @@ COLOR_VERDE = "#43A047"
 
 
 @dataclass
-class TestResult:
+class ResultadoEstadistico:
     """Resultado de un test estadístico formal."""
 
     nombre: str
@@ -93,7 +93,7 @@ class HallazgoPublicable:
     nivel_evidencia: str  # "alto" | "medio" | "exploratorio"
     especie: str | None = None
     years: list[int] = field(default_factory=list)
-    tests: list[TestResult] = field(default_factory=list)
+    tests: list[ResultadoEstadistico] = field(default_factory=list)
     fuentes: list[str] = field(default_factory=list)
 
     def resumen_ejecutivo(self) -> str:
@@ -284,7 +284,7 @@ class ResearchExporter:
     # Tests estadísticos
     # ------------------------------------------------------------------
 
-    def test_sobreasignacion(self) -> TestResult:
+    def test_sobreasignacion(self) -> ResultadoEstadistico:
         """
         Wilcoxon signed-rank: H0: ratio CMP/CBA = 1 (CFP respeta recomendación INIDEP).
         Un p<0.05 indica que el CFP sistemáticamente se aparta de la recomendación.
@@ -292,7 +292,7 @@ class ResearchExporter:
         raw = self.comp.get_triangulo_completo()
         df = raw.dropna(subset=["ratio_cmp_cba"]) if "ratio_cmp_cba" in raw.columns else raw.iloc[:0]
         if len(df) < 3:
-            return TestResult(
+            return ResultadoEstadistico(
                 "Wilcoxon CMP/CBA",
                 np.nan, 1.0, "Datos insuficientes (n<3)", len(df)
             )
@@ -304,9 +304,9 @@ class ResearchExporter:
             if p < 0.05
             else f"No hay evidencia de desvío sistemático (mediana={df['ratio_cmp_cba'].median():.2f})"
         )
-        return TestResult("Wilcoxon signed-rank CMP/CBA", stat, p, interp, len(df))
+        return ResultadoEstadistico("Wilcoxon signed-rank CMP/CBA", stat, p, interp, len(df))
 
-    def test_tendencia_temporal(self, especie_code: str | None = None) -> TestResult:
+    def test_tendencia_temporal(self, especie_code: str | None = None) -> ResultadoEstadistico:
         """
         Kendall tau sobre ratio CMP/CBA a lo largo del tiempo.
         Detecta si la sobreasignación aumenta o disminuye año a año.
@@ -314,7 +314,7 @@ class ResearchExporter:
         df = self.comp.get_triangulo_completo(especie_code).dropna(subset=["ratio_cmp_cba"])
         df = df.sort_values("year")
         if len(df) < 4:
-            return TestResult("Kendall tau tendencia", np.nan, 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico("Kendall tau tendencia", np.nan, 1.0, "Datos insuficientes", len(df))
         tau, p = stats.kendalltau(df["year"], df["ratio_cmp_cba"])
         direccion = "creciente" if tau > 0 else "decreciente"
         interp = (
@@ -323,25 +323,25 @@ class ResearchExporter:
             else f"Sin tendencia temporal significativa (τ={tau:.3f})"
         )
         label = f"Kendall tau — {especie_code or 'todas las especies'}"
-        return TestResult(label, tau, p, interp, len(df))
+        return ResultadoEstadistico(label, tau, p, interp, len(df))
 
-    def test_diferencia_entre_especies(self) -> TestResult:
+    def test_diferencia_entre_especies(self) -> ResultadoEstadistico:
         """
         Kruskal-Wallis: ¿difiere el nivel de sobreasignación entre especies?
         """
         df = self.comp.get_triangulo_completo().dropna(subset=["ratio_cmp_cba"])
         grupos = [g["ratio_cmp_cba"].values for _, g in df.groupby("especie") if len(g) >= 2]
         if len(grupos) < 2:
-            return TestResult("Kruskal-Wallis especies", np.nan, 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico("Kruskal-Wallis especies", np.nan, 1.0, "Datos insuficientes", len(df))
         stat, p = stats.kruskal(*grupos)
         interp = (
             "Diferencias significativas entre especies en ratio CMP/CBA"
             if p < 0.05
             else "No hay diferencias significativas entre especies"
         )
-        return TestResult("Kruskal-Wallis entre especies", stat, p, interp, len(df))
+        return ResultadoEstadistico("Kruskal-Wallis entre especies", stat, p, interp, len(df))
 
-    def test_correlacion_captura_cba(self) -> TestResult:
+    def test_correlacion_captura_cba(self) -> ResultadoEstadistico:
         """
         Spearman: correlación entre ratio CMP/CBA y ratio Captura/CBA.
         Detecta si cuando el CFP aprueba más, también se captura más.
@@ -350,8 +350,12 @@ class ResearchExporter:
             subset=["ratio_cmp_cba", "ratio_captura_cba"]
         )
         if len(df) < 4:
-            return TestResult("Spearman CMP-Captura", np.nan, 1.0, "Datos insuficientes", len(df))
-        rho, p = stats.spearmanr(df["ratio_cmp_cba"], df["ratio_captura_cba"])
+            return ResultadoEstadistico("Spearman CMP-Captura", np.nan, 1.0, "Datos insuficientes", len(df))
+        with warnings.catch_warnings(), np.errstate(invalid="ignore", divide="ignore"):
+            warnings.simplefilter("ignore")
+            rho, p = stats.spearmanr(df["ratio_cmp_cba"], df["ratio_captura_cba"])
+        if np.isnan(rho):
+            return ResultadoEstadistico("Spearman CMP-Captura", np.nan, 1.0, "Variable constante (datos seed)", len(df))
         interp = (
             f"Correlación positiva significativa (ρ={rho:.3f}): cuotas más altas → más captura"
             if (p < 0.05 and rho > 0)
@@ -359,9 +363,9 @@ class ResearchExporter:
             if (p < 0.05 and rho < 0)
             else f"Sin correlación significativa (ρ={rho:.3f})"
         )
-        return TestResult("Spearman CMP/CBA ↔ Captura/CBA", rho, p, interp, len(df))
+        return ResultadoEstadistico("Spearman CMP/CBA ↔ Captura/CBA", rho, p, interp, len(df))
 
-    def ejecutar_todos_los_tests(self) -> list[TestResult]:
+    def ejecutar_todos_los_tests(self) -> list[ResultadoEstadistico]:
         """Corre toda la batería de tests estadísticos."""
         resultados = [
             self.test_sobreasignacion(),
@@ -826,18 +830,18 @@ class PatternExporter:
     # Tests estadísticos de concentración
     # ------------------------------------------------------------------
 
-    def test_concentracion_hhi(self) -> TestResult:
+    def test_concentracion_hhi(self) -> ResultadoEstadistico:
         """Evalúa si la concentración HHI supera el umbral de preocupación (2500)."""
         hhi_data = self.det.hhi_concentration()
         hhi = hhi_data.get("hhi", 0)
         n = hhi_data.get("empresas_analizadas", 0)
         if n < 2:
-            return TestResult("HHI umbral", hhi, 1.0, "Datos insuficientes", n)
+            return ResultadoEstadistico("HHI umbral", hhi, 1.0, "Datos insuficientes", n)
 
         # Comparar distribución de menciones contra distribución uniforme (chi-squared)
         df = self.det.top_beneficiaries(limit=100)
         if df.empty or len(df) < 2:
-            return TestResult("HHI umbral", hhi, 1.0, "Datos insuficientes", 0)
+            return ResultadoEstadistico("HHI umbral", hhi, 1.0, "Datos insuficientes", 0)
 
         observed = df["menciones"].values
         expected = np.full_like(observed, observed.mean(), dtype=float)
@@ -847,13 +851,13 @@ class PatternExporter:
             if p < 0.05
             else f"Sin concentración estadísticamente significativa (HHI={hhi:.0f})"
         )
-        return TestResult("Chi-cuadrado concentración beneficiarios", stat, p, interp, len(df))
+        return ResultadoEstadistico("Chi-cuadrado concentración beneficiarios", stat, p, interp, len(df))
 
-    def test_tendencia_riesgo(self) -> TestResult:
+    def test_tendencia_riesgo(self) -> ResultadoEstadistico:
         """Kendall tau: ¿el riesgo de las resoluciones aumenta con el tiempo?"""
         df = self.det.risk_evolution()
         if len(df) < 4:
-            return TestResult("Kendall tau riesgo temporal", float("nan"), 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico("Kendall tau riesgo temporal", float("nan"), 1.0, "Datos insuficientes", len(df))
         tau, p = stats.kendalltau(df["year"], df["riesgo_promedio"])
         direccion = "creciente" if tau > 0 else "decreciente"
         interp = (
@@ -861,7 +865,7 @@ class PatternExporter:
             if p < 0.05
             else f"Sin tendencia temporal en riesgo (τ={tau:.3f})"
         )
-        return TestResult("Kendall tau riesgo temporal", tau, p, interp, len(df))
+        return ResultadoEstadistico("Kendall tau riesgo temporal", tau, p, interp, len(df))
 
     def exportar_patrones_csv(self) -> Path:
         """Exporta CSV con datos de patrones históricos."""
@@ -1233,7 +1237,7 @@ class GraphExporter:
     # Tests estadísticos
     # ------------------------------------------------------------------
 
-    def test_centralidad(self, G) -> TestResult:
+    def test_centralidad(self, G) -> ResultadoEstadistico:
         """
         Evalúa si la distribución de betweenness centrality es significativamente
         no-uniforme (concentración de intermediación en pocos nodos).
@@ -1242,12 +1246,12 @@ class GraphExporter:
         test chi-cuadrado de bondad de ajuste contra distribución uniforme.
 
         Returns:
-            TestResult con interpretación de la concentración de centralidad.
+            ResultadoEstadistico con interpretación de la concentración de centralidad.
         """
         import networkx as nx
 
         if G is None or G.number_of_nodes() < 3:
-            return TestResult(
+            return ResultadoEstadistico(
                 "Chi-cuadrado centralidad betweenness",
                 float("nan"), 1.0,
                 "Grafo insuficiente (n<3 nodos) — ejecutá el pipeline primero.",
@@ -1259,7 +1263,7 @@ class GraphExporter:
         n = len(valores)
 
         if valores.sum() == 0:
-            return TestResult(
+            return ResultadoEstadistico(
                 "Chi-cuadrado centralidad betweenness",
                 float("nan"), 1.0,
                 "Centralidad uniforme: todos los nodos tienen betweenness = 0 (grafo sin intermediación).",
@@ -1293,7 +1297,7 @@ class GraphExporter:
                "la intermediación está distribuida sin actores dominantes")
         )
 
-        return TestResult(
+        return ResultadoEstadistico(
             "Chi-cuadrado centralidad betweenness",
             float("nan") if np.isnan(stat) else stat,
             p,
@@ -1752,7 +1756,7 @@ class FAOExporter:
     # Tests estadísticos
     # ------------------------------------------------------------------
 
-    def test_tendencia_captura_argentina(self, especie_fao_code: str) -> TestResult:
+    def test_tendencia_captura_argentina(self, especie_fao_code: str) -> ResultadoEstadistico:
         """
         Kendall tau sobre las capturas de Argentina para una especie a lo largo del tiempo.
 
@@ -1763,11 +1767,11 @@ class FAOExporter:
             especie_fao_code: Código FAO 3-alpha (ej. "HKP")
 
         Returns:
-            TestResult con interpretación de tendencia
+            ResultadoEstadistico con interpretación de tendencia
         """
         df = self.scraper.get_capturas_df()
         if df.empty:
-            return TestResult(
+            return ResultadoEstadistico(
                 f"Kendall tau capturas Argentina — {especie_fao_code}",
                 np.nan, 1.0, "Sin datos de capturas FAO disponibles.", 0,
             )
@@ -1778,7 +1782,7 @@ class FAOExporter:
 
         n = len(df_esp)
         if n < 3:
-            return TestResult(
+            return ResultadoEstadistico(
                 f"Kendall tau capturas Argentina — {especie_fao_code}",
                 np.nan, 1.0,
                 f"Datos insuficientes (n={n}, se requieren ≥3 años).",
@@ -1801,12 +1805,12 @@ class FAOExporter:
                 f"(τ={tau:.3f}, p={p:.4f}). Las capturas se mantienen relativamente estables."
             )
 
-        return TestResult(
+        return ResultadoEstadistico(
             f"Kendall tau capturas Argentina — {especie_fao_code}",
             tau, p, interp, n,
         )
 
-    def test_sobrexplotacion_global(self) -> TestResult:
+    def test_sobrexplotacion_global(self) -> ResultadoEstadistico:
         """
         Test de proporciones: fracción de stocks argentinos monitoreados que están
         sobrexplotados o agotados (O/D), comparada con la referencia FAO global
@@ -1815,13 +1819,13 @@ class FAOExporter:
         H0: la proporción de sobrexplotación en stocks argentinos <= promedio global FAO.
 
         Returns:
-            TestResult con comparación Argentina vs referencia FAO global
+            ResultadoEstadistico con comparación Argentina vs referencia FAO global
         """
         df_status = self.scraper.get_stock_status_df()
         n = len(df_status)
 
         if n == 0:
-            return TestResult(
+            return ResultadoEstadistico(
                 "Test proporciones sobrexplotación — Argentina vs FAO global",
                 np.nan, 1.0,
                 "Sin datos de estado de stocks FAO disponibles.",
@@ -1853,7 +1857,7 @@ class FAOExporter:
                 f"(p={p:.4f}, test binomial exacto)"
             )
 
-        return TestResult(
+        return ResultadoEstadistico(
             "Test proporciones sobrexplotación — Argentina vs FAO global",
             prop_arg,
             p,
@@ -2177,13 +2181,14 @@ class ModelExporter:
         """
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.linear_model import LogisticRegression
-        from sklearn.model_selection import StratifiedKFold, cross_val_score
         from sklearn.metrics import (
-            roc_auc_score, classification_report,
-            confusion_matrix, roc_curve
+            classification_report,
+            confusion_matrix,
+            roc_curve,
         )
-        from sklearn.preprocessing import StandardScaler
+        from sklearn.model_selection import StratifiedKFold, cross_val_score
         from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
 
         # Imputar NaN restantes
         X_clean = X.fillna(X.median(numeric_only=True))
