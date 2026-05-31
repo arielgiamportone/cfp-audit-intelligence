@@ -158,6 +158,77 @@
 
 ---
 
+## 🔵 Próximos pasos — VS Code Local (Sprint 4)
+
+> Para retomar en la sesión local de VS Code. Ejecutar en orden.
+> El agente debe leer `AGENTS.md` sección "Instrucciones para sesión local en VS Code" para los comandos exactos.
+
+### Fase 1 — Pipeline con datos reales (sin costo API)
+
+- [ ] **Descarga actas CFP 2020–2025** (validación inicial)
+  ```bash
+  python scripts/run_full_pipeline.py --step download --years 2020-2025
+  ```
+  Resultado esperado: ~60–80 PDFs en `data/raw/`
+
+- [ ] **Descarga corpus completo 1998–2025** (una vez validado)
+  ```bash
+  python scripts/run_full_pipeline.py --step download --years 1998-2025
+  ```
+  Resultado esperado: ~400 PDFs, ~1-2 GB
+
+- [ ] **Extracción y parsing** (`--step process`)
+  - Puebla `resoluciones`, `entidades`, `menciones` en `catalog.db`
+  - Puebla `cmp_aprobada_tn` en `cfp_cuotas` — **dato clave para modelo predictivo**
+  - Resultado: textos en `data/processed/text/`, JSONs en `data/processed/json/`
+
+- [ ] **Pipeline INIDEP** (`--step inidep`)
+  - Scrapea los 492 ITOs de marabierto.inidep.edu.ar
+  - Puebla `inidep_evaluaciones` con CBA real por especie/año
+
+- [ ] **Knowledge base** (`--step knowledge_base`)
+  - Indexa documentos en ChromaDB con embeddings multilingües
+
+### Fase 2 — Auditoría IA ($2–80 según volumen)
+
+- [ ] **Test barato** (50 actas, $2–5)
+  ```bash
+  python scripts/run_full_pipeline.py --step audit --limit 50
+  ```
+
+- [ ] **Corpus parcial** (200 actas, $15–30) — cuando test pase OK
+
+- [ ] **Corpus completo** (500 actas, $50–80) — para publicación
+
+### Fase 3 — Re-ejecutar notebooks con datos reales
+
+- [ ] **`FisheriesAudit_ALG_05_modelo_predictivo.ipynb`** — prioridad máxima
+  - Con `cmp_aprobada_tn` real, el target ya no es sintético
+  - Si AUC-ROC > 0.75 → **publicable como artículo científico**
+  - Calcular SHAP con features reales
+
+- [ ] **`FisheriesAudit_ALG_01_triangulo_auditoria.ipynb`** — triángulo con datos reales
+- [ ] **`FisheriesAudit_ALG_02_patrones_historicos.ipynb`** — HHI y riesgo reales
+- [ ] **`FisheriesAudit_ALG_03_red_relaciones.ipynb`** — grafo real de empresas y CFP
+
+### Fase 4 — Entrega #06 (investigación futura)
+
+- [ ] **Red de conflictos de interés** — grafo directores de empresas pesqueras en cargos públicos
+  - Fuentes necesarias: Registro Público de Comercio, Boletín Oficial Nacional
+  - Requiere enriquecimiento externo (datos no están en CFP)
+
+### Fase 5 — Deployment y publicación
+
+- [ ] **HuggingFace Spaces** — publicar dashboard con datos seed para acceso público
+  - Ver sección Deployment en TODO.md
+  - Ajustar `requirements.txt` para Spaces (sin torch pesado si es posible)
+
+- [ ] **Dataset abierto en Zenodo**
+  - Exportar `triangulo_auditoria.csv` + `patrones_historicos.csv` con DOI
+  - Citabilidad académica para Serie FisheriesAudit ALG
+
+---
+
 ## 🐛 Bugs conocidos
 
 - [ ] El parser puede fallar en actas con estructura atípica (sesiones extraordinarias muy cortas)
