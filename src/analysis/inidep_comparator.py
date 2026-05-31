@@ -1,1 +1,503 @@
-"""\nComparador CFP vs INIDEP: cuotas aprobadas vs. CBA/CMP recomendada científicamente.\n\nGenera alertas cuando el CFP aprueba cuotas superiores a las recomendaciones del INIDEP,\nevidenciando potenciales decisiones contra la sostenibilidad (Ley 24.922, Art. 9).\n\nv0.5: incluye capturas reales SAGPyA para completar el Triángulo de Auditoría\n      CBA (INIDEP) → CMP (CFP) → Captura real (SIPA/SAGPyA).\n"""\n\nimport sqlite3\nfrom dataclasses import asdict, dataclass\nfrom pathlib import Path\n\nimport pandas as pd\nfrom loguru import logger\n\nfrom src.acquisition.inidep_scraper import SEED_DATA\nfrom src.acquisition.sipa_scraper import SEED_DATA_CAPTURAS, _clasificar_alerta_captura\n\nSCHEMA_INIDEP = """\nCREATE TABLE IF NOT EXISTS inidep_evaluaciones (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    especie         TEXT NOT NULL,\n    especie_code    TEXT NOT NULL,\n    zona            TEXT,\n    year            INTEGER NOT NULL,\n    cba_recomendada_tn   REAL,\n    cba_alternativa_tn   REAL,\n    estado_stock    TEXT,\n    numero_ito      TEXT,\n    fuente_url      TEXT,\n    notas           TEXT,\n    created_at      TEXT DEFAULT (datetime('now'))\n);\n\nCREATE TABLE IF NOT EXISTS cfp_cuotas (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    especie         TEXT NOT NULL,\n    especie_code    TEXT NOT NULL,\n    zona            TEXT,\n    year            INTEGER NOT NULL,\n    cmp_aprobada_tn REAL,\n    tipo_decision   TEXT,\n    acta_referencia TEXT,\n    resolucion_cfp  TEXT,\n    created_at      TEXT DEFAULT (datetime('now'))\n);\n\nCREATE TABLE IF NOT EXISTS capturas_reales (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    especie         TEXT NOT NULL,\n    especie_code    TEXT NOT NULL,\n    year            INTEGER NOT NULL,\n    captura_tn      REAL NOT NULL,\n    fuente          TEXT DEFAULT 'SAGPyA',\n    notas           TEXT,\n    created_at      TEXT DEFAULT (datetime('now')),\n    UNIQUE(especie_code, year)\n);\n\nCREATE TABLE IF NOT EXISTS comparacion_cfp_inidep (\n    id                      INTEGER PRIMARY KEY AUTOINCREMENT,\n    especie                 TEXT NOT NULL,\n    especie_code            TEXT NOT NULL,\n    zona                    TEXT,\n    year                    INTEGER NOT NULL,\n    cba_inidep_tn           REAL,\n    cmp_cfp_tn              REAL,\n    captura_real_tn         REAL,\n    diferencia_tn           REAL,\n    ratio_sobreasignacion   REAL,\n    nivel_alerta            TEXT,\n    descripcion_alerta      TEXT,\n    alerta_captura          TEXT,\n    numero_ito              TEXT,\n    acta_cfp                TEXT,\n    created_at              TEXT DEFAULT (datetime('now'))\n);\n\nCREATE INDEX IF NOT EXISTS idx_inidep_especie_year ON inidep_evaluaciones(especie_code, year);\nCREATE INDEX IF NOT EXISTS idx_cfp_cuotas_especie_year ON cfp_cuotas(especie_code, year);\nCREATE INDEX IF NOT EXISTS idx_capturas_especie_year ON capturas_reales(especie_code, year);\nCREATE INDEX IF NOT EXISTS idx_comparacion_year ON comparacion_cfp_inidep(year);\n"""\n\n# ── Niveles de alerta CMP vs CBA ──────────────────────────────────────────────\nALERTA_VERDE = "verde"\nALERTA_AMARILLA = "amarillo"\nALERTA_ROJA = "rojo"\nALERTA_CRITICA = "critico"\nALERTA_SIN_DATOS = "sin_datos"\n\n\n@dataclass\nclass AlertaComparacion:\n    especie: str\n    zona: str\n    year: int\n    cba_inidep_tn: float | None\n    cmp_cfp_tn: float | None\n    diferencia_tn: float | None\n    ratio: float | None\n    nivel: str\n    descripcion: str\n    numero_ito: str | None\n    acta_cfp: str | None\n    # Tercer vértice del triángulo: captura real SAGPyA\n    captura_real_tn: float | None = None\n    alerta_captura: str | None = None\n\n\nclass INIDEPComparator:\n    """Motor de comparación CFP vs. INIDEP con triángulo de auditoría completo."""\n\n    def __init__(self, db_path: Path | str = "data/processed/catalog.db"):\n        self.db_path = Path(db_path)\n        self._init_schema()\n        self._migrate_schema()\n        self._seed_inidep_data()\n        self._seed_capturas_data()\n\n    def _conn(self):\n        conn = sqlite3.connect(self.db_path)\n        conn.row_factory = sqlite3.Row\n        return conn\n\n    def _init_schema(self) -> None:\n        with self._conn() as conn:\n            conn.executescript(SCHEMA_INIDEP)\n        logger.debug("Schema INIDEP inicializado")\n\n    def _migrate_schema(self) -> None:\n        """Agrega columnas nuevas a tablas existentes si no existen (idempotente)."""\n        migrations = [\n            "ALTER TABLE comparacion_cfp_inidep ADD COLUMN captura_real_tn REAL",\n            "ALTER TABLE comparacion_cfp_inidep ADD COLUMN alerta_captura TEXT",\n        ]\n        with self._conn() as conn:\n            for sql in migrations:\n                try:\n                    conn.execute(sql)\n                except sqlite3.OperationalError:\n                    pass  # columna ya existe\n            conn.commit()\n\n    def _seed_inidep_data(self) -> None:\n        """Carga datos semilla del INIDEP (ya verificados con fuentes oficiales)."""\n        with self._conn() as conn:\n            existing = conn.execute("SELECT COUNT(*) FROM inidep_evaluaciones").fetchone()[0]\n            if existing > 0:\n                return\n            for rec in SEED_DATA:\n                conn.execute(\n                    """\n                    INSERT INTO inidep_evaluaciones\n                        (especie, especie_code, zona, year, cba_recomendada_tn,\n                         cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)\n                    VALUES\n                        (:especie, :especie_code, :zona, :year, :cba_recomendada_tn,\n                         :cba_alternativa_tn, :estado_stock, :numero_ito, :fuente_url, :notas)\n                    """,\n                    {\n                        "especie": rec["especie"],\n                        "especie_code": rec["especie_code"],\n                        "zona": rec.get("zona"),\n                        "year": rec["year"],\n                        "cba_recomendada_tn": rec.get("cba_recomendada_tn"),\n                        "cba_alternativa_tn": rec.get("cba_alternativa_tn"),\n                        "estado_stock": rec.get("estado_stock"),\n                        "numero_ito": rec.get("numero_ito"),\n                        "fuente_url": rec.get("fuente_url"),\n                        "notas": rec.get("notas"),\n                    },\n                )\n            conn.commit()\n            logger.info(f"Seed INIDEP: {len(SEED_DATA)} registros cargados")\n\n    def _seed_capturas_data(self) -> None:\n        """Carga datos semilla SAGPyA (capturas reales verificadas)."""\n        with self._conn() as conn:\n            existing = conn.execute("SELECT COUNT(*) FROM capturas_reales").fetchone()[0]\n            if existing > 0:\n                return\n            inserted = 0\n            for rec in SEED_DATA_CAPTURAS:\n                try:\n                    conn.execute(\n                        """\n                        INSERT OR IGNORE INTO capturas_reales\n                            (especie, especie_code, year, captura_tn, fuente, notas)\n                        VALUES (?, ?, ?, ?, ?, ?)\n                        """,\n                        (\n                            rec["especie"],\n                            rec["especie_code"],\n                            rec["year"],\n                            rec["captura_tn"],\n                            rec.get("fuente", "SAGPyA"),\n                            rec.get("notas"),\n                        ),\n                    )\n                    inserted += 1\n                except sqlite3.IntegrityError:\n                    pass\n            conn.commit()\n            logger.info(f"Seed capturas_reales: {inserted} registros cargados")\n\n    # ── CRUD cuotas CFP ───────────────────────────────────────────────────────\n\n    def upsert_cfp_cuota(\n        self,\n        especie: str,\n        especie_code: str,\n        year: int,\n        cmp_aprobada_tn: float,\n        zona: str | None = None,\n        acta_referencia: str | None = None,\n        resolucion_cfp: str | None = None,\n        tipo_decision: str = "CMP",\n    ) -> None:\n        with self._conn() as conn:\n            conn.execute(\n                """\n                INSERT INTO cfp_cuotas\n                    (especie, especie_code, zona, year, cmp_aprobada_tn,\n                     tipo_decision, acta_referencia, resolucion_cfp)\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n                """,\n                (\n                    especie,\n                    especie_code,\n                    zona,\n                    year,\n                    cmp_aprobada_tn,\n                    tipo_decision,\n                    acta_referencia,\n                    resolucion_cfp,\n                ),\n            )\n            conn.commit()\n\n    def upsert_inidep_evaluacion(self, rec: dict) -> None:\n        """Inserta una evaluación INIDEP. Ignora duplicados (mismo especie_code+zona+year+ito)."""\n        with self._conn() as conn:\n            conn.execute(\n                """\n                INSERT INTO inidep_evaluaciones\n                    (especie, especie_code, zona, year, cba_recomendada_tn,\n                     cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)\n                VALUES (:especie, :especie_code, :zona, :year, :cba_recomendada_tn,\n                        :cba_alternativa_tn, :estado_stock, :numero_ito, :fuente_url, :notas)\n                """,\n                {\n                    "especie": rec.get("especie"),\n                    "especie_code": rec.get("especie_code"),\n                    "zona": rec.get("zona"),\n                    "year": rec.get("year"),\n                    "cba_recomendada_tn": rec.get("cba_recomendada_tn"),\n                    "cba_alternativa_tn": rec.get("cba_alternativa_tn"),\n                    "estado_stock": rec.get("estado_stock"),\n                    "numero_ito": rec.get("numero_ito"),\n                    "fuente_url": rec.get("fuente_url"),\n                    "notas": rec.get("notas"),\n                },\n            )\n            conn.commit()\n\n    # ── Comparación y alertas ─────────────────────────────────────────────────\n\n    def compute_comparisons(self) -> list[AlertaComparacion]:\n        """\n        Cruza cuotas CFP con recomendaciones INIDEP y capturas reales SAGPyA\n        por especie+zona+año y genera alertas de sobreasignación y captura.\n        """\n        alertas = []\n\n        with self._conn() as conn:\n            rows = conn.execute(\n                """\n                SELECT\n                    i.especie, i.especie_code, COALESCE(i.zona, 'Nacional') as zona,\n                    i.year, i.cba_recomendada_tn, i.numero_ito, i.estado_stock,\n                    c.cmp_aprobada_tn, c.acta_referencia, c.resolucion_cfp,\n                    cr.captura_tn AS captura_real_tn\n                FROM inidep_evaluaciones i\n                LEFT JOIN cfp_cuotas c\n                    ON i.especie_code = c.especie_code\n                    AND i.year = c.year\n                    AND (i.zona = c.zona OR c.zona IS NULL)\n                LEFT JOIN capturas_reales cr\n                    ON i.especie_code = cr.especie_code\n                    AND i.year = cr.year\n                ORDER BY i.year DESC, i.especie\n                """\n            ).fetchall()\n\n        for row in rows:\n            cba = row["cba_recomendada_tn"]\n            cmp = row["cmp_aprobada_tn"]\n            captura_real = row["captura_real_tn"]\n\n            # Alerta CMP vs CBA\n            if cba is None:\n                nivel = ALERTA_SIN_DATOS\n                desc = "CBA del INIDEP no disponible para comparar"\n                ratio = None\n                diff = None\n            elif cmp is None:\n                nivel = ALERTA_SIN_DATOS\n                desc = "Cuota CFP no registrada en el sistema (completar con scraping completo)"\n                ratio = None\n                diff = None\n            else:\n                ratio = cmp / cba\n                diff = cmp - cba\n                if ratio <= 1.0:\n                    nivel = ALERTA_VERDE\n                    desc = f"Cuota CFP ({cmp:,.0f} tn) dentro del límite recomendado por INIDEP ({cba:,.0f} tn)"\n                elif ratio <= 1.15:\n                    nivel = ALERTA_AMARILLA\n                    desc = (\n                        f"Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "\n                        f"la CBA del INIDEP ({cba:,.0f} tn). Monitorear."\n                    )\n                elif ratio <= 1.30:\n                    nivel = ALERTA_ROJA\n                    desc = (\n                        f"⚠️ Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "\n                        f"la CBA del INIDEP ({cba:,.0f} tn). Sobreasignación significativa."\n                    )\n                else:\n                    nivel = ALERTA_CRITICA\n                    desc = (\n                        f"🚨 Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "\n                        f"la CBA del INIDEP ({cba:,.0f} tn). Riesgo crítico de sostenibilidad."\n                    )\n\n            # Alerta captura real vs CBA (tercer vértice del triángulo)\n            ratio_captura_cba = (captura_real / cba) if (captura_real and cba) else None\n            ratio_captura_cmp = (captura_real / cmp) if (captura_real and cmp) else None\n            alerta_captura = _clasificar_alerta_captura(ratio_captura_cba, ratio_captura_cmp)\n\n            alertas.append(\n                AlertaComparacion(\n                    especie=row["especie"],\n                    zona=row["zona"],\n                    year=row["year"],\n                    cba_inidep_tn=cba,\n                    cmp_cfp_tn=cmp,\n                    diferencia_tn=diff,\n                    ratio=ratio,\n                    nivel=nivel,\n                    descripcion=desc,\n                    numero_ito=row["numero_ito"],\n                    acta_cfp=row["acta_referencia"],\n                    captura_real_tn=captura_real,\n                    alerta_captura=alerta_captura,\n                )\n            )\n\n        self._persist_comparisons(alertas)\n        return alertas\n\n    def _persist_comparisons(self, alertas: list[AlertaComparacion]) -> None:\n        with self._conn() as conn:\n            conn.execute("DELETE FROM comparacion_cfp_inidep")\n            for a in alertas:\n                conn.execute(\n                    """\n                    INSERT INTO comparacion_cfp_inidep\n                        (especie, especie_code, zona, year, cba_inidep_tn, cmp_cfp_tn,\n                         captura_real_tn, diferencia_tn, ratio_sobreasignacion, nivel_alerta,\n                         descripcion_alerta, alerta_captura, numero_ito, acta_cfp)\n                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n                    """,\n                    (\n                        a.especie,\n                        a.especie.lower().replace(" ", "_"),\n                        a.zona,\n                        a.year,\n                        a.cba_inidep_tn,\n                        a.cmp_cfp_tn,\n                        a.captura_real_tn,\n                        a.diferencia_tn,\n                        a.ratio,\n                        a.nivel,\n                        a.descripcion,\n                        a.alerta_captura,\n                        a.numero_ito,\n                        a.acta_cfp,\n                    ),\n                )\n            conn.commit()\n\n    # ── Queries de análisis ───────────────────────────────────────────────────\n\n    def get_alertas_activas(self, nivel_minimo: str = ALERTA_AMARILLA) -> pd.DataFrame:\n        niveles_orden = {\n            ALERTA_VERDE: 0,\n            ALERTA_AMARILLA: 1,\n            ALERTA_ROJA: 2,\n            ALERTA_CRITICA: 3,\n            ALERTA_SIN_DATOS: -1,\n        }\n        umbral = niveles_orden.get(nivel_minimo, 1)\n        niveles_incluidos = [k for k, v in niveles_orden.items() if v >= umbral]\n\n        with self._conn() as conn:\n            placeholders = ",".join("?" * len(niveles_incluidos))\n            df = pd.read_sql_query(\n                f"""\n                SELECT especie, zona, year, cba_inidep_tn, cmp_cfp_tn, captura_real_tn,\n                       diferencia_tn, ratio_sobreasignacion, nivel_alerta,\n                       descripcion_alerta, alerta_captura, numero_ito\n                FROM comparacion_cfp_inidep\n                WHERE nivel_alerta IN ({placeholders})\n                ORDER BY ratio_sobreasignacion DESC NULLS LAST\n                """,\n                conn,\n                params=niveles_incluidos,\n            )\n        return df\n\n    def get_inidep_data(self) -> pd.DataFrame:\n        with self._conn() as conn:\n            return pd.read_sql_query(\n                "SELECT * FROM inidep_evaluaciones ORDER BY year DESC, especie",\n                conn,\n            )\n\n    def get_cfp_data(self) -> pd.DataFrame:\n        with self._conn() as conn:\n            return pd.read_sql_query(\n                "SELECT * FROM cfp_cuotas ORDER BY year DESC, especie",\n                conn,\n            )\n\n    def get_capturas_data(self) -> pd.DataFrame:\n        """Retorna DataFrame de capturas reales SAGPyA."""\n        with self._conn() as conn:\n            return pd.read_sql_query(\n                "SELECT * FROM capturas_reales ORDER BY year DESC, especie",\n                conn,\n            )\n\n    def get_triangulo_completo(self, especie_code: str | None = None) -> pd.DataFrame:\n        """\n        Retorna DataFrame con los tres vértices del triángulo de auditoría:\n        CBA (INIDEP), CMP (CFP) y captura real (SAGPyA).\n        """\n        with self._conn() as conn:\n            base_query = """\n            SELECT\n                i.especie,\n                i.especie_code,\n                COALESCE(i.zona, 'Nacional') AS zona,\n                i.year,\n                i.cba_recomendada_tn,\n                c.cmp_aprobada_tn,\n                cr.captura_tn AS captura_real_tn,\n                CASE\n                    WHEN c.cmp_aprobada_tn IS NOT NULL AND i.cba_recomendada_tn IS NOT NULL\n                    THEN ROUND(c.cmp_aprobada_tn / i.cba_recomendada_tn, 3)\n                END AS ratio_cmp_cba,\n                CASE\n                    WHEN cr.captura_tn IS NOT NULL AND i.cba_recomendada_tn IS NOT NULL\n                    THEN ROUND(cr.captura_tn / i.cba_recomendada_tn, 3)\n                END AS ratio_captura_cba\n            FROM inidep_evaluaciones i\n            LEFT JOIN cfp_cuotas c\n                ON i.especie_code = c.especie_code\n                AND i.year = c.year\n                AND (i.zona = c.zona OR c.zona IS NULL)\n            LEFT JOIN capturas_reales cr\n                ON i.especie_code = cr.especie_code\n                AND i.year = cr.year\n            """\n            if especie_code:\n                base_query += " WHERE i.especie_code = ?"\n                base_query += " ORDER BY i.year DESC, i.especie"\n                return pd.read_sql_query(base_query, conn, params=(especie_code,))\n            base_query += " ORDER BY i.year DESC, i.especie"\n            return pd.read_sql_query(base_query, conn)\n\n    def summary_report(self) -> dict:\n        alertas = self.compute_comparisons()\n        from collections import Counter\n\n        conteo = Counter(a.nivel for a in alertas)\n        criticas = [a for a in alertas if a.nivel == ALERTA_CRITICA]\n        rojas = [a for a in alertas if a.nivel == ALERTA_ROJA]\n        sub_utilizacion = [a for a in alertas if a.alerta_captura == "sub_utilizacion"]\n\n        return {\n            "total_comparaciones": len(alertas),\n            "por_nivel": dict(conteo),\n            "alertas_criticas": [asdict(a) for a in criticas],\n            "alertas_rojas": [asdict(a) for a in rojas],\n            "n_sub_utilizacion": len(sub_utilizacion),\n            "especies_monitoreadas": list({a.especie for a in alertas}),\n            "años_cubiertos": sorted({a.year for a in alertas}),\n        }\n
+"""
+Comparador CFP vs INIDEP: cuotas aprobadas vs. CBA/CMP recomendada científicamente.
+
+Genera alertas cuando el CFP aprueba cuotas superiores a las recomendaciones del INIDEP,
+evidenciando potenciales decisiones contra la sostenibilidad (Ley 24.922, Art. 9).
+
+v0.5: incluye capturas reales SAGPyA para completar el Triángulo de Auditoría
+      CBA (INIDEP) → CMP (CFP) → Captura real (SIPA/SAGPyA).
+"""
+
+import sqlite3
+from dataclasses import asdict, dataclass
+from pathlib import Path
+
+import pandas as pd
+from loguru import logger
+
+from src.acquisition.inidep_scraper import SEED_DATA
+from src.acquisition.sipa_scraper import SEED_DATA_CAPTURAS, _clasificar_alerta_captura
+
+SCHEMA_INIDEP = """
+CREATE TABLE IF NOT EXISTS inidep_evaluaciones (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    especie         TEXT NOT NULL,
+    especie_code    TEXT NOT NULL,
+    zona            TEXT,
+    year            INTEGER NOT NULL,
+    cba_recomendada_tn   REAL,
+    cba_alternativa_tn   REAL,
+    estado_stock    TEXT,
+    numero_ito      TEXT,
+    fuente_url      TEXT,
+    notas           TEXT,
+    created_at      TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS cfp_cuotas (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    especie         TEXT NOT NULL,
+    especie_code    TEXT NOT NULL,
+    zona            TEXT,
+    year            INTEGER NOT NULL,
+    cmp_aprobada_tn REAL,
+    tipo_decision   TEXT,
+    acta_referencia TEXT,
+    resolucion_cfp  TEXT,
+    created_at      TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS capturas_reales (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    especie         TEXT NOT NULL,
+    especie_code    TEXT NOT NULL,
+    year            INTEGER NOT NULL,
+    captura_tn      REAL NOT NULL,
+    fuente          TEXT DEFAULT 'SAGPyA',
+    notas           TEXT,
+    created_at      TEXT DEFAULT (datetime('now')),
+    UNIQUE(especie_code, year)
+);
+
+CREATE TABLE IF NOT EXISTS comparacion_cfp_inidep (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    especie                 TEXT NOT NULL,
+    especie_code            TEXT NOT NULL,
+    zona                    TEXT,
+    year                    INTEGER NOT NULL,
+    cba_inidep_tn           REAL,
+    cmp_cfp_tn              REAL,
+    captura_real_tn         REAL,
+    diferencia_tn           REAL,
+    ratio_sobreasignacion   REAL,
+    nivel_alerta            TEXT,
+    descripcion_alerta      TEXT,
+    alerta_captura          TEXT,
+    numero_ito              TEXT,
+    acta_cfp                TEXT,
+    created_at              TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_inidep_especie_year ON inidep_evaluaciones(especie_code, year);
+CREATE INDEX IF NOT EXISTS idx_cfp_cuotas_especie_year ON cfp_cuotas(especie_code, year);
+CREATE INDEX IF NOT EXISTS idx_capturas_especie_year ON capturas_reales(especie_code, year);
+CREATE INDEX IF NOT EXISTS idx_comparacion_year ON comparacion_cfp_inidep(year);
+"""
+
+# ── Niveles de alerta CMP vs CBA ──────────────────────────────────────────────
+ALERTA_VERDE = "verde"
+ALERTA_AMARILLA = "amarillo"
+ALERTA_ROJA = "rojo"
+ALERTA_CRITICA = "critico"
+ALERTA_SIN_DATOS = "sin_datos"
+
+
+@dataclass
+class AlertaComparacion:
+    especie: str
+    zona: str
+    year: int
+    cba_inidep_tn: float | None
+    cmp_cfp_tn: float | None
+    diferencia_tn: float | None
+    ratio: float | None
+    nivel: str
+    descripcion: str
+    numero_ito: str | None
+    acta_cfp: str | None
+    # Tercer vértice del triángulo: captura real SAGPyA
+    captura_real_tn: float | None = None
+    alerta_captura: str | None = None
+
+
+class INIDEPComparator:
+    """Motor de comparación CFP vs. INIDEP con triángulo de auditoría completo."""
+
+    def __init__(self, db_path: Path | str = "data/processed/catalog.db"):
+        self.db_path = Path(db_path)
+        self._init_schema()
+        self._migrate_schema()
+        self._seed_inidep_data()
+        self._seed_capturas_data()
+
+    def _conn(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _init_schema(self) -> None:
+        with self._conn() as conn:
+            conn.executescript(SCHEMA_INIDEP)
+        logger.debug("Schema INIDEP inicializado")
+
+    def _migrate_schema(self) -> None:
+        """Agrega columnas nuevas a tablas existentes si no existen (idempotente)."""
+        migrations = [
+            "ALTER TABLE comparacion_cfp_inidep ADD COLUMN captura_real_tn REAL",
+            "ALTER TABLE comparacion_cfp_inidep ADD COLUMN alerta_captura TEXT",
+        ]
+        with self._conn() as conn:
+            for sql in migrations:
+                try:
+                    conn.execute(sql)
+                except sqlite3.OperationalError:
+                    pass  # columna ya existe
+            conn.commit()
+
+    def _seed_inidep_data(self) -> None:
+        """Carga datos semilla del INIDEP (ya verificados con fuentes oficiales)."""
+        with self._conn() as conn:
+            existing = conn.execute("SELECT COUNT(*) FROM inidep_evaluaciones").fetchone()[0]
+            if existing > 0:
+                return
+            for rec in SEED_DATA:
+                conn.execute(
+                    """
+                    INSERT INTO inidep_evaluaciones
+                        (especie, especie_code, zona, year, cba_recomendada_tn,
+                         cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)
+                    VALUES
+                        (:especie, :especie_code, :zona, :year, :cba_recomendada_tn,
+                         :cba_alternativa_tn, :estado_stock, :numero_ito, :fuente_url, :notas)
+                    """,
+                    {
+                        "especie": rec["especie"],
+                        "especie_code": rec["especie_code"],
+                        "zona": rec.get("zona"),
+                        "year": rec["year"],
+                        "cba_recomendada_tn": rec.get("cba_recomendada_tn"),
+                        "cba_alternativa_tn": rec.get("cba_alternativa_tn"),
+                        "estado_stock": rec.get("estado_stock"),
+                        "numero_ito": rec.get("numero_ito"),
+                        "fuente_url": rec.get("fuente_url"),
+                        "notas": rec.get("notas"),
+                    },
+                )
+            conn.commit()
+            logger.info(f"Seed INIDEP: {len(SEED_DATA)} registros cargados")
+
+    def _seed_capturas_data(self) -> None:
+        """Carga datos semilla SAGPyA (capturas reales verificadas)."""
+        with self._conn() as conn:
+            existing = conn.execute("SELECT COUNT(*) FROM capturas_reales").fetchone()[0]
+            if existing > 0:
+                return
+            inserted = 0
+            for rec in SEED_DATA_CAPTURAS:
+                try:
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO capturas_reales
+                            (especie, especie_code, year, captura_tn, fuente, notas)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            rec["especie"],
+                            rec["especie_code"],
+                            rec["year"],
+                            rec["captura_tn"],
+                            rec.get("fuente", "SAGPyA"),
+                            rec.get("notas"),
+                        ),
+                    )
+                    inserted += 1
+                except sqlite3.IntegrityError:
+                    pass
+            conn.commit()
+            logger.info(f"Seed capturas_reales: {inserted} registros cargados")
+
+    # ── CRUD cuotas CFP ───────────────────────────────────────────────────────
+
+    def upsert_cfp_cuota(
+        self,
+        especie: str,
+        especie_code: str,
+        year: int,
+        cmp_aprobada_tn: float,
+        zona: str | None = None,
+        acta_referencia: str | None = None,
+        resolucion_cfp: str | None = None,
+        tipo_decision: str = "CMP",
+    ) -> None:
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO cfp_cuotas
+                    (especie, especie_code, zona, year, cmp_aprobada_tn,
+                     tipo_decision, acta_referencia, resolucion_cfp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    especie,
+                    especie_code,
+                    zona,
+                    year,
+                    cmp_aprobada_tn,
+                    tipo_decision,
+                    acta_referencia,
+                    resolucion_cfp,
+                ),
+            )
+            conn.commit()
+
+    def upsert_inidep_evaluacion(self, rec: dict) -> None:
+        """Inserta una evaluación INIDEP. Ignora duplicados (mismo especie_code+zona+year+ito)."""
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO inidep_evaluaciones
+                    (especie, especie_code, zona, year, cba_recomendada_tn,
+                     cba_alternativa_tn, estado_stock, numero_ito, fuente_url, notas)
+                VALUES (:especie, :especie_code, :zona, :year, :cba_recomendada_tn,
+                        :cba_alternativa_tn, :estado_stock, :numero_ito, :fuente_url, :notas)
+                """,
+                {
+                    "especie": rec.get("especie"),
+                    "especie_code": rec.get("especie_code"),
+                    "zona": rec.get("zona"),
+                    "year": rec.get("year"),
+                    "cba_recomendada_tn": rec.get("cba_recomendada_tn"),
+                    "cba_alternativa_tn": rec.get("cba_alternativa_tn"),
+                    "estado_stock": rec.get("estado_stock"),
+                    "numero_ito": rec.get("numero_ito"),
+                    "fuente_url": rec.get("fuente_url"),
+                    "notas": rec.get("notas"),
+                },
+            )
+            conn.commit()
+
+    # ── Comparación y alertas ─────────────────────────────────────────────────
+
+    def compute_comparisons(self) -> list[AlertaComparacion]:
+        """
+        Cruza cuotas CFP con recomendaciones INIDEP y capturas reales SAGPyA
+        por especie+zona+año y genera alertas de sobreasignación y captura.
+        """
+        alertas = []
+
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    i.especie, i.especie_code, COALESCE(i.zona, 'Nacional') as zona,
+                    i.year, i.cba_recomendada_tn, i.numero_ito, i.estado_stock,
+                    c.cmp_aprobada_tn, c.acta_referencia, c.resolucion_cfp,
+                    cr.captura_tn AS captura_real_tn
+                FROM inidep_evaluaciones i
+                LEFT JOIN cfp_cuotas c
+                    ON i.especie_code = c.especie_code
+                    AND i.year = c.year
+                    AND (i.zona = c.zona OR c.zona IS NULL)
+                LEFT JOIN capturas_reales cr
+                    ON i.especie_code = cr.especie_code
+                    AND i.year = cr.year
+                ORDER BY i.year DESC, i.especie
+                """
+            ).fetchall()
+
+        for row in rows:
+            cba = row["cba_recomendada_tn"]
+            cmp = row["cmp_aprobada_tn"]
+            captura_real = row["captura_real_tn"]
+
+            # Alerta CMP vs CBA
+            if cba is None:
+                nivel = ALERTA_SIN_DATOS
+                desc = "CBA del INIDEP no disponible para comparar"
+                ratio = None
+                diff = None
+            elif cmp is None:
+                nivel = ALERTA_SIN_DATOS
+                desc = "Cuota CFP no registrada en el sistema (completar con scraping completo)"
+                ratio = None
+                diff = None
+            else:
+                ratio = cmp / cba
+                diff = cmp - cba
+                if ratio <= 1.0:
+                    nivel = ALERTA_VERDE
+                    desc = f"Cuota CFP ({cmp:,.0f} tn) dentro del límite recomendado por INIDEP ({cba:,.0f} tn)"
+                elif ratio <= 1.15:
+                    nivel = ALERTA_AMARILLA
+                    desc = (
+                        f"Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
+                        f"la CBA del INIDEP ({cba:,.0f} tn). Monitorear."
+                    )
+                elif ratio <= 1.30:
+                    nivel = ALERTA_ROJA
+                    desc = (
+                        f"⚠️ Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
+                        f"la CBA del INIDEP ({cba:,.0f} tn). Sobreasignación significativa."
+                    )
+                else:
+                    nivel = ALERTA_CRITICA
+                    desc = (
+                        f"🚨 Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
+                        f"la CBA del INIDEP ({cba:,.0f} tn). Riesgo crítico de sostenibilidad."
+                    )
+
+            # Alerta captura real vs CBA (tercer vértice del triángulo)
+            ratio_captura_cba = (captura_real / cba) if (captura_real and cba) else None
+            ratio_captura_cmp = (captura_real / cmp) if (captura_real and cmp) else None
+            alerta_captura = _clasificar_alerta_captura(ratio_captura_cba, ratio_captura_cmp)
+
+            alertas.append(
+                AlertaComparacion(
+                    especie=row["especie"],
+                    zona=row["zona"],
+                    year=row["year"],
+                    cba_inidep_tn=cba,
+                    cmp_cfp_tn=cmp,
+                    diferencia_tn=diff,
+                    ratio=ratio,
+                    nivel=nivel,
+                    descripcion=desc,
+                    numero_ito=row["numero_ito"],
+                    acta_cfp=row["acta_referencia"],
+                    captura_real_tn=captura_real,
+                    alerta_captura=alerta_captura,
+                )
+            )
+
+        self._persist_comparisons(alertas)
+        return alertas
+
+    def _persist_comparisons(self, alertas: list[AlertaComparacion]) -> None:
+        with self._conn() as conn:
+            conn.execute("DELETE FROM comparacion_cfp_inidep")
+            for a in alertas:
+                conn.execute(
+                    """
+                    INSERT INTO comparacion_cfp_inidep
+                        (especie, especie_code, zona, year, cba_inidep_tn, cmp_cfp_tn,
+                         captura_real_tn, diferencia_tn, ratio_sobreasignacion, nivel_alerta,
+                         descripcion_alerta, alerta_captura, numero_ito, acta_cfp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        a.especie,
+                        a.especie.lower().replace(" ", "_"),
+                        a.zona,
+                        a.year,
+                        a.cba_inidep_tn,
+                        a.cmp_cfp_tn,
+                        a.captura_real_tn,
+                        a.diferencia_tn,
+                        a.ratio,
+                        a.nivel,
+                        a.descripcion,
+                        a.alerta_captura,
+                        a.numero_ito,
+                        a.acta_cfp,
+                    ),
+                )
+            conn.commit()
+
+    # ── Queries de análisis ───────────────────────────────────────────────────
+
+    def get_alertas_activas(self, nivel_minimo: str = ALERTA_AMARILLA) -> pd.DataFrame:
+        niveles_orden = {
+            ALERTA_VERDE: 0,
+            ALERTA_AMARILLA: 1,
+            ALERTA_ROJA: 2,
+            ALERTA_CRITICA: 3,
+            ALERTA_SIN_DATOS: -1,
+        }
+        umbral = niveles_orden.get(nivel_minimo, 1)
+        niveles_incluidos = [k for k, v in niveles_orden.items() if v >= umbral]
+
+        with self._conn() as conn:
+            placeholders = ",".join("?" * len(niveles_incluidos))
+            df = pd.read_sql_query(
+                f"""
+                SELECT especie, zona, year, cba_inidep_tn, cmp_cfp_tn, captura_real_tn,
+                       diferencia_tn, ratio_sobreasignacion, nivel_alerta,
+                       descripcion_alerta, alerta_captura, numero_ito
+                FROM comparacion_cfp_inidep
+                WHERE nivel_alerta IN ({placeholders})
+                ORDER BY ratio_sobreasignacion DESC NULLS LAST
+                """,
+                conn,
+                params=niveles_incluidos,
+            )
+        return df
+
+    def get_inidep_data(self) -> pd.DataFrame:
+        with self._conn() as conn:
+            return pd.read_sql_query(
+                "SELECT * FROM inidep_evaluaciones ORDER BY year DESC, especie",
+                conn,
+            )
+
+    def get_cfp_data(self) -> pd.DataFrame:
+        with self._conn() as conn:
+            return pd.read_sql_query(
+                "SELECT * FROM cfp_cuotas ORDER BY year DESC, especie",
+                conn,
+            )
+
+    def get_capturas_data(self) -> pd.DataFrame:
+        """Retorna DataFrame de capturas reales SAGPyA."""
+        with self._conn() as conn:
+            return pd.read_sql_query(
+                "SELECT * FROM capturas_reales ORDER BY year DESC, especie",
+                conn,
+            )
+
+    def get_triangulo_completo(self, especie_code: str | None = None) -> pd.DataFrame:
+        """
+        Retorna DataFrame con los tres vértices del triángulo de auditoría:
+        CBA (INIDEP), CMP (CFP) y captura real (SAGPyA).
+        """
+        with self._conn() as conn:
+            base_query = """
+            SELECT
+                i.especie,
+                i.especie_code,
+                COALESCE(i.zona, 'Nacional') AS zona,
+                i.year,
+                i.cba_recomendada_tn,
+                c.cmp_aprobada_tn,
+                cr.captura_tn AS captura_real_tn,
+                CASE
+                    WHEN c.cmp_aprobada_tn IS NOT NULL AND i.cba_recomendada_tn IS NOT NULL
+                    THEN ROUND(c.cmp_aprobada_tn / i.cba_recomendada_tn, 3)
+                END AS ratio_cmp_cba,
+                CASE
+                    WHEN cr.captura_tn IS NOT NULL AND i.cba_recomendada_tn IS NOT NULL
+                    THEN ROUND(cr.captura_tn / i.cba_recomendada_tn, 3)
+                END AS ratio_captura_cba
+            FROM inidep_evaluaciones i
+            LEFT JOIN cfp_cuotas c
+                ON i.especie_code = c.especie_code
+                AND i.year = c.year
+                AND (i.zona = c.zona OR c.zona IS NULL)
+            LEFT JOIN capturas_reales cr
+                ON i.especie_code = cr.especie_code
+                AND i.year = cr.year
+            """
+            if especie_code:
+                base_query += " WHERE i.especie_code = ?"
+                base_query += " ORDER BY i.year DESC, i.especie"
+                return pd.read_sql_query(base_query, conn, params=(especie_code,))
+            base_query += " ORDER BY i.year DESC, i.especie"
+            return pd.read_sql_query(base_query, conn)
+
+    def summary_report(self) -> dict:
+        alertas = self.compute_comparisons()
+        from collections import Counter
+
+        conteo = Counter(a.nivel for a in alertas)
+        criticas = [a for a in alertas if a.nivel == ALERTA_CRITICA]
+        rojas = [a for a in alertas if a.nivel == ALERTA_ROJA]
+        sub_utilizacion = [a for a in alertas if a.alerta_captura == "sub_utilizacion"]
+
+        return {
+            "total_comparaciones": len(alertas),
+            "por_nivel": dict(conteo),
+            "alertas_criticas": [asdict(a) for a in criticas],
+            "alertas_rojas": [asdict(a) for a in rojas],
+            "n_sub_utilizacion": len(sub_utilizacion),
+            "especies_monitoreadas": list({a.especie for a in alertas}),
+            "años_cubiertos": sorted({a.year for a in alertas}),
+        }
