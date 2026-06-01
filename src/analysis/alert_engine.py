@@ -14,6 +14,8 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
+from src.config_loader import get_umbrales_cmp_cba
+
 SCHEMA_ALERTAS = """
 CREATE TABLE IF NOT EXISTS alertas_reglas (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,31 +79,37 @@ SEVERITY_ICONS = {
     SEV_CRITICAL: "🔴",
 }
 
+# Umbrales CMP/CBA externalizados a config/settings.yaml (sensibilidad y
+# justificación bibliográfica; ver ADR-005 y SensitivityAnalyzer).
+_UMBRALES = get_umbrales_cmp_cba()
+_UMBRAL_ROJO_PCT = round(_UMBRALES["rojo_min"] * 100, 1)       # 1.15 → 115.0
+_UMBRAL_CRITICO_PCT = round(_UMBRALES["critico_min"] * 100, 1)  # 1.30 → 130.0
+
 # Reglas por defecto instaladas en la primera ejecución
 DEFAULT_RULES = [
     {
-        "nombre": "Exceso CBA ≥ 115% (alerta moderada)",
+        "nombre": f"Exceso CBA ≥ {_UMBRAL_ROJO_PCT:.0f}% (alerta moderada)",
         "tipo": TIPO_CBA_EXCESO,
         "especie_code": None,
         "zona": None,
         "year_desde": 2000,
         "year_hasta": 2030,
-        "umbral_pct": 115.0,
+        "umbral_pct": _UMBRAL_ROJO_PCT,
         "umbral_estado": None,
         "severidad": SEV_WARNING,
-        "descripcion": "Cuota CFP supera el 115% de la CBA recomendada por INIDEP",
+        "descripcion": f"Cuota CFP supera el {_UMBRAL_ROJO_PCT:.0f}% de la CBA recomendada por INIDEP",
     },
     {
-        "nombre": "Exceso CBA ≥ 130% (alerta crítica)",
+        "nombre": f"Exceso CBA ≥ {_UMBRAL_CRITICO_PCT:.0f}% (alerta crítica)",
         "tipo": TIPO_CBA_EXCESO,
         "especie_code": None,
         "zona": None,
         "year_desde": 2000,
         "year_hasta": 2030,
-        "umbral_pct": 130.0,
+        "umbral_pct": _UMBRAL_CRITICO_PCT,
         "umbral_estado": None,
         "severidad": SEV_CRITICAL,
-        "descripcion": "Cuota CFP supera el 130% de la CBA — violación grave del Art. 9 Ley 24.922",
+        "descripcion": f"Cuota CFP supera el {_UMBRAL_CRITICO_PCT:.0f}% de la CBA — violación grave del Art. 9 Ley 24.922",
     },
     {
         "nombre": "Stock sobrexplotado con cuota asignada",

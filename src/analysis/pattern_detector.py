@@ -16,6 +16,7 @@ from typing import Any
 
 import pandas as pd
 from loguru import logger
+from scipy import stats as scipy_stats
 
 
 class PatternDetector:
@@ -91,7 +92,60 @@ class PatternDetector:
                 else "Baja concentración (<1000): mercado diversificado"
             ),
             "empresas_analizadas": len(df),
+            "n_empresas": len(df),
+            "_counts": df["menciones"].tolist(),
         }
+
+    def hhi_concentration_with_test(self) -> dict[str, Any]:
+        """
+        HHI con contrafactual estadístico y test de significancia.
+
+        Responde a la crítica metodológica: HHI sin baseline no es una estadística.
+        Baseline = distribución uniforme perfecta entre N empresas (HHI_null = 10000/N).
+        Test chi-cuadrado evalúa H0: las menciones se distribuyen uniformemente.
+
+        Universo de comparación: top-100 empresas por frecuencia de mención
+        en resoluciones CFP 1998-2025 (todas las especies y zonas).
+        """
+        base = self.hhi_concentration()
+        if base.get("hhi", 0) == 0:
+            return base
+
+        n = base["n_empresas"]
+        hhi_obs = base["hhi"]
+        counts = base.pop("_counts")
+
+        hhi_null = round(10_000 / n, 1)
+        delta_hhi = round(hhi_obs - hhi_null, 1)
+
+        mean_count = sum(counts) / n
+        with scipy_stats.chisquare.__module__ and True:
+            chi2_stat, p_valor = scipy_stats.chisquare(
+                f_obs=counts, f_exp=[mean_count] * n
+            )
+
+        base.pop("_counts", None)
+        base.update(
+            {
+                "hhi_null_uniform": hhi_null,
+                "delta_hhi": delta_hhi,
+                "chi2_stat": round(float(chi2_stat), 2),
+                "p_valor_uniformidad": round(float(p_valor), 4),
+                "significativo_alpha_05": bool(p_valor < 0.05),
+                "universo_comparacion": (
+                    "top-100 empresas por frecuencia de mención "
+                    "en resoluciones CFP 1998-2025"
+                ),
+                "interpretacion_contrafactual": (
+                    f"HHI observado ({hhi_obs:.0f}) supera en {delta_hhi:.0f} puntos "
+                    f"el baseline de distribución uniforme entre {n} empresas "
+                    f"(HHI_null={hhi_null:.0f}). "
+                    f"Test chi²={chi2_stat:.1f}, p={p_valor:.3f} "
+                    f"(H0: distribución uniforme de beneficiarios)."
+                ),
+            }
+        )
+        return base
 
     # ── Análisis de votaciones ────────────────────────────────────────────
 

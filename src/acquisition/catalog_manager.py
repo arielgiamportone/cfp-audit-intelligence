@@ -78,14 +78,52 @@ CREATE TABLE IF NOT EXISTS analisis_sesiones (
     resultado       TEXT,   -- JSON
     modelo_ia       TEXT,
     tokens_usados   INTEGER,
+    prompt_hash     TEXT,   -- sha256[:16] del system+user prompt — reproducibilidad
+    input_hash      TEXT,   -- sha256[:16] del texto de entrada
+    temperatura     REAL,
     created_at      TEXT DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_actas_year    ON actas(year);
-CREATE INDEX IF NOT EXISTS idx_actas_status  ON actas(download_status);
-CREATE INDEX IF NOT EXISTS idx_res_acta      ON resoluciones(acta_id);
-CREATE INDEX IF NOT EXISTS idx_res_tipo      ON resoluciones(tipo);
-CREATE INDEX IF NOT EXISTS idx_menciones_ent ON menciones(entidad_id);
+CREATE TABLE IF NOT EXISTS anotaciones_humanas (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    resolucion_id       INTEGER REFERENCES resoluciones(id),
+    anotador            TEXT NOT NULL,
+    categoria_ia        TEXT,
+    categoria_humana    TEXT,
+    hallazgos_ia        TEXT,
+    hallazgos_humanos   TEXT,
+    riesgo_score_ia     REAL,
+    riesgo_score_humano INTEGER,
+    coincide_categoria  BOOLEAN,
+    notas               TEXT,
+    confianza_pct       INTEGER,
+    is_gold_set         BOOLEAN DEFAULT FALSE,
+    timestamp           TEXT DEFAULT (datetime('now')),
+    UNIQUE(resolucion_id, anotador)
+);
+
+CREATE TABLE IF NOT EXISTS prompt_registry (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre        TEXT NOT NULL UNIQUE,
+    version       TEXT NOT NULL,
+    modelo        TEXT NOT NULL,
+    system_hash   TEXT NOT NULL,
+    user_template TEXT NOT NULL,
+    user_hash     TEXT NOT NULL,
+    temperatura   REAL,
+    tokens_max    INTEGER,
+    notas         TEXT,
+    created_at    TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_actas_year        ON actas(year);
+CREATE INDEX IF NOT EXISTS idx_actas_status      ON actas(download_status);
+CREATE INDEX IF NOT EXISTS idx_res_acta          ON resoluciones(acta_id);
+CREATE INDEX IF NOT EXISTS idx_res_tipo          ON resoluciones(tipo);
+CREATE INDEX IF NOT EXISTS idx_menciones_ent     ON menciones(entidad_id);
+CREATE INDEX IF NOT EXISTS idx_anotaciones_res   ON anotaciones_humanas(resolucion_id);
+CREATE INDEX IF NOT EXISTS idx_anotaciones_gold  ON anotaciones_humanas(is_gold_set);
+CREATE INDEX IF NOT EXISTS idx_analisis_phash    ON analisis_sesiones(prompt_hash);
 """
 
 
@@ -113,7 +151,22 @@ class CatalogManager:
     def _init_db(self) -> None:
         with self._conn() as conn:
             conn.executescript(SCHEMA_SQL)
+        self._migrate_analisis_schema()
         logger.debug(f"Catálogo inicializado: {self.db_path}")
+
+    def _migrate_analisis_schema(self) -> None:
+        """Agrega columnas de reproducibilidad a analisis_sesiones (idempotente)."""
+        migrations = [
+            "ALTER TABLE analisis_sesiones ADD COLUMN prompt_hash TEXT",
+            "ALTER TABLE analisis_sesiones ADD COLUMN input_hash TEXT",
+            "ALTER TABLE analisis_sesiones ADD COLUMN temperatura REAL",
+        ]
+        with self._conn() as conn:
+            for sql in migrations:
+                try:
+                    conn.execute(sql)
+                except sqlite3.OperationalError:
+                    pass
 
     # ── Actas ──────────────────────────────────────────────────────────────
 
@@ -275,16 +328,132 @@ class CatalogManager:
         resultado: str,
         modelo_ia: str,
         tokens_usados: int = 0,
+        prompt_hash: str | None = None,
+        input_hash: str | None = None,
+        temperatura: float | None = None,
     ) -> None:
         with self._conn() as conn:
             conn.execute(
                 """
                 INSERT INTO analisis_sesiones
-                    (acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados)
-                VALUES (?, ?, ?, ?, ?)
+                    (acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados,
+                     prompt_hash, input_hash, temperatura)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados),
+                (acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados,
+                 prompt_hash, input_hash, temperatura),
             )
+
+    def upsert_anotacion(
+        self,
+        resolucion_id: int,
+        anotador: str,
+        categoria_ia: str | None = None,
+        categoria_humana: str | None = None,
+        hallazgos_ia: str | None = None,
+        hallazgos_humanos: str | None = None,
+        riesgo_score_ia: float | None = None,
+        riesgo_score_humano: int | None = None,
+        notas: str | None = None,
+        confianza_pct: int | None = None,
+        is_gold_set: bool = False,
+    ) -> int:
+        """Inserta o actualiza una anotación humana. Retorna id."""
+        coincide = (
+            categoria_ia == categoria_humana
+            if (categoria_ia and categoria_humana)
+            else None
+        )
+        with self._conn() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO anotaciones_humanas
+                    (resolucion_id, anotador, categoria_ia, categoria_humana,
+                     hallazgos_ia, hallazgos_humanos, riesgo_score_ia,
+                     riesgo_score_humano, coincide_categoria, notas,
+                     confianza_pct, is_gold_set)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(resolucion_id, anotador) DO UPDATE SET
+                    categoria_ia=excluded.categoria_ia,
+                    categoria_humana=excluded.categoria_humana,
+                    hallazgos_ia=excluded.hallazgos_ia,
+                    hallazgos_humanos=excluded.hallazgos_humanos,
+                    riesgo_score_ia=excluded.riesgo_score_ia,
+                    riesgo_score_humano=excluded.riesgo_score_humano,
+                    coincide_categoria=excluded.coincide_categoria,
+                    notas=excluded.notas,
+                    confianza_pct=excluded.confianza_pct,
+                    is_gold_set=excluded.is_gold_set,
+                    timestamp=datetime('now')
+                RETURNING id
+                """,
+                (resolucion_id, anotador, categoria_ia, categoria_humana,
+                 hallazgos_ia, hallazgos_humanos, riesgo_score_ia,
+                 riesgo_score_humano, coincide, notas, confianza_pct, is_gold_set),
+            )
+            return cur.fetchone()[0]
+
+    def get_anotaciones(
+        self,
+        solo_gold: bool = False,
+        anotador: str | None = None,
+    ) -> list[sqlite3.Row]:
+        """Retorna anotaciones humanas filtradas."""
+        conditions = []
+        params: list[Any] = []
+        if solo_gold:
+            conditions.append("a.is_gold_set=TRUE")
+        if anotador:
+            conditions.append("a.anotador=?")
+            params.append(anotador)
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        with self._conn() as conn:
+            return conn.execute(
+                f"""
+                SELECT a.*, r.texto_completo, r.categoria as categoria_pipeline
+                FROM anotaciones_humanas a
+                LEFT JOIN resoluciones r ON r.id = a.resolucion_id
+                {where}
+                ORDER BY a.id
+                """,
+                params,
+            ).fetchall()
+
+    def upsert_prompt_registro(
+        self,
+        nombre: str,
+        version: str,
+        modelo: str,
+        system_hash: str,
+        user_template: str,
+        user_hash: str,
+        temperatura: float | None = None,
+        tokens_max: int | None = None,
+        notas: str | None = None,
+    ) -> int:
+        """Registra o actualiza una versión de prompt. Retorna id."""
+        with self._conn() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO prompt_registry
+                    (nombre, version, modelo, system_hash, user_template, user_hash,
+                     temperatura, tokens_max, notas)
+                VALUES (?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(nombre) DO UPDATE SET
+                    version=excluded.version,
+                    modelo=excluded.modelo,
+                    system_hash=excluded.system_hash,
+                    user_template=excluded.user_template,
+                    user_hash=excluded.user_hash,
+                    temperatura=excluded.temperatura,
+                    tokens_max=excluded.tokens_max,
+                    notas=excluded.notas
+                RETURNING id
+                """,
+                (nombre, version, modelo, system_hash, user_template, user_hash,
+                 temperatura, tokens_max, notas),
+            )
+            return cur.fetchone()[0]
 
     # ── Utilidades ────────────────────────────────────────────────────────
 
