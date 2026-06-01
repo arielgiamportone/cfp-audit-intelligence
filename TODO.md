@@ -1,6 +1,6 @@
 # CFP Audit Intelligence — Backlog y Roadmap
 
-> Estado: 2026-05-30 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `main`
+> Estado: 2026-05-31 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `main`
 
 ---
 
@@ -84,9 +84,28 @@
 - [x] `--step inidep` + `--enrich-pdf` en pipeline CLI
 - [x] 44 tests con fixtures HTTP mockeadas (sin llamadas reales)
 
+### Capturas reales SIPA integradas en comparador
+- [x] `capturas_reales` table en `SCHEMA_INIDEP` de `inidep_comparator.py`
+- [x] `_seed_capturas_data()` — seed SAGPyA (7 especies, ~40 registros)
+- [x] `compute_comparisons()` actualizado: LEFT JOIN `capturas_reales` + `alerta_captura`
+- [x] `get_triangulo_completo()` — DataFrame con CBA · CMP · Captura Real + ratios
+- [x] `summary_report()` incluye `n_sub_utilizacion`
+- [x] Dashboard `05_INIDEP_Comparador.py`: tab "🔺 Triángulo Completo" + 3ª barra en gráfico
+- [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
+
 ### Tests y CI
-- [x] 609 tests totales, todos verdes
+- [x] 763 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
+
+### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
+- [x] `src/analysis/research_exporter.py` — motor de exportación científica (ResearchExporter, PatternExporter, GraphExporter, FAOExporter)
+- [x] `src/analysis/linkedin_formatter.py` — generador Serie FisheriesAudit ALG 2026
+- [x] `src/dashboard/pages/13_Investigacion.py` — hub de publicación (figuras, tests, exports, posts LinkedIn)
+- [x] `notebooks/FisheriesAudit_ALG_01_triangulo_auditoria.ipynb` — Entrega #01: CBA · CMP · Captura real
+- [x] `notebooks/FisheriesAudit_ALG_02_patrones_historicos.ipynb` — Entrega #02: HHI, riesgo temporal, reversiones de veda
+- [x] `notebooks/FisheriesAudit_ALG_03_red_relaciones.ipynb` — Entrega #03: red de relaciones empresas-especies-CFP
+- [x] `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb` — Entrega #04: FAO FIRMS, share Argentina, estado de stocks
+- [x] `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb` — Entrega #05: RF + LR + SHAP, predicción sobreasignación CFP
 
 ---
 
@@ -99,13 +118,20 @@
 ## 🟡 Prioridad Media
 
 ### [IMPROVEMENT] Mejoras al parser
-- [ ] Extraer fecha exacta de cada resolución (no solo del acta)
-- [ ] Detectar miembros que votaron en contra por nombre
-- [ ] Manejo de actas multi-sesión (plenarios largos)
+- [x] Extraer fecha exacta de cada resolución (no solo del acta)
+- [x] Detectar miembros que votaron en contra por nombre
+- [x] Manejo de actas multi-sesión (plenarios largos)
+- [x] Extraer número de resolución CFP por decisión
+- [x] Detectar decisiones diferidas y denegadas
+- [x] Extraer fundamentos científicos INIDEP citados
+- [x] Votos nominales por institución + normalización canónica
+- [x] Extraer zonas y áreas geográficas de pesca
+- [x] Extraer período de vigencia de cada decisión
+- [x] Extraer asignaciones empresa→cuota
 
 ### [FEAT] Capturas reales SIPA/SAGPyA integradas
-- [ ] Validar cuotas CFP vs capturas efectivas por especie/año
-- [ ] Integrar en comparador para detectar sub-utilización de cuotas
+- [x] Validar cuotas CFP vs capturas efectivas por especie/año
+- [x] Integrar en comparador para detectar sub-utilización de cuotas
 
 ---
 
@@ -129,6 +155,77 @@
 | ¿Dónde hospedar el dashboard? | Streamlit Cloud / HuggingFace Spaces / VPS | Sprint 4 |
 | ¿Publicar datos procesados? | Dataset abierto en Hugging Face / Zenodo | Sprint 4 |
 | ¿Framework de anotación NER? | Prodigy (pago) / Label Studio (libre) / Doccano | Sprint 4 |
+
+---
+
+## 🔵 Próximos pasos — VS Code Local (Sprint 4)
+
+> Para retomar en la sesión local de VS Code. Ejecutar en orden.
+> El agente debe leer `AGENTS.md` sección "Instrucciones para sesión local en VS Code" para los comandos exactos.
+
+### Fase 1 — Pipeline con datos reales (sin costo API)
+
+- [ ] **Descarga actas CFP 2020–2025** (validación inicial)
+  ```bash
+  python scripts/run_full_pipeline.py --step download --years 2020-2025
+  ```
+  Resultado esperado: ~60–80 PDFs en `data/raw/`
+
+- [ ] **Descarga corpus completo 1998–2025** (una vez validado)
+  ```bash
+  python scripts/run_full_pipeline.py --step download --years 1998-2025
+  ```
+  Resultado esperado: ~400 PDFs, ~1-2 GB
+
+- [ ] **Extracción y parsing** (`--step process`)
+  - Puebla `resoluciones`, `entidades`, `menciones` en `catalog.db`
+  - Puebla `cmp_aprobada_tn` en `cfp_cuotas` — **dato clave para modelo predictivo**
+  - Resultado: textos en `data/processed/text/`, JSONs en `data/processed/json/`
+
+- [ ] **Pipeline INIDEP** (`--step inidep`)
+  - Scrapea los 492 ITOs de marabierto.inidep.edu.ar
+  - Puebla `inidep_evaluaciones` con CBA real por especie/año
+
+- [ ] **Knowledge base** (`--step knowledge_base`)
+  - Indexa documentos en ChromaDB con embeddings multilingües
+
+### Fase 2 — Auditoría IA ($2–80 según volumen)
+
+- [ ] **Test barato** (50 actas, $2–5)
+  ```bash
+  python scripts/run_full_pipeline.py --step audit --limit 50
+  ```
+
+- [ ] **Corpus parcial** (200 actas, $15–30) — cuando test pase OK
+
+- [ ] **Corpus completo** (500 actas, $50–80) — para publicación
+
+### Fase 3 — Re-ejecutar notebooks con datos reales
+
+- [ ] **`FisheriesAudit_ALG_05_modelo_predictivo.ipynb`** — prioridad máxima
+  - Con `cmp_aprobada_tn` real, el target ya no es sintético
+  - Si AUC-ROC > 0.75 → **publicable como artículo científico**
+  - Calcular SHAP con features reales
+
+- [ ] **`FisheriesAudit_ALG_01_triangulo_auditoria.ipynb`** — triángulo con datos reales
+- [ ] **`FisheriesAudit_ALG_02_patrones_historicos.ipynb`** — HHI y riesgo reales
+- [ ] **`FisheriesAudit_ALG_03_red_relaciones.ipynb`** — grafo real de empresas y CFP
+
+### Fase 4 — Entrega #06 (investigación futura)
+
+- [ ] **Red de conflictos de interés** — grafo directores de empresas pesqueras en cargos públicos
+  - Fuentes necesarias: Registro Público de Comercio, Boletín Oficial Nacional
+  - Requiere enriquecimiento externo (datos no están en CFP)
+
+### Fase 5 — Deployment y publicación
+
+- [ ] **HuggingFace Spaces** — publicar dashboard con datos seed para acceso público
+  - Ver sección Deployment en TODO.md
+  - Ajustar `requirements.txt` para Spaces (sin torch pesado si es posible)
+
+- [ ] **Dataset abierto en Zenodo**
+  - Exportar `triangulo_auditoria.csv` + `patrones_historicos.csv` con DOI
+  - Citabilidad académica para Serie FisheriesAudit ALG
 
 ---
 

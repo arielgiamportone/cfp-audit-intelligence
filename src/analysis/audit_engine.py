@@ -13,7 +13,7 @@ Usa prompt caching para reducir costos en análisis masivos.
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import anthropic
@@ -42,6 +42,13 @@ Contexto normativo clave:
 - Los miembros del CFP representan a provincias costeras, Nación y sector pesquero"""
 
 
+def _sha16(text: str) -> str:
+    """Hash SHA-256 truncado a 16 hex chars para reproducibilidad de prompts."""
+    from src.evaluation.groundedness import sha16
+
+    return sha16(text)
+
+
 @dataclass
 class AuditResult:
     resolucion_id: str
@@ -58,6 +65,12 @@ class AuditResult:
     tokens_entrada: int
     tokens_salida: int
     analisis_completo: str
+    # Reproducibilidad
+    prompt_hash: str = ""
+    input_hash: str = ""
+    # Groundedness
+    groundedness_scores: list[float] = field(default_factory=list)
+    groundedness_avg: float = 0.0
 
 
 class CFPAuditEngine:
@@ -177,6 +190,9 @@ Proporciona tu análisis en el siguiente formato JSON:
 
 Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
 
+        prompt_hash = _sha16(SYSTEM_PROMPT + prompt)
+        input_hash = _sha16(texto)
+
         try:
             response = self._call_claude(prompt, high_stakes=high_stakes)
             content = response.content[0].text
@@ -184,12 +200,21 @@ Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
             # Extraer JSON del response
             parsed = _extract_json(content)
 
+            hallazgos = parsed.get("hallazgos", [])
+
+            # Verificar anclaje textual de cada hallazgo en el texto fuente
+            from src.evaluation.groundedness import GroundednessChecker
+
+            checker = GroundednessChecker()
+            g = checker.check_all(hallazgos, texto)
+            hallazgos_flagged = checker.flag_low_evidence(hallazgos, g["scores"])
+
             return AuditResult(
                 resolucion_id=resolucion_id,
                 resolucion_texto=texto,
                 riesgo_score=float(parsed.get("riesgo_score", 0)),
                 categoria_riesgo=parsed.get("categoria_riesgo", "bajo"),
-                hallazgos=parsed.get("hallazgos", []),
+                hallazgos=hallazgos_flagged,
                 indicios=parsed.get("indicios", []),
                 recomendaciones=parsed.get("recomendaciones", []),
                 normativa_afectada=parsed.get("normativa_afectada", []),
@@ -199,6 +224,10 @@ Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
                 tokens_entrada=response.usage.input_tokens,
                 tokens_salida=response.usage.output_tokens,
                 analisis_completo=content,
+                prompt_hash=prompt_hash,
+                input_hash=input_hash,
+                groundedness_scores=g["scores"],
+                groundedness_avg=g["avg"],
             )
 
         except Exception as exc:
@@ -218,6 +247,8 @@ Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
                 tokens_entrada=0,
                 tokens_salida=0,
                 analisis_completo=f"ERROR: {exc}",
+                prompt_hash=prompt_hash,
+                input_hash=input_hash,
             )
 
     def summarize_acta(self, acta_texto: str, filename: str) -> dict[str, Any]:

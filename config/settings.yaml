@@ -85,6 +85,26 @@ audit:
     - "vinculación"
     - "participación accionaria"
 
+comparador:
+  # Umbrales CMP/CBA — externalizados para sensibilidad y reproducibilidad
+  # Justificación bibliográfica:
+  #   100% → Ley 24.922 Art. 9: cuota no puede superar CMS recomendada por INIDEP
+  #   115% → Bertolotti et al. 2001: desvío histórico promedio CFP/INIDEP ~15%
+  #   130% → FAO Code of Conduct 1995 Art. 7.2.1: límite precautorio MSY
+  umbrales_cmp_cba:
+    amarillo_min: 1.00   # ratio > 1.00 → amarillo
+    rojo_min: 1.15       # ratio > 1.15 → rojo
+    critico_min: 1.30    # ratio > 1.30 → crítico
+
+evaluation:
+  # Groundedness
+  low_evidence_threshold: 0.15  # Jaccard score < este valor → [BAJA_EVIDENCIA]
+  window_size: 100              # Tokens por ventana deslizante
+  # Sensibilidad de umbrales
+  sensitivity_amarillo_range: [0.05, 0.25]   # min, max de exceso sobre 1.0
+  sensitivity_rojo_range: [0.10, 0.50]
+  sensitivity_step: 0.025
+
 llm:
   default_model: "claude-sonnet-4-6"
   audit_model: "claude-opus-4-7"
