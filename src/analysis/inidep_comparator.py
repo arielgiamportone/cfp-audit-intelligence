@@ -275,6 +275,15 @@ class INIDEPComparator:
         """
         alertas = []
 
+        # Umbrales CMP/CBA externalizados a config/settings.yaml (sensibilidad y
+        # justificación bibliográfica; ver ADR-005 y SensitivityAnalyzer).
+        from src.config_loader import get_umbrales_cmp_cba
+
+        umbrales = get_umbrales_cmp_cba()
+        umbral_amarillo = umbrales["amarillo_min"]
+        umbral_rojo = umbrales["rojo_min"]
+        umbral_critico = umbrales["critico_min"]
+
         with self._conn() as conn:
             rows = conn.execute(
                 """
@@ -314,16 +323,16 @@ class INIDEPComparator:
             else:
                 ratio = cmp / cba
                 diff = cmp - cba
-                if ratio <= 1.0:
+                if ratio <= umbral_amarillo:
                     nivel = ALERTA_VERDE
                     desc = f"Cuota CFP ({cmp:,.0f} tn) dentro del límite recomendado por INIDEP ({cba:,.0f} tn)"
-                elif ratio <= 1.15:
+                elif ratio <= umbral_rojo:
                     nivel = ALERTA_AMARILLA
                     desc = (
                         f"Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
                         f"la CBA del INIDEP ({cba:,.0f} tn). Monitorear."
                     )
-                elif ratio <= 1.30:
+                elif ratio <= umbral_critico:
                     nivel = ALERTA_ROJA
                     desc = (
                         f"⚠️ Cuota CFP ({cmp:,.0f} tn) supera en {(ratio - 1) * 100:.1f}% "
