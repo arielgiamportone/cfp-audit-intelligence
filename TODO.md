@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 664 tests totales, todos verdes
+- [x] 763 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)

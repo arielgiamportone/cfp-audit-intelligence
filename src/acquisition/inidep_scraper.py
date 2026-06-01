@@ -11,6 +11,7 @@ Colección ITOs: scope 50a522a6-b22a-4c95-88fb-adbb6936fdde (492 items)
 import re
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import requests
 import urllib3
@@ -49,19 +50,66 @@ ESPECIES_INTERES = [
     "macruronus",
 ]
 
-# Patrones para extraer valores numéricos de CBA del abstract/texto
-_RE_CBA = re.compile(
-    r"(?:CBA|captura\s+biol[oó]gicamente\s+aceptable)"
-    r"[\s\w]*?(?:de\s+)?(?:es\s+de\s+|fue\s+de\s+|=\s*|:\s*|de\s+)?"
-    r"([\d]{1,3}(?:[.\s]\d{3})*(?:,\d+)?)\s*(?:toneladas?|tn\.?|t\.?)",
-    re.IGNORECASE,
-)
+# ── Número en formato argentino/europeo: 1.234.567,8 o 1 234 567 ──────────────
+_RE_NUM = r"([\d]{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?)"
+_RE_TN_UNIT = r"(?:toneladas?\s+m[eé]tricas?|toneladas?|tn\.?|t\.?)"
 
-_RE_CBA_ALT = re.compile(
-    r"se\s+recomienda[^.]{0,60}?([\d]{1,3}(?:[.\s]\d{3})*(?:,\d+)?)"
-    r"\s*(?:toneladas?|tn\.?)",
-    re.IGNORECASE,
-)
+# Patrones para extraer valores numéricos de CBA del abstract/texto de ITOs.
+# Ordenados de mayor a menor especificidad para evitar falsos positivos.
+_CBA_PATTERNS: list[re.Pattern] = [
+    # 1. "CBA = 300.000 tn" / "CBA: 300.000 tn" / "CBA de 300.000 tn"
+    re.compile(
+        r"(?:CBA|captura\s+biol[oó]gicamente\s+aceptable)"
+        r"[\s\w]{0,30}?(?:es\s+de\s+|fue\s+de\s+|=\s*|:\s*|de\s+|estimada?\s+en\s+|resultante\s+de\s+)?"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 2. "se recomienda no superar las 280.000 tn" / "no superar … 280.000 tn"
+    re.compile(
+        r"(?:se\s+recomienda\s+)?no\s+(?:superar|exceder)[^.]{0,60}?"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 3. "se recomienda … 300.000 tn"
+    re.compile(
+        rf"se\s+recomienda[^.{{}}]{{0,80}}?{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 4. "captura máxima recomendada de 180.000 tn"
+    re.compile(
+        r"captura\s+m[aá]xima\s+(?:recomendada?|permisible|sugerida?)"
+        rf"[^.{{}}]{{0,40}}?{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 5. "captura recomendada: 95.000 tn"
+    re.compile(
+        r"captura\s+recomendada?\s*[:\-]\s*"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 6. "límite de captura [de] 180.000 t"
+    re.compile(
+        r"l[ií]mite\s+de\s+captura\s+(?:de\s+)?"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 7. "la captura no debería exceder las 350.000 t"
+    re.compile(
+        r"captura\s+no\s+(?:deber[ií]a|debe)\s+exceder[^.]{0,40}?"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+    # 8. "resultó en 312.000 toneladas" (resultado de modelo)
+    re.compile(
+        r"result[oó]\s+en\s+"
+        rf"{_RE_NUM}\s*{_RE_TN_UNIT}",
+        re.IGNORECASE,
+    ),
+]
+
+# Mantener los nombres originales para compatibilidad con tests existentes
+_RE_CBA = _CBA_PATTERNS[0]
+_RE_CBA_ALT = _CBA_PATTERNS[2]
 
 _RE_ITO_NUM = re.compile(
     r"(?:ITO|Informe\s+T[eé]cnico\s+Oficial)\s+(?:N[°º]?\s*)?(\d+/\d{4})",
@@ -403,21 +451,30 @@ def _extract_eval_year(titulo: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def _parse_tn_value(raw: str) -> float | None:
+    """Convierte una cadena numérica en formato argentino/europeo a float."""
+    try:
+        val = float(raw.replace(" ", "").replace(".", "").replace(",", "."))
+        return val if 10 <= val <= 2_000_000 else None
+    except ValueError:
+        return None
+
+
 def _extract_cba(text: str) -> float | None:
-    """Extrae el valor numérico de CBA del abstract o texto de un ITO."""
+    """
+    Extrae el valor numérico de CBA del abstract o texto de un ITO.
+
+    Evalúa 8 patrones en orden de especificidad; retorna el primer valor
+    válido en el rango 10–2.000.000 toneladas.
+    """
     if not text:
         return None
 
-    for pattern in (_RE_CBA, _RE_CBA_ALT):
+    for pattern in _CBA_PATTERNS:
         for m in pattern.finditer(text):
-            try:
-                raw = m.group(1).replace(" ", "").replace(".", "").replace(",", ".")
-                val = float(raw)
-                # Rango razonable para una CBA: 10 a 2.000.000 toneladas
-                if 10 <= val <= 2_000_000:
-                    return val
-            except ValueError:
-                continue
+            val = _parse_tn_value(m.group(1))
+            if val is not None:
+                return val
     return None
 
 
@@ -482,6 +539,71 @@ def _extract_zona(titulo: str) -> str | None:
     if "golfo san" in t or "san jorge" in t:
         return "Golfo San Jorge"
     return None
+
+
+# ── Estado del scraping en DB ─────────────────────────────────────────────────
+
+
+def get_scrape_status(db_path: str | Path) -> dict:
+    """
+    Retorna estadísticas del scraping INIDEP en la DB.
+
+    Returns:
+        dict con claves: n_total, n_con_cba, especies_cubiertas,
+        ultimo_año, primera_actualizacion, ultima_actualizacion.
+    """
+    import sqlite3
+
+    db_path = Path(db_path)
+    if not db_path.exists():
+        return {
+            "n_total": 0,
+            "n_con_cba": 0,
+            "especies_cubiertas": [],
+            "ultimo_año": None,
+            "primera_actualizacion": None,
+            "ultima_actualizacion": None,
+        }
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute(
+                """
+                SELECT
+                    COUNT(*) AS n_total,
+                    SUM(CASE WHEN cba_recomendada_tn IS NOT NULL THEN 1 ELSE 0 END) AS n_con_cba,
+                    MAX(year) AS ultimo_año,
+                    MIN(created_at) AS primera_actualizacion,
+                    MAX(created_at) AS ultima_actualizacion
+                FROM inidep_evaluaciones
+                """
+            ).fetchone()
+
+            especies = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT DISTINCT especie_code FROM inidep_evaluaciones ORDER BY especie_code"
+                ).fetchall()
+            ]
+
+            return {
+                "n_total": row["n_total"] or 0,
+                "n_con_cba": row["n_con_cba"] or 0,
+                "especies_cubiertas": especies,
+                "ultimo_año": row["ultimo_año"],
+                "primera_actualizacion": row["primera_actualizacion"],
+                "ultima_actualizacion": row["ultima_actualizacion"],
+            }
+        except Exception:
+            return {
+                "n_total": 0,
+                "n_con_cba": 0,
+                "especies_cubiertas": [],
+                "ultimo_año": None,
+                "primera_actualizacion": None,
+                "ultima_actualizacion": None,
+            }
 
 
 # ── Datos semilla verificados ─────────────────────────────────────────────────
@@ -1047,12 +1169,19 @@ def save_itos_to_db(records: list["ITORecord"], db_path: str) -> int:
             year = rec.año_evaluacion or rec.año_publicacion
             if not year or not rec.titulo:
                 continue
-            zona = rec.zona or ""
+            zona = rec.zona or None  # consistente con lo almacenado (NULL si vacío)
 
-            exists = conn.execute(
-                "SELECT 1 FROM inidep_evaluaciones WHERE especie_code=? AND zona=? AND year=?",
-                (especie_code, zona, year),
-            ).fetchone()
+            if zona:
+                exists = conn.execute(
+                    "SELECT 1 FROM inidep_evaluaciones WHERE especie_code=? AND zona=? AND year=?",
+                    (especie_code, zona, year),
+                ).fetchone()
+            else:
+                exists = conn.execute(
+                    "SELECT 1 FROM inidep_evaluaciones "
+                    "WHERE especie_code=? AND (zona IS NULL OR zona='') AND year=?",
+                    (especie_code, year),
+                ).fetchone()
             if exists:
                 continue
 
