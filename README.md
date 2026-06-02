@@ -7,7 +7,7 @@
 [![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 609](https://img.shields.io/badge/tests-609%20passing-brightgreen.svg)](#tests)
+[![Tests: 864](https://img.shields.io/badge/tests-864%20passing-brightgreen.svg)](#tests)
 
 ---
 
@@ -147,7 +147,7 @@ docker-compose up --build
 ## Tests
 
 ```bash
-pytest                    # 609 tests, todos verdes
+pytest                    # 864 tests, todos verdes
 pytest -k "inidep" -v     # subset INIDEP
 make test                 # via Makefile
 ```
@@ -241,7 +241,7 @@ sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
 - [x] Integración FAO FIRMS (capturas mundiales, estado de stocks)
 - [x] Publicaciones científicas CONICET/INIDEP por especie
 - [x] Dashboard Streamlit de 12 páginas
-- [x] **609 tests pasando**
+- [x] **864 tests pasando**
 
 ### Pendiente
 
