@@ -63,7 +63,7 @@ Antes de implementar algo nuevo, buscar si ya existe:
 grep -r "nombre_funcion\|concepto" src/ tests/
 ```
 
-El proyecto tiene 609 tests y ~50 módulos. Es fácil re-implementar algo que ya existe.
+El proyecto tiene 864 tests y ~50 módulos. Es fácil re-implementar algo que ya existe.
 
 ---
 
@@ -271,6 +271,9 @@ GET  /entidades              → empresas, personas, especies
 | Personas privadas | No publicar nombres sin consentimiento |
 | Marco legal | Ley 24.922 + principios de acceso a información pública Argentina |
 
+> Marco completo y citable de límites éticos: ver **`docs/adr/007-limites-eticos.md`**
+> (marco legal, no-difamación, salvaguardas técnicas, pre-registro OSF, firma GPG).
+
 ---
 
 ## Estado actual del proyecto (2026-05-31)
@@ -308,7 +311,7 @@ claude/cfp-fisheries-audit-project-lLMib
 - `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb`
 - `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb`
 
-**Tests:** 664 tests, todos verdes (pytest)
+**Tests:** 864 tests, todos verdes (pytest)
 
 ---
 

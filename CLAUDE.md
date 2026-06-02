@@ -171,7 +171,7 @@ streamlit run src/dashboard/app.py
 uvicorn src.api.main:app --reload
 
 # Tests
-pytest                          # todos (609 actualmente)
+pytest                          # todos (864 actualmente)
 pytest tests/test_inidep_issue9.py -v
 pytest -k "inidep" -v
 
@@ -205,6 +205,15 @@ CLAUDE_AUDIT_MODEL=claude-opus-4-8  # Deep analysis (más lento, más profundo)
 ```
 
 **Regla absoluta**: nunca hardcodear `ANTHROPIC_API_KEY` en ningún archivo del repo.
+
+---
+
+## Límites éticos
+
+Marco completo y citable en **`docs/adr/007-limites-eticos.md`**: análisis descriptivo
+no acusatorio, solo datos públicos, no difamación, hallazgos que requieren verificación,
+conflictos de interés (`verificado=FALSE`) que exigen validación legal, salvaguarda de
+groundedness, y recomendaciones de pre-registro OSF + firma GPG para publicación.
 
 ---
 
@@ -311,7 +320,7 @@ test(api): tests de endpoints /inidep con mocks HTTP
 - Integración FAO FIRMS (capturas mundiales)
 - Publicaciones CONICET/INIDEP
 - Scraping completo 492 ITOs Mar Abierto (Issue #9)
-- **609 tests pasando**
+- **864 tests pasando**
 
 ### Pendiente (ver TODO.md)
 - Mejoras al parser (fecha exacta, miembros disidentes por nombre)

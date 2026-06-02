@@ -58,6 +58,12 @@ test:
 test-cov:
 	pytest tests/ -v --cov=src --cov-report=term-missing
 
+update-stats:
+	$(PYTHON) scripts/update_test_count.py
+
+check-stats:
+	$(PYTHON) scripts/update_test_count.py --check
+
 lint:
 	ruff check src/ scripts/
 	ruff format --check src/ scripts/
@@ -106,6 +112,8 @@ help:
 	@echo "  test-cov       Tests con reporte de cobertura"
 	@echo "  lint           Verificar estilo de código"
 	@echo "  lint-fix       Corregir estilo automáticamente"
+	@echo "  update-stats   Sincronizar conteo de tests en la documentación"
+	@echo "  check-stats    Verificar drift del conteo de tests (CI)"
 	@echo ""
 	@echo "  Pipeline de datos:"
 	@echo "  download       Descargar todas las actas del CFP"

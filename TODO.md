@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 763 tests totales, todos verdes
+- [x] 864 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
@@ -106,6 +106,17 @@
 - [x] `notebooks/FisheriesAudit_ALG_03_red_relaciones.ipynb` — Entrega #03: red de relaciones empresas-especies-CFP
 - [x] `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb` — Entrega #04: FAO FIRMS, share Argentina, estado de stocks
 - [x] `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb` — Entrega #05: RF + LR + SHAP, predicción sobreasignación CFP
+- [x] `notebooks/FisheriesAudit_ALG_07_conflictos_interes.ipynb` — Entrega #07: red de conflictos de interés CFP-industria (Boletín Oficial × actas CFP)
+
+### Rigor metodológico para publicación (Sprint 4–5)
+- [x] Framework de evaluación ground-truth (`src/evaluation/evaluator.py`, gold set, P/R/F1, Cohen's kappa) — ADR-005
+- [x] Groundedness automático + flag `[BAJA_EVIDENCIA]` (`src/evaluation/groundedness.py`)
+- [x] Versionado de prompts (`prompt_hash`, `input_hash`, `temperatura`, `prompt_registry`)
+- [x] HHI contrafactual + test chi-cuadrado (`pattern_detector.hhi_concentration_with_test()`)
+- [x] Sensibilidad de umbrales + justificación bibliográfica (`sensitivity_analyzer.py`)
+- [x] ADR-007 límites éticos (marco legal, no-difamación, OSF, GPG)
+- [x] Model Card (Mitchell 2019) + Datasheet (Gebru 2018) en `docs/`
+- [x] Script de sincronización del conteo de tests (`scripts/update_test_count.py`)
 
 ---
 
@@ -142,8 +153,9 @@
 - [ ] Dataset abierto en Hugging Face / Zenodo (actas procesadas 1998–2025)
 
 ### [ANALYSIS] Investigación futura
-- [ ] Modelo predictivo: ¿qué variables predicen cuota > CBA?
-- [ ] Red de conflictos de interés: directores de empresas pesqueras en cargos públicos
+- [ ] Modelo predictivo: ¿qué variables predicen cuota > CBA? (reemplazar target sintético — ver Model Card)
+- [x] Red de conflictos de interés: directores de empresas pesqueras en cargos públicos (Entrega #07)
+- [ ] **Auditoría de citas INIDEP** (diferida — ver `docs/adr/008-auditoria-citas-inidep.md`): cuántas veces el CFP cita un ITO que recomienda X y aprueba algo que lo contradice. Requiere `cfp_cuotas` poblado + ETL de citas a SQLite
 - [ ] Comparación internacional con Chile, Perú, UE
 
 ---
