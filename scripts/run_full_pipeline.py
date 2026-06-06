@@ -129,6 +129,25 @@ def step_inidep(db_path: Path, max_items: int | None = None, enrich_pdf: bool = 
     )
 
 
+def step_geovisor(db_path: Path) -> None:
+    """Descarga vedas geoespaciales del geovisor SERE (INIDEP) y las cruza contra el corpus."""
+    from src.acquisition.inidep_geovisor_scraper import SEREGeovisorClient
+    from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
+
+    logger.info("=== ETAPA GEOVISOR: VEDAS GEOESPACIALES SERE (INIDEP) ===")
+    client = SEREGeovisorClient(delay=1.0)
+    n = client.scrape_and_save_vedas(db_path)
+
+    validador = GeovisorCrossValidator(db_path)
+    resumen = validador.cobertura_summary()
+
+    logger.success(
+        f"Geovisor completado: {n} zonas de veda nuevas | "
+        f"Cobertura corpus (fuente CFP): {resumen['encontradas_en_corpus']}/"
+        f"{resumen['total_resoluciones_citadas_cfp']} ({resumen['pct_cobertura']}%)"
+    )
+
+
 def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
     import json
     import os
@@ -208,7 +227,7 @@ def main():
     parser = argparse.ArgumentParser(description="CFP Audit Intelligence Pipeline")
     parser.add_argument(
         "--step",
-        choices=["download", "process", "knowledge_base", "audit", "inidep", "all"],
+        choices=["download", "process", "knowledge_base", "audit", "inidep", "geovisor", "all"],
         default="all",
         help="Etapa del pipeline a ejecutar",
     )
@@ -255,6 +274,8 @@ def main():
             max_items=args.limit or None,
             enrich_pdf=args.enrich_pdf,
         )
+    if "geovisor" in steps:
+        step_geovisor(db_path)
 
     logger.success("Pipeline completado.")
 

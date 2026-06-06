@@ -7,7 +7,7 @@
 [![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 864](https://img.shields.io/badge/tests-864%20passing-brightgreen.svg)](#tests)
+[![Tests: 915](https://img.shields.io/badge/tests-915%20passing-brightgreen.svg)](#tests)
 
 ---
 
@@ -65,6 +65,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | `src/acquisition/sipa_scraper.py` | SAGPyA/SIPA | Capturas reales por especie y año |
 | `src/acquisition/fao_firms_scraper.py` | FAO FIRMS | Capturas mundiales + estado de stocks globales |
 | `src/acquisition/conicet_scraper.py` | CONICET/INIDEP | Publicaciones científicas por especie |
+| `src/acquisition/inidep_geovisor_scraper.py` | Geovisor SERE (INIDEP) | Vedas geoespaciales: número de resolución + link al PDF oficial (WFS GeoServer) |
 
 ### Procesamiento
 
@@ -81,6 +82,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | `src/analysis/audit_engine.py` | Claude API con prompt caching para análisis masivo |
 | `src/analysis/pattern_detector.py` | HHI concentración, votaciones, reversiones estadísticas |
 | `src/analysis/inidep_comparator.py` | CBA (INIDEP) vs CMP (CFP): 4 niveles de alerta |
+| `src/analysis/geovisor_cross_validator.py` | Cruce de vedas del geovisor SERE vs. citas en el corpus de actas (ground truth externo, ADR-009) |
 | `src/analysis/alert_engine.py` | 4 tipos de alerta configurables |
 | `src/analysis/graph_builder.py` | NetworkX + pyvis: red empresas–resoluciones–miembros |
 | `src/analysis/report_generator.py` | Reporte PDF ejecutivo con reportlab |
@@ -147,7 +149,7 @@ docker-compose up --build
 ## Tests
 
 ```bash
-pytest                    # 864 tests, todos verdes
+pytest                    # 915 tests, todos verdes
 pytest -k "inidep" -v     # subset INIDEP
 make test                 # via Makefile
 ```
@@ -240,8 +242,8 @@ sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
 - [x] Docker multi-stage + GitHub Actions CI (Python 3.10/3.11)
 - [x] Integración FAO FIRMS (capturas mundiales, estado de stocks)
 - [x] Publicaciones científicas CONICET/INIDEP por especie
-- [x] Dashboard Streamlit de 12 páginas
-- [x] **864 tests pasando**
+- [x] Dashboard Streamlit de 16 páginas
+- [x] **915 tests pasando**
 
 ### Pendiente
 
