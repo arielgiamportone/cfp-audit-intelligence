@@ -446,6 +446,60 @@ class TestPipelineInidepStep:
         assert args.step == "inidep"
 
 
+# ── Pipeline --step geovisor (ADR-009) ───────────────────────────────────────
+
+
+class TestPipelineGeovisorStep:
+    def test_step_geovisor_llama_scraper_y_validador(self, tmp_path):
+        db_path = tmp_path / "catalog.db"
+
+        with (
+            patch(
+                "src.acquisition.inidep_geovisor_scraper.SEREGeovisorClient.scrape_and_save_vedas",
+                return_value=7,
+            ) as mock_scrape,
+            patch(
+                "src.analysis.geovisor_cross_validator.GeovisorCrossValidator.cobertura_summary",
+                return_value={
+                    "total_resoluciones_citadas_cfp": 6,
+                    "encontradas_en_corpus": 0,
+                    "pendientes": 6,
+                    "pct_cobertura": 0.0,
+                    "interpretacion": "0/6 ...",
+                },
+            ) as mock_resumen,
+        ):
+            from scripts.run_full_pipeline import step_geovisor
+
+            step_geovisor(db_path)
+
+        mock_scrape.assert_called_once()
+        mock_resumen.assert_called_once()
+
+    def test_pipeline_acepta_step_geovisor(self):
+        """Verifica que el argparser acepta --step geovisor."""
+        import argparse
+        import sys
+
+        with patch.object(sys, "argv", ["pipeline", "--step", "geovisor"]):
+            parser = argparse.ArgumentParser()
+            parser.add_argument(
+                "--step",
+                choices=[
+                    "download",
+                    "process",
+                    "knowledge_base",
+                    "audit",
+                    "inidep",
+                    "geovisor",
+                    "all",
+                ],
+            )
+            parser.add_argument("--enrich-pdf", action="store_true")
+            args = parser.parse_args()
+        assert args.step == "geovisor"
+
+
 # ── Enrich con PDF ────────────────────────────────────────────────────────────────
 
 

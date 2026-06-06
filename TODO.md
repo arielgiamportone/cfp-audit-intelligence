@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 864 tests totales, todos verdes
+- [x] 915 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
@@ -107,6 +107,8 @@
 - [x] `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb` — Entrega #04: FAO FIRMS, share Argentina, estado de stocks
 - [x] `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb` — Entrega #05: RF + LR + SHAP, predicción sobreasignación CFP
 - [x] `notebooks/FisheriesAudit_ALG_07_conflictos_interes.ipynb` — Entrega #07: red de conflictos de interés CFP-industria (Boletín Oficial × actas CFP)
+- [ ] Entrega #08 — auditoría de citas INIDEP: **diferida**, diseño documentado en ADR-008 (`cfp_cuotas` vacía, citas solo en JSON)
+- [x] `notebooks/FisheriesAudit_ALG_09_geovisor_vedas.ipynb` — Entrega #09: vedas geoespaciales del geovisor SERE (INIDEP) como ground truth externo, cruce de cobertura del corpus (ADR-009)
 
 ### Rigor metodológico para publicación (Sprint 4–5)
 - [x] Framework de evaluación ground-truth (`src/evaluation/evaluator.py`, gold set, P/R/F1, Cohen's kappa) — ADR-005
@@ -155,6 +157,7 @@
 ### [ANALYSIS] Investigación futura
 - [ ] Modelo predictivo: ¿qué variables predicen cuota > CBA? (reemplazar target sintético — ver Model Card)
 - [x] Red de conflictos de interés: directores de empresas pesqueras en cargos públicos (Entrega #07)
+- [x] Geovisor SERE (INIDEP) — vedas geoespaciales como ground truth externo + cruce de cobertura del corpus (ADR-009, Entrega #09): `inidep_geovisor_scraper.py`, `geovisor_cross_validator.py`, dashboard `16_Geovisor.py`, `--step geovisor`
 - [ ] **Auditoría de citas INIDEP** (diferida — ver `docs/adr/008-auditoria-citas-inidep.md`): cuántas veces el CFP cita un ITO que recomienda X y aprueba algo que lo contradice. Requiere `cfp_cuotas` poblado + ETL de citas a SQLite
 - [ ] Comparación internacional con Chile, Perú, UE
 
