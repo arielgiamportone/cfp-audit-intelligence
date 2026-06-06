@@ -93,7 +93,13 @@ Este sistema usa **dos modelos** con propósitos distintos. Se documentan por se
 ---
 
 ## Referencias
-- Mitchell, M. et al. (2019). Model Cards for Model Reporting. *FAT\* '19*.
+
+Ver [`docs/bibliography.md`](bibliography.md) para la bibliografía completa verificada del proyecto.
+
+Referencias específicas de este documento:
+- Mitchell, M. et al. (2019). Model Cards for Model Reporting. *FAT\* '19*. https://doi.org/10.1145/3287560.3287596
+- Gebru, T. et al. (2021). Datasheets for Datasets. *CACM*, 64(12). https://doi.org/10.1145/3458723
 - Landis, J.R. & Koch, G.G. (1977). *Biometrics*, 33(1), 159–174.
-- Bertolotti, M.I. et al. (2001). *Economía de la pesca marítima argentina.*
+- Raji, I.D. et al. (2020). Closing the AI accountability gap. *FAccT '20*. https://doi.org/10.1145/3351095.3372873
+- Bertolotti, M.I. et al. (2015). Cuotas Individuales Transferibles de Captura en Argentina. UNMdP/FCEyS. https://nulan.mdp.edu.ar/3113/
 - ADR-005 (evaluación y reproducibilidad), ADR-007 (límites éticos).
