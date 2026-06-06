@@ -99,10 +99,18 @@ el riesgo de afirmaciones no respaldadas por el acta original.
 
 ## Referencias
 
+Ver [`docs/bibliography.md`](../bibliography.md) para la bibliografía académica completa verificada.
+
+Referencias legales y normativas:
 - Ley 24.922 — Régimen Federal de Pesca (Argentina, 1998).
 - Ley 25.188 — Ética en el Ejercicio de la Función Pública (Argentina, 1999), Art. 13.
 - Ley 27.275 — Derecho de Acceso a la Información Pública (Argentina, 2016).
 - OCDE (2003). *Managing Conflict of Interest in the Public Service: OECD Guidelines.*
 - FAO (1995). *Code of Conduct for Responsible Fisheries*, Art. 7.1.2 (transparencia).
+
+Referencias metodológicas:
 - Nosek, B. et al. (2018). The preregistration revolution. *PNAS*, 115(11).
+- Coglianese, C., & Lehr, D. (2017). Regulating by Robot. *Georgetown Law Journal*, 105(5). https://scholarship.law.upenn.edu/faculty_scholarship/1734/
+- Raji, I.D. et al. (2020). Closing the AI accountability gap. *FAccT '20*. https://doi.org/10.1145/3351095.3372873
+- Mökander, J., & Floridi, L. (2022). Operationalising AI governance through ethics-based auditing. *AI and Ethics*, 3, 451–468.
 - ADR-005 (evaluación y reproducibilidad) — salvaguarda de groundedness.

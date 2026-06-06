@@ -273,6 +273,30 @@ Trabaja exclusivamente con **documentos públicos** del CFP, organismo colegiado
 - El análisis es **descriptivo** — los hallazgos no constituyen acusación legal
 - Todos los resultados están marcados como "requieren verificación"
 - Metodología reproducible y código abierto
+- Marco ético completo y citable: [`docs/adr/007-limites-eticos.md`](docs/adr/007-limites-eticos.md)
+
+---
+
+## Bases bibliográficas
+
+La bibliografía académica verificada del proyecto (gobernanza pesquera argentina, brecha
+ciencia-política, NLP regulatorio, concentración corporativa e IA responsable) está en
+[`docs/bibliography.md`](docs/bibliography.md).
+
+Referencias mínimas indispensables:
+
+| Referencia | Relevancia |
+|-----------|-----------|
+| Da Rocha, Villasante & Trelles González (2013) — *Ambio* | Marco teórico brecha CBA→CMP |
+| Froese et al. (2025) — *Science* | "Overfishing ratchet" europeo; equivalente del hallazgo central |
+| Gualdoni, Pagani & Bertolotti (2014) — *FACES* | Análisis institucional del CITC argentino |
+| Bertolotti et al. (2015) — UNMdP | Desempeño empírico CITC (hipótesis a validar 2010–2025) |
+| Villasante et al. (2015) — *Sea Around Us* | Reconstrucción IUU Argentina 55% sub-reportado |
+| Österblom et al. (2015) — *PLOS ONE* | Keystone actors; base metodológica del análisis de grafo |
+| Coglianese & Lehr (2017) — *Georgetown Law Journal* | IA en regulación administrativa |
+| Mitchell et al. (2019) — *FAT\* '19* | Model Cards (`docs/MODEL_CARD.md`) |
+| Gebru et al. (2021) — *CACM* | Datasheets for Datasets (`docs/DATASHEET.md`) |
+| INIDEP ITOs 32/2024 y 34/2024 | Fuente primaria CBA actual |
 
 ---
 

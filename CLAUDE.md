@@ -222,6 +222,14 @@ no acusatorio, solo datos públicos, no difamación, hallazgos que requieren ver
 conflictos de interés (`verificado=FALSE`) que exigen validación legal, salvaguarda de
 groundedness, y recomendaciones de pre-registro OSF + firma GPG para publicación.
 
+## Bibliografía
+
+Bibliografía académica verificada en **`docs/bibliography.md`**: gobernanza pesquera
+argentina (escuela UNMdP: Bertolotti, Pagani, Gualdoni), brecha ciencia-política
+(Da Rocha 2013; Froese 2025), NLP regulatorio (Coglianese 2017), concentración
+corporativa (Österblom 2015), IA responsable (Mitchell 2019; Gebru 2021; Raji 2020),
+y notas estratégicas sobre alianzas académicas y la hipótesis publicable central.
+
 ---
 
 ## Tecnologías
