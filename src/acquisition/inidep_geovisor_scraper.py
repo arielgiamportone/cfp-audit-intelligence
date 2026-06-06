@@ -173,6 +173,18 @@ class SEREGeovisorClient:
         )
         return out
 
+    def scrape_and_save_vedas(self, db_path: str | Path) -> int:
+        """Descarga todas las capas de veda y las persiste en `vedas_geoespaciales`.
+
+        Returns:
+            Número de filas nuevas insertadas.
+        """
+        logger.info(f"Iniciando scraping de vedas geoespaciales SERE → {db_path}")
+        records = self.scrape_all_vedas()
+        n = save_vedas_to_db(records, db_path)
+        logger.success(f"scrape_and_save_vedas completo: {n} registros nuevos en DB")
+        return n
+
 
 # ── Persistencia ──────────────────────────────────────────────────────────────
 
