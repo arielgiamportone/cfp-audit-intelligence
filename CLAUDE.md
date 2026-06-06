@@ -70,6 +70,7 @@ src/
     sipa_scraper.py        → Capturas reales SAGPyA/SIPA por especie/año
     fao_firms_scraper.py   → Datos FAO: capturas Argentina + estado stocks
     conicet_scraper.py     → Publicaciones científicas INIDEP/CONICET
+    inidep_geovisor_scraper.py → Geovisor SERE (WFS GeoServer): vedas geoespaciales + link al PDF oficial
 
   processing/
     pdf_extractor.py       → Cascada: pdfplumber → PyMuPDF → OCR Tesseract
@@ -80,6 +81,7 @@ src/
     audit_engine.py        → Claude API + prompt caching, análisis de resoluciones
     pattern_detector.py    → HHI concentración, votaciones, reversiones estadísticas
     inidep_comparator.py   → CBA vs CMP: 4 niveles de alerta
+    geovisor_cross_validator.py → Cruce vedas geovisor SERE vs. citas en corpus de actas (ground truth externo, ADR-009)
     alert_engine.py        → Alertas: cuota > CBA, empresa recurrente, veda revertida
     graph_builder.py       → NetworkX + pyvis: empresas–resoluciones–miembros
     report_generator.py    → Reportlab: reporte PDF ejecutivo
@@ -113,6 +115,10 @@ src/
       10_FAO_FIRMS.py      → Capturas mundiales vs Argentina
       11_CONICET.py        → Publicaciones científicas por especie
       12_Capturas.py       → Capturas reales SIPA
+      13_Investigacion.py  → Hub Serie FisheriesAudit ALG (figuras, exports, posts)
+      14_Evaluacion.py     → Evaluación ground truth, groundedness, sensibilidad
+      15_Conflictos.py     → Red de conflictos de interés CFP-industria
+      16_Geovisor.py       → Vedas geoespaciales del geovisor SERE (INIDEP) + cobertura del corpus
 
 scripts/
   run_full_pipeline.py     → Pipeline CLI completo
@@ -163,6 +169,7 @@ python scripts/run_full_pipeline.py --step knowledge_base
 python scripts/run_full_pipeline.py --step audit --limit 50
 python scripts/run_full_pipeline.py --step inidep
 python scripts/run_full_pipeline.py --step inidep --limit 20 --enrich-pdf
+python scripts/run_full_pipeline.py --step geovisor
 
 # Dashboard
 streamlit run src/dashboard/app.py
@@ -171,7 +178,7 @@ streamlit run src/dashboard/app.py
 uvicorn src.api.main:app --reload
 
 # Tests
-pytest                          # todos (864 actualmente)
+pytest                          # todos (915 actualmente)
 pytest tests/test_inidep_issue9.py -v
 pytest -k "inidep" -v
 
@@ -270,6 +277,10 @@ conicet_publicaciones(id, titulo, autores, año, revista, doi,
                       especie_code, resumen, url, created_at)
 
 sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
+
+vedas_geoespaciales(id, capa, especie, especie_code, area, fecha_inicio, fecha_fin,
+                    resolucion_numero, resolucion_fuente, resolucion_url, notas,
+                    geometry_type, fuente, created_at)
 ```
 
 ---
@@ -320,7 +331,8 @@ test(api): tests de endpoints /inidep con mocks HTTP
 - Integración FAO FIRMS (capturas mundiales)
 - Publicaciones CONICET/INIDEP
 - Scraping completo 492 ITOs Mar Abierto (Issue #9)
-- **864 tests pasando**
+- Geovisor SERE (INIDEP): vedas geoespaciales + cruce de cobertura del corpus (ADR-009)
+- **915 tests pasando**
 
 ### Pendiente (ver TODO.md)
 - Mejoras al parser (fecha exacta, miembros disidentes por nombre)

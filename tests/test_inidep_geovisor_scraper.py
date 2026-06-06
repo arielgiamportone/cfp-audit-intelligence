@@ -247,6 +247,34 @@ class TestScrapeAllVedas:
         assert len(out) == len(VEDAS_LAYERS) - 2
 
 
+class TestScrapeAndSaveVedas:
+    def test_descarga_y_persiste(self, client, db):
+        fake = [
+            VedaGeoespacial(
+                capa="vedas_2024:centolla",
+                especie="Centolla",
+                area="Zona C V",
+                resolucion_numero="Res. 12/2018",
+                resolucion_fuente="CFP",
+            )
+        ]
+        with patch.object(client, "scrape_all_vedas", return_value=fake):
+            n = client.scrape_and_save_vedas(db)
+
+        assert n == 1
+        with sqlite3.connect(db) as conn:
+            row = conn.execute("SELECT COUNT(*) FROM vedas_geoespaciales").fetchone()
+        assert row[0] == 1
+
+    def test_es_idempotente(self, client, db):
+        fake = [VedaGeoespacial(capa="vedas_2024:centolla", area="Zona C V")]
+        with patch.object(client, "scrape_all_vedas", return_value=fake):
+            client.scrape_and_save_vedas(db)
+            n_segunda = client.scrape_and_save_vedas(db)
+
+        assert n_segunda == 0
+
+
 # ── Persistencia ──────────────────────────────────────────────────────────────
 
 
