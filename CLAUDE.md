@@ -23,6 +23,11 @@ Plataforma de **auditoría inteligente** de las actas públicas del Consejo Fede
 3. **`AGENTS.md`** — reglas por tipo de agente y flujo multi-entorno
 4. **`docs/adr/`** — decisiones de arquitectura tomadas (no re-decidir sin ADR nuevo)
 
+**Documentación técnica completa (no especulativa — basada en código real):**
+- `docs/ARCHITECTURE.md` — componentes, contratos, flujo end-to-end, stack
+- `docs/DATA_PIPELINE.md` — integridad de datos, SHA256, idempotencia, provenance chain
+- `docs/ANALYSIS_METHODOLOGY.md` — fundamentos técnicos y bibliográficos de cada método
+
 ---
 
 ## Coordinación multi-entorno
@@ -221,6 +226,14 @@ Marco completo y citable en **`docs/adr/007-limites-eticos.md`**: análisis desc
 no acusatorio, solo datos públicos, no difamación, hallazgos que requieren verificación,
 conflictos de interés (`verificado=FALSE`) que exigen validación legal, salvaguarda de
 groundedness, y recomendaciones de pre-registro OSF + firma GPG para publicación.
+
+## Bibliografía
+
+Bibliografía académica verificada en **`docs/bibliography.md`**: gobernanza pesquera
+argentina (escuela UNMdP: Bertolotti, Pagani, Gualdoni), brecha ciencia-política
+(Da Rocha 2013; Froese 2025), NLP regulatorio (Coglianese 2017), concentración
+corporativa (Österblom 2015), IA responsable (Mitchell 2019; Gebru 2021; Raji 2020),
+y notas estratégicas sobre alianzas académicas y la hipótesis publicable central.
 
 ---
 

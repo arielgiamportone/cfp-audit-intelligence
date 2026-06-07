@@ -82,5 +82,11 @@
 ---
 
 ## Referencias
-- Gebru, T. et al. (2021). Datasheets for Datasets. *Communications of the ACM*, 64(12).
+
+Ver [`docs/bibliography.md`](bibliography.md) para la bibliografía completa verificada del proyecto.
+
+Referencias específicas de este documento:
+- Gebru, T. et al. (2021). Datasheets for Datasets. *Communications of the ACM*, 64(12), 86–92. https://doi.org/10.1145/3458723
+- Wilkinson, M.D. et al. (2016). The FAIR Guiding Principles for scientific data management. *Scientific Data*, 3, 160018. https://doi.org/10.1038/sdata.2016.18
+- Villasante, S. et al. (2015). Reconstruction of marine fisheries catches in Argentina (1950–2010). *Sea Around Us Working Paper*. http://www.seaaroundus.org/doc/publications/wp/2015/Villasante-et-al-Argentina.pdf
 - ADR-005 (reproducibilidad), ADR-007 (límites éticos).
