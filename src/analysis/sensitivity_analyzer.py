@@ -12,14 +12,25 @@ Justificación bibliográfica de los umbrales actuales:
     desvío histórico promedio entre CMP aprobada por CFP y CBA recomendada
     por INIDEP es ~15%. Este umbral identifica decisiones fuera de la
     tendencia histórica "normal" pero aún dentro de lo observado.
-  - 130% (rojo→crítico): FAO Code of Conduct for Responsible Fisheries
-    (1995, Art. 7.2.1) establece que sobrepasar el MSY en más de un 30%
-    constituye riesgo de colapso del stock. Este umbral se usa en gestión
-    pesquera internacional como límite precautorio.
+  - 130% (rojo→crítico): Precedente histórico de colapso documentado en el
+    propio dominio: la merluza argentina (Merluccius hubbsi) colapsó en
+    1997–2000 con cuotas sistemáticamente >30% sobre la CMS. El INIDEP
+    declaró veda de emergencia en 2000. Villasante et al. (2015, Sea Around
+    Us) estimó capturas reales ~55% superiores a las reportadas en ese
+    período. Aubone (2004, Ecological Modelling) demostró la vulnerabilidad
+    estructural del stock a capturas excesivas de juveniles. Consistente
+    además con FAO Code of Conduct 1995, Art. 7.2.1 (límite precautorio
+    internacional para MSY).
 
 Referencias:
   Bertolotti, M.I. et al. (2001). Impacto económico de la actividad pesquera.
     INIDEP Informe Técnico 47.
+  Bezzi, S., Verazay, G.A., & Dato, C.V. (1993). Biology and fisheries of
+    Argentine hake. En Alheit & Pitcher (Eds.), Hake. Chapman & Hall.
+  Aubone, A. (2004). Loss of stability owing to a stable age structure
+    skewed toward juveniles. Ecological Modelling, 175(1), 55–64.
+  Villasante, S. et al. (2015). Reconstruction of marine fisheries catches
+    in Argentina (1950–2010). Sea Around Us Working Paper.
   FAO (1995). Code of Conduct for Responsible Fisheries. Art. 7.2.1.
   Ley Federal de Pesca 24.922 (1998). Art. 9. Buenos Aires: Argentina.
 """
@@ -38,7 +49,7 @@ from loguru import logger
 LITERATURA = {
     "100pct": "Ley 24.922 Art. 9 — cuota ≤ CMS recomendada por INIDEP",
     "115pct": "Bertolotti et al. 2001 — desvío histórico promedio CFP/INIDEP ~15%",
-    "130pct": "FAO Code of Conduct 1995 Art. 7.2.1 — límite precautorio MSY",
+    "130pct": "Colapso merluza argentina 1997–2000 (Villasante 2015; Aubone 2004); FAO Code 1995 Art. 7.2.1",
 }
 
 

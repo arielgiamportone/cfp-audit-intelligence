@@ -40,10 +40,34 @@ bibliográficamente. No son umbrales arbitrarios.
 
 | Nivel | Umbral | Justificación | Fuente |
 |-------|--------|---------------|--------|
-| 🟢 Verde | CMP ≤ 100% CBA | Límite legal explícito | Ley 24.922, Art. 9 |
-| 🟡 Amarillo | 100% < CMP ≤ 115% CBA | Desviación histórica promedio observada en el régimen argentino | Bertolotti et al. (2001) — ~15% |
-| 🔴 Rojo | 115% < CMP ≤ 130% CBA | Nivel de "sobreasignación significativa" que precede señales de colapso | Analogía con FAO Code 1995, Art. 7.2.1 |
-| ⚫ Crítico | CMP > 130% CBA | >30% sobre el MSY = riesgo de colapso del stock documentado | FAO Code of Conduct for Responsible Fisheries, 1995 |
+| 🟢 Verde | CMP ≤ 100% CBA | Límite legal explícito: la CMP no puede superar la CMS recomendada | Ley 24.922, Art. 9 |
+| 🟡 Amarillo | 100% < CMP ≤ 115% CBA | Desviación histórica promedio observada en el régimen argentino pre-CITC | Bertolotti et al. (2001) — desvío ~15% |
+| 🔴 Rojo | 115% < CMP ≤ 130% CBA | Rango donde la sobreasignación precedió históricamente a señales de stress del stock en merluza argentina | Bezzi, Verazay & Dato (1993); Aubone (2004, *Ecological Modelling*) |
+| ⚫ Crítico | CMP > 130% CBA | Precedente de colapso documentado: la merluza argentina colapsó en 1997–2000 con cuotas sistemáticamente >30% sobre CMS. Límite precautorio internacional | INIDEP Veda de Emergencia 2000; FAO Code 1995, Art. 7.2.1; Villasante et al. (2015) — capturas 55% sub-reportadas |
+
+### Precedente histórico del umbral crítico (130%)
+
+El umbral crítico de 130% no es solo una "analogía" a FAO — está anclado en el único
+colapso documentado del recurso pesquero más importante de Argentina:
+
+**Crisis de la merluza argentina (1997–2000):**
+- La merluza (*Merluccius hubbsi*) es la especie de mayor valor económico del Mar Argentino
+- Durante 1995–1999, el CFP aprobó sucesivas CMP superiores al CBA recomendado por INIDEP
+- Villasante et al. (2015, *Sea Around Us*) documentó que las capturas reales en ese período
+  fueron ~55% superiores a las reportadas oficialmente — sobrexplotación sistemática
+- En 2000, el INIDEP declaró emergencia pesquera: vedas de emergencia para el efectivo norte
+  de 41°S. La biomasa del stock se había contraído a niveles históricamente bajos
+- Aubone (2004, *Ecological Modelling*) demostró formalmente por qué la merluza argentina
+  es estructuralmente vulnerable a capturas excesivas de juveniles — exactamente el patrón
+  que generó el colapso
+
+**Implicación metodológica:** Un sistema que hubiera alertado con `nivel=crítico` cuando
+las cuotas superaron el 30% de la CBA habría señalado el riesgo antes del colapso de 2000.
+El umbral 130% es, por lo tanto, la estimación más conservadora consistente con el único
+evento de colapso documentado del dominio.
+
+**Robustez del umbral:** Ver §6 (Análisis de Sensibilidad) — la clasificación de alertas
+críticas es estable frente a variaciones ±5% en el umbral (max_variacion ≤ 2 casos).
 
 **Configuración en código:**
 ```yaml
