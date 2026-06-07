@@ -349,6 +349,6 @@ test(api): tests de endpoints /inidep con mocks HTTP
 
 ### Pendiente (ver TODO.md)
 - Mejoras al parser (fecha exacta, miembros disidentes por nombre)
-- Capturas SIPA integradas en comparador
+- Capturas SIPA: seed SAGPyA verificado en comparador; pull real de SIPA pendiente con datos del pipeline
 - Deployment (Streamlit Cloud / HuggingFace / VPS)
 - Dataset abierto (HuggingFace / Zenodo)

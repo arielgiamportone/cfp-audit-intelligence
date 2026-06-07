@@ -298,7 +298,7 @@ claude/cfp-fisheries-audit-project-lLMib
 - AuditEngine (Claude API + prompt caching)
 - NER pesquero (spaCy EntityRuler, 6 categorías)
 - API REST FastAPI (17 endpoints)
-- Dashboard Streamlit (13 páginas activas)
+- Dashboard Streamlit (16 páginas activas)
 - Docker + GitHub Actions CI
 
 **Serie FisheriesAudit ALG (I+D+I publicable):**

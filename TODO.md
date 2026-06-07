@@ -14,7 +14,7 @@
 - [x] Vector store ChromaDB con embeddings multilingües (`paraphrase-multilingual-MiniLM-L12-v2`)
 - [x] Motor de auditoría con Claude API + prompt caching
 - [x] Detector de patrones estadísticos (HHI concentración, votaciones, reversiones)
-- [x] Dashboard Streamlit multipágina (12 páginas activas)
+- [x] Dashboard Streamlit multipágina (16 páginas activas)
 - [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit|inidep`)
 - [x] Makefile con targets clave
 - [x] ADRs (001–004), CLAUDE.md, AGENTS.md
