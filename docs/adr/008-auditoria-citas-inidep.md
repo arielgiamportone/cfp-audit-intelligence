@@ -92,6 +92,11 @@ class CitationAuditor:
 
 ## Referencias
 
+Ver [`docs/bibliography.md`](../bibliography.md) para la bibliografía académica completa verificada.
+
+- Da Rocha, J.M., Villasante, S., & Trelles González, R. (2013). Credible Enforcement Policies Under Illegal Fishing. *Ambio*, 42(8), 1047–1056. https://doi.org/10.1007/s13280-013-0459-6 — marco teórico del enforcement sin compromiso creíble.
+- Froese, R. et al. (2025). Systemic failure of European fisheries management. *Science*. — equivalente europeo del hallazgo central; propone separación entre asesoramiento científico y decisión política.
+- Bertolotti, M.I. et al. (2015). Cuotas Individuales Transferibles de Captura en Argentina. UNMdP/FCEyS. https://nulan.mdp.edu.ar/3113/ — la hipótesis de cumplimiento inicial que este módulo extenderá temporalmente.
 - ADR-003 (SQLite), ADR-005 (reproducibilidad), ADR-007 (límites éticos).
 - `src/analysis/inidep_comparator.py` — comparador CBA/CMP existente.
 - `src/processing/document_parser.py` — `parse_fundamento_inidep()`.

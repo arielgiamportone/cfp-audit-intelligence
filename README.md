@@ -22,6 +22,20 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 
 ---
 
+## Documentación Técnica
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arquitectura completa: capas, módulos, contratos de datos, flujo end-to-end, stack tecnológico |
+| [`docs/DATA_PIPELINE.md`](docs/DATA_PIPELINE.md) | Tratamiento e integridad de datos: cascade PDF, parseo estructural, hashing SHA256, idempotencia, provenance chain |
+| [`docs/ANALYSIS_METHODOLOGY.md`](docs/ANALYSIS_METHODOLOGY.md) | Fundamentos técnicos: triángulo CBA·CMP·Captura, umbrales con citas, HHI+chi², groundedness, kappa, sensibilidad |
+| [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Model Card (Mitchell 2019): audit_engine + modelo predictivo |
+| [`docs/DATASHEET.md`](docs/DATASHEET.md) | Datasheet for Datasets (Gebru 2021): composición, procesamiento, limitaciones |
+| [`docs/bibliography.md`](docs/bibliography.md) | Bibliografía académica verificada (30+ refs con DOI) |
+| [`docs/adr/`](docs/adr/) | ADR 001–009: decisiones de arquitectura con contexto y justificación |
+
+---
+
 ## Arquitectura
 
 ```
@@ -273,6 +287,30 @@ Trabaja exclusivamente con **documentos públicos** del CFP, organismo colegiado
 - El análisis es **descriptivo** — los hallazgos no constituyen acusación legal
 - Todos los resultados están marcados como "requieren verificación"
 - Metodología reproducible y código abierto
+- Marco ético completo y citable: [`docs/adr/007-limites-eticos.md`](docs/adr/007-limites-eticos.md)
+
+---
+
+## Bases bibliográficas
+
+La bibliografía académica verificada del proyecto (gobernanza pesquera argentina, brecha
+ciencia-política, NLP regulatorio, concentración corporativa e IA responsable) está en
+[`docs/bibliography.md`](docs/bibliography.md).
+
+Referencias mínimas indispensables:
+
+| Referencia | Relevancia |
+|-----------|-----------|
+| Da Rocha, Villasante & Trelles González (2013) — *Ambio* | Marco teórico brecha CBA→CMP |
+| Froese et al. (2025) — *Science* | "Overfishing ratchet" europeo; equivalente del hallazgo central |
+| Gualdoni, Pagani & Bertolotti (2014) — *FACES* | Análisis institucional del CITC argentino |
+| Bertolotti et al. (2015) — UNMdP | Desempeño empírico CITC (hipótesis a validar 2010–2025) |
+| Villasante et al. (2015) — *Sea Around Us* | Reconstrucción IUU Argentina 55% sub-reportado |
+| Österblom et al. (2015) — *PLOS ONE* | Keystone actors; base metodológica del análisis de grafo |
+| Coglianese & Lehr (2017) — *Georgetown Law Journal* | IA en regulación administrativa |
+| Mitchell et al. (2019) — *FAT\* '19* | Model Cards (`docs/MODEL_CARD.md`) |
+| Gebru et al. (2021) — *CACM* | Datasheets for Datasets (`docs/DATASHEET.md`) |
+| INIDEP ITOs 32/2024 y 34/2024 | Fuente primaria CBA actual |
 
 ---
 
