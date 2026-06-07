@@ -53,9 +53,10 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 └────────────┴───────────────┴──────────────┴──────────────────────────┘
                                     │
               ┌─────────────────────▼─────────────────────────┐
-              │           DASHBOARD STREAMLIT (12 páginas)       │
+              │           DASHBOARD STREAMLIT (16 páginas)       │
               │  Adquisición │ KB │ Auditoría │ INIDEP │ FAO     │
               │  Timeline │ Grafo │ Alertas │ Reporte │ CONICET  │
+              │  Capturas │ Investigación │ Evaluación │ Conflictos│ Geovisor │
               └──────────────────────────────────────────────────┘
                                     │
               ┌─────────────────────▼─────────────────────────┐
@@ -261,7 +262,7 @@ sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
 
 ### Pendiente
 
-- [ ] Capturas SIPA integradas en el comparador
+- [x] Capturas SIPA en comparador (seed SAGPyA verificado; pull real de SIPA pendiente cuando el pipeline produzca `cfp_cuotas` con datos reales)
 - [ ] Mejoras al parser (fecha exacta por resolución, votos disidentes por nombre)
 - [ ] Deployment (Streamlit Cloud / HuggingFace / VPS)
 - [ ] Dataset abierto en HuggingFace / Zenodo
@@ -311,6 +312,33 @@ Referencias mínimas indispensables:
 | Mitchell et al. (2019) — *FAT\* '19* | Model Cards (`docs/MODEL_CARD.md`) |
 | Gebru et al. (2021) — *CACM* | Datasheets for Datasets (`docs/DATASHEET.md`) |
 | INIDEP ITOs 32/2024 y 34/2024 | Fuente primaria CBA actual |
+
+---
+
+## Autoría y Declaración de Asistencia IA
+
+**Autor:** Ariel L. Giamportone (Ingeniero Pesquero | Data Scientist)
+
+**Contribuciones humanas:** El diseño metodológico, la elección y justificación de umbrales
+(115%/130% CBA), la selección de fuentes bibliográficas, la interpretación de los hallazgos,
+todas las decisiones de arquitectura (documentadas en `docs/adr/`), y la supervisión del
+desarrollo son responsabilidad del autor. El autor operó el pipeline, validó los resultados
+contra documentos primarios (ITOs INIDEP, actas CFP públicas) y tomó todas las decisiones
+de diseño relevantes para la validez científica.
+
+**Asistencia IA:** Se utilizó Claude (Anthropic) como herramienta de asistencia en la
+implementación de código, redacción de documentación técnica y revisión de tests, bajo
+supervisión y dirección continua del autor. Todas las decisiones metodológicas y de
+interpretación son humanas. El audit_engine usa Claude como herramienta analítica sobre
+documentos públicos, con salvaguardas de groundedness y marcado `[BAJA_EVIDENCIA]` para
+hallazgos sin anclaje textual suficiente (ver `docs/adr/007-limites-eticos.md`).
+
+**Recomendación OSF:** Pre-registrar el plan analítico de cada entrega ALG en el Open
+Science Framework *antes* de re-correr con datos reales del pipeline, para prevenir
+críticas de ajuste post-hoc (ver ADR-007).
+
+**GPG:** Los commits significativos deben firmarse con la identidad GPG del autor para
+atribución verificable en revisión por pares.
 
 ---
 

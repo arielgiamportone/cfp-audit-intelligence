@@ -233,7 +233,7 @@ with tab_alertas:
                 if row["Alerta Captura"] and row["Alerta Captura"] not in ("verde", "sin_datos"):
                     alerta_icono = ALERTA_CAPTURA_COLOR.get(row["Alerta Captura"], "⬜")
                     if row["Alerta Captura"] == "sub_utilizacion":
-                        st.info(f"📉 Sub-utilización: captura real por debajo del 70% de la CMP")
+                        st.info("📉 Sub-utilización: captura real por debajo del 70% de la CMP")
                     else:
                         st.warning(
                             f"{alerta_icono} Captura real supera la CBA — "
