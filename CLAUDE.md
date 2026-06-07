@@ -23,6 +23,11 @@ Plataforma de **auditoría inteligente** de las actas públicas del Consejo Fede
 3. **`AGENTS.md`** — reglas por tipo de agente y flujo multi-entorno
 4. **`docs/adr/`** — decisiones de arquitectura tomadas (no re-decidir sin ADR nuevo)
 
+**Documentación técnica completa (no especulativa — basada en código real):**
+- `docs/ARCHITECTURE.md` — componentes, contratos, flujo end-to-end, stack
+- `docs/DATA_PIPELINE.md` — integridad de datos, SHA256, idempotencia, provenance chain
+- `docs/ANALYSIS_METHODOLOGY.md` — fundamentos técnicos y bibliográficos de cada método
+
 ---
 
 ## Coordinación multi-entorno

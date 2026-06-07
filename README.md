@@ -22,6 +22,20 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 
 ---
 
+## Documentación Técnica
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Arquitectura completa: capas, módulos, contratos de datos, flujo end-to-end, stack tecnológico |
+| [`docs/DATA_PIPELINE.md`](docs/DATA_PIPELINE.md) | Tratamiento e integridad de datos: cascade PDF, parseo estructural, hashing SHA256, idempotencia, provenance chain |
+| [`docs/ANALYSIS_METHODOLOGY.md`](docs/ANALYSIS_METHODOLOGY.md) | Fundamentos técnicos: triángulo CBA·CMP·Captura, umbrales con citas, HHI+chi², groundedness, kappa, sensibilidad |
+| [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Model Card (Mitchell 2019): audit_engine + modelo predictivo |
+| [`docs/DATASHEET.md`](docs/DATASHEET.md) | Datasheet for Datasets (Gebru 2021): composición, procesamiento, limitaciones |
+| [`docs/bibliography.md`](docs/bibliography.md) | Bibliografía académica verificada (30+ refs con DOI) |
+| [`docs/adr/`](docs/adr/) | ADR 001–009: decisiones de arquitectura con contexto y justificación |
+
+---
+
 ## Arquitectura
 
 ```
