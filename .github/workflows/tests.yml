@@ -53,8 +53,12 @@ jobs:
           pip install pytest pytest-cov
           pip install loguru tenacity pandas requests beautifulsoup4 lxml
           pip install "fastapi>=0.111.0" "uvicorn[standard]>=0.30.0" httpx
+          pip install "pydantic>=2.5.0" "pydantic-settings>=2.1.0"
           pip install "spacy>=3.7.0"
           pip install "reportlab>=4.0.0"
+          pip install "networkx>=3.2.0"
+          pip install "matplotlib>=3.7.0" "scipy>=1.10.0" "scikit-learn>=1.3.0"
+          pip install "numpy>=1.26.0"
           python -m spacy download es_core_news_sm || echo "spacy model download failed - NER will use blank model fallback"
 
       - name: Run tests
