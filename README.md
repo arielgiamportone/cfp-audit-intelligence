@@ -7,7 +7,7 @@
 [![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 915](https://img.shields.io/badge/tests-915%20passing-brightgreen.svg)](#tests)
+[![Tests: 945](https://img.shields.io/badge/tests-945%20passing-brightgreen.svg)](#tests)
 
 ---
 
@@ -32,7 +32,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Model Card (Mitchell 2019): audit_engine + modelo predictivo |
 | [`docs/DATASHEET.md`](docs/DATASHEET.md) | Datasheet for Datasets (Gebru 2021): composición, procesamiento, limitaciones |
 | [`docs/bibliography.md`](docs/bibliography.md) | Bibliografía académica verificada (30+ refs con DOI) |
-| [`docs/adr/`](docs/adr/) | ADR 001–009: decisiones de arquitectura con contexto y justificación |
+| [`docs/adr/`](docs/adr/) | ADR 001–010: decisiones de arquitectura con contexto y justificación |
 
 ---
 
@@ -53,10 +53,11 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 └────────────┴───────────────┴──────────────┴──────────────────────────┘
                                     │
               ┌─────────────────────▼─────────────────────────┐
-              │           DASHBOARD STREAMLIT (16 páginas)       │
+              │           DASHBOARD STREAMLIT (17 páginas)       │
               │  Adquisición │ KB │ Auditoría │ INIDEP │ FAO     │
               │  Timeline │ Grafo │ Alertas │ Reporte │ CONICET  │
-              │  Capturas │ Investigación │ Evaluación │ Conflictos│ Geovisor │
+              │  Capturas │ Investigación │ Evaluación │ Conflictos│
+              │  Geovisor SERE │ CONAE Satelital                  │
               └──────────────────────────────────────────────────┘
                                     │
               ┌─────────────────────▼─────────────────────────┐
@@ -81,6 +82,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | `src/acquisition/fao_firms_scraper.py` | FAO FIRMS | Capturas mundiales + estado de stocks globales |
 | `src/acquisition/conicet_scraper.py` | CONICET/INIDEP | Publicaciones científicas por especie |
 | `src/acquisition/inidep_geovisor_scraper.py` | Geovisor SERE (INIDEP) | Vedas geoespaciales: número de resolución + link al PDF oficial (WFS GeoServer) |
+| `src/acquisition/conae_marine_scraper.py` | CONAE Geoportal Marino | Esfuerzo pesquero GFW AIS + SST + Clorofila-a (WMS GetFeatureInfo) — 4° vértice |
 
 ### Procesamiento
 
@@ -97,7 +99,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | `src/analysis/audit_engine.py` | Claude API con prompt caching para análisis masivo |
 | `src/analysis/pattern_detector.py` | HHI concentración, votaciones, reversiones estadísticas |
 | `src/analysis/inidep_comparator.py` | CBA (INIDEP) vs CMP (CFP): 4 niveles de alerta |
-| `src/analysis/geovisor_cross_validator.py` | Cruce de vedas del geovisor SERE vs. citas en el corpus de actas (ground truth externo, ADR-009) |
+| `src/analysis/geovisor_cross_validator.py` | Cruce de vedas del geovisor SERE vs. citas en el corpus (ADR-009) + verificación satelital de cumplimiento vía CONAE GFW AIS (ADR-010) |
 | `src/analysis/alert_engine.py` | 4 tipos de alerta configurables |
 | `src/analysis/graph_builder.py` | NetworkX + pyvis: red empresas–resoluciones–miembros |
 | `src/analysis/report_generator.py` | Reporte PDF ejecutivo con reportlab |
@@ -137,6 +139,8 @@ python scripts/run_full_pipeline.py --step knowledge_base
 python scripts/run_full_pipeline.py --step audit --limit 50
 python scripts/run_full_pipeline.py --step inidep          # scraping 492 ITOs INIDEP
 python scripts/run_full_pipeline.py --step inidep --enrich-pdf  # + extracción desde PDFs
+python scripts/run_full_pipeline.py --step geovisor        # vedas geoespaciales SERE (INIDEP)
+python scripts/run_full_pipeline.py --step conae           # esfuerzo satelital GFW + SST + Clorofila
 ```
 
 ### Dashboard
@@ -164,7 +168,7 @@ docker-compose up --build
 ## Tests
 
 ```bash
-pytest                    # 915 tests, todos verdes
+pytest                    # 945 tests, todos verdes
 pytest -k "inidep" -v     # subset INIDEP
 make test                 # via Makefile
 ```
@@ -237,6 +241,15 @@ fao_capturas(id, especie_code, year, pais, captura_tn, fuente, created_at)
 fao_stock_status(id, especie_code, year, estado, descripcion, fuente, created_at)
 conicet_publicaciones(id, titulo, autores, año, revista, doi, especie_code, resumen)
 sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
+
+vedas_geoespaciales(id, capa, especie, especie_code, area, fecha_inicio, fecha_fin,
+                    resolucion_numero, resolucion_fuente, resolucion_url,
+                    geometry_type, fuente, created_at)
+
+-- 4° vértice: verificación satelital independiente (CONAE, ADR-010)
+esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
+                   sst, sst_noche, clorofila, clorofila_8d,
+                   esfuerzo_gfw, luces_noche, fuente, created_at)
 ```
 
 ---
@@ -257,8 +270,9 @@ sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
 - [x] Docker multi-stage + GitHub Actions CI (Python 3.10/3.11)
 - [x] Integración FAO FIRMS (capturas mundiales, estado de stocks)
 - [x] Publicaciones científicas CONICET/INIDEP por especie
-- [x] Dashboard Streamlit de 16 páginas
-- [x] **915 tests pasando**
+- [x] Dashboard Streamlit de 17 páginas
+- [x] Integración CONAE Geoportal Marino — 4° vértice satelital (GFW AIS + SST + Clorofila, ADR-010)
+- [x] **945 tests pasando**
 
 ### Pendiente
 
