@@ -6,11 +6,15 @@ Etapas:
   2. process       → Extrae texto y parsea resoluciones
   3. knowledge_base → Construye el vector store
   4. audit         → Corre análisis IA sobre resoluciones
+  5. inidep        → Scrapea ITOs de INIDEP Mar Abierto (492 ITOs)
+  6. geovisor      → Descarga vedas geoespaciales SERE (INIDEP)
+  7. conae         → Muestrea esfuerzo satelital GFW + SST + Clorofila (CONAE)
 
 Uso:
   python scripts/run_full_pipeline.py --years 1998-2025
   python scripts/run_full_pipeline.py --step download --years 2020-2025
   python scripts/run_full_pipeline.py --step audit --limit 100
+  python scripts/run_full_pipeline.py --step conae
 """
 
 import argparse
@@ -148,6 +152,29 @@ def step_geovisor(db_path: Path) -> None:
     )
 
 
+def step_conae(db_path: Path) -> None:
+    """Muestrea capas satelitales del geoportal marino CONAE y cruza con vedas (ADR-010)."""
+    from src.acquisition.conae_marine_scraper import CONAEMarineClient
+    from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
+
+    logger.info("=== ETAPA CONAE: ESFUERZO PESQUERO SATELITAL (GFW AIS + SST + Clorofila) ===")
+    client = CONAEMarineClient(delay=0.5)
+    n = client.scrape_and_save(db_path)
+
+    validador = GeovisorCrossValidator(db_path)
+    resultado = validador.validar_cumplimiento_satelital()
+
+    if "error" not in resultado:
+        logger.success(
+            f"CONAE completado: {n} registros nuevos | "
+            f"Esfuerzo dentro/fuera veda: "
+            f"{resultado['mediana_esfuerzo_dentro']:.2f}/{resultado['mediana_esfuerzo_fuera']:.2f} "
+            f"(ratio={resultado['ratio_reduccion']})"
+        )
+    else:
+        logger.success(f"CONAE completado: {n} registros nuevos | {resultado['error']}")
+
+
 def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
     import json
     import os
@@ -227,7 +254,7 @@ def main():
     parser = argparse.ArgumentParser(description="CFP Audit Intelligence Pipeline")
     parser.add_argument(
         "--step",
-        choices=["download", "process", "knowledge_base", "audit", "inidep", "geovisor", "all"],
+        choices=["download", "process", "knowledge_base", "audit", "inidep", "geovisor", "conae", "all"],
         default="all",
         help="Etapa del pipeline a ejecutar",
     )
@@ -276,6 +303,8 @@ def main():
         )
     if "geovisor" in steps:
         step_geovisor(db_path)
+    if "conae" in steps:
+        step_conae(db_path)
 
     logger.success("Pipeline completado.")
 
