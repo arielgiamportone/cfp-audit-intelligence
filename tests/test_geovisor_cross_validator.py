@@ -238,3 +238,109 @@ class TestCoberturaSummary:
         resumen = v.cobertura_summary()
         assert resumen["total_resoluciones_citadas_cfp"] == 0
         assert resumen["pct_cobertura"] == 0.0
+
+
+# ── validar_cumplimiento_satelital ────────────────────────────────────────────
+
+
+@pytest.fixture
+def db_con_satelital(tmp_path) -> Path:
+    """BD con esfuerzo_satelital y vedas_geoespaciales para probar la validación."""
+    db = tmp_path / "catalog.db"
+    conn = sqlite3.connect(db)
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS vedas_geoespaciales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            capa TEXT,
+            especie TEXT,
+            especie_code TEXT,
+            resolucion_numero TEXT,
+            resolucion_fuente TEXT,
+            fecha_inicio TEXT,
+            fecha_fin TEXT
+        );
+        CREATE TABLE IF NOT EXISTS esfuerzo_satelital (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            zona TEXT NOT NULL,
+            especie_code TEXT,
+            fecha TEXT NOT NULL,
+            lon REAL,
+            lat REAL,
+            esfuerzo_gfw REAL,
+            UNIQUE(zona, fecha)
+        );
+        """
+    )
+    # Veda activa para merluza_hubbsi en jun/2025
+    conn.execute(
+        "INSERT INTO vedas_geoespaciales (capa, especie_code, fecha_inicio, fecha_fin) "
+        "VALUES (?,?,?,?)",
+        ("vedas_2024:Merluza_Hubbsi_invierno", "merluza_hubbsi", "2025-06-01", "2025-08-31"),
+    )
+    # Esfuerzo DENTRO de veda (bajo: ~2.0)
+    for d, v in [("2025-06-15", 1.8), ("2025-07-01", 2.2), ("2025-08-01", 1.5)]:
+        conn.execute(
+            "INSERT INTO esfuerzo_satelital (zona, especie_code, fecha, lon, lat, esfuerzo_gfw) "
+            "VALUES (?,?,?,?,?,?)",
+            ("golfo_san_jorge_norte", "merluza_hubbsi", d, -65.0, -44.5, v),
+        )
+    # Esfuerzo FUERA de veda (alto: ~6.0)
+    for d, v in [("2025-03-01", 6.1), ("2025-04-01", 5.8), ("2025-10-01", 6.4)]:
+        conn.execute(
+            "INSERT INTO esfuerzo_satelital (zona, especie_code, fecha, lon, lat, esfuerzo_gfw) "
+            "VALUES (?,?,?,?,?,?)",
+            ("golfo_san_jorge_norte", "merluza_hubbsi", d, -65.0, -44.5, v),
+        )
+    conn.commit()
+    conn.close()
+    return db
+
+
+class TestValidarCumplimientoSatelital:
+    def test_detecta_reduccion_durante_veda(self, db_con_satelital):
+        v = GeovisorCrossValidator(db_con_satelital)
+        resultado = v.validar_cumplimiento_satelital()
+        assert "error" not in resultado
+        assert resultado["n_dentro_veda"] == 3
+        assert resultado["n_fuera_veda"] == 3
+        assert resultado["mediana_esfuerzo_dentro"] < resultado["mediana_esfuerzo_fuera"]
+        assert resultado["ratio_reduccion"] < 1.0
+
+    def test_interpretacion_indica_cumplimiento(self, db_con_satelital):
+        v = GeovisorCrossValidator(db_con_satelital)
+        resultado = v.validar_cumplimiento_satelital()
+        assert "cumplimiento" in resultado["interpretacion"].lower()
+
+    def test_error_si_tablas_no_existen(self, db_vacia):
+        v = GeovisorCrossValidator(db_vacia)
+        resultado = v.validar_cumplimiento_satelital()
+        assert "error" in resultado
+
+    def test_error_si_sin_datos_satelitales(self, tmp_path):
+        db = tmp_path / "catalog.db"
+        conn = sqlite3.connect(db)
+        conn.executescript(
+            """
+            CREATE TABLE esfuerzo_satelital (
+                id INTEGER PRIMARY KEY, zona TEXT, especie_code TEXT,
+                fecha TEXT, esfuerzo_gfw REAL, UNIQUE(zona,fecha)
+            );
+            CREATE TABLE vedas_geoespaciales (
+                id INTEGER PRIMARY KEY, especie_code TEXT,
+                fecha_inicio TEXT, fecha_fin TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+        v = GeovisorCrossValidator(db)
+        resultado = v.validar_cumplimiento_satelital()
+        assert "error" in resultado
+
+    def test_retorna_ratio_y_medianas(self, db_con_satelital):
+        v = GeovisorCrossValidator(db_con_satelital)
+        resultado = v.validar_cumplimiento_satelital()
+        assert resultado["ratio_reduccion"] is not None
+        assert resultado["mediana_esfuerzo_dentro"] is not None
+        assert resultado["mediana_esfuerzo_fuera"] is not None
