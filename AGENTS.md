@@ -63,7 +63,7 @@ Antes de implementar algo nuevo, buscar si ya existe:
 grep -r "nombre_funcion\|concepto" src/ tests/
 ```
 
-El proyecto tiene 915 tests y ~50 módulos. Es fácil re-implementar algo que ya existe.
+El proyecto tiene 945 tests y ~50 módulos. Es fácil re-implementar algo que ya existe.
 
 ---
 
@@ -81,6 +81,8 @@ El proyecto tiene 915 tests y ~50 módulos. Es fácil re-implementar algo que ya
 | `sipa_scraper.py` | SAGPyA/SIPA | Capturas reales por especie y año |
 | `fao_firms_scraper.py` | FAO FIRMS | Capturas mundiales + estado de stocks globales |
 | `conicet_scraper.py` | ri.conicet.gov.ar | Publicaciones científicas INIDEP/CONICET |
+| `inidep_geovisor_scraper.py` | Geovisor SERE (INIDEP) | Vedas geoespaciales WFS GeoServer |
+| `conae_marine_scraper.py` | CONAE Geoportal Marino | Esfuerzo GFW AIS + SST + Clorofila (WMS, ADR-010) |
 
 **Puede hacer**:
 - GET requests con delay ≥ 1.5s entre requests
@@ -134,6 +136,7 @@ los años. El parser maneja minutas narrativas y sesiones plenarias. Ver tests e
 | `audit_engine.py` | Claude API con prompt caching para análisis masivo |
 | `pattern_detector.py` | HHI concentración, votaciones, reversiones estadísticas |
 | `inidep_comparator.py` | CBA (INIDEP) vs CMP (CFP): 4 niveles de alerta |
+| `geovisor_cross_validator.py` | Cobertura corpus vs. vedas SERE (ADR-009) + cumplimiento satelital CONAE (ADR-010) |
 | `alert_engine.py` | 4 tipos de alerta: cuota > CBA, empresa recurrente, veda revertida, quórum mínimo |
 | `graph_builder.py` | NetworkX + pyvis: red empresas–resoluciones–miembros CFP |
 | `report_generator.py` | Reporte PDF ejecutivo con reportlab |
@@ -298,7 +301,7 @@ claude/cfp-fisheries-audit-project-lLMib
 - AuditEngine (Claude API + prompt caching)
 - NER pesquero (spaCy EntityRuler, 6 categorías)
 - API REST FastAPI (17 endpoints)
-- Dashboard Streamlit (16 páginas activas)
+- Dashboard Streamlit (17 páginas activas)
 - Docker + GitHub Actions CI
 
 **Serie FisheriesAudit ALG (I+D+I publicable):**
@@ -311,7 +314,7 @@ claude/cfp-fisheries-audit-project-lLMib
 - `notebooks/FisheriesAudit_ALG_04_contexto_internacional.ipynb`
 - `notebooks/FisheriesAudit_ALG_05_modelo_predictivo.ipynb`
 
-**Tests:** 915 tests, todos verdes (pytest)
+**Tests:** 945 tests, todos verdes (pytest)
 
 ---
 

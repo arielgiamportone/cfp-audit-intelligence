@@ -1,6 +1,6 @@
 # CFP Audit Intelligence — Backlog y Roadmap
 
-> Estado: 2026-05-31 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `main`
+> Estado: 2026-06-10 | Repo: `arielgiamportone/cfp-audit-intelligence` | Branch: `main`
 
 ---
 
@@ -14,8 +14,8 @@
 - [x] Vector store ChromaDB con embeddings multilingües (`paraphrase-multilingual-MiniLM-L12-v2`)
 - [x] Motor de auditoría con Claude API + prompt caching
 - [x] Detector de patrones estadísticos (HHI concentración, votaciones, reversiones)
-- [x] Dashboard Streamlit multipágina (16 páginas activas)
-- [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit|inidep`)
+- [x] Dashboard Streamlit multipágina (17 páginas activas)
+- [x] Pipeline CLI end-to-end (`scripts/run_full_pipeline.py --step download|process|kb|audit|inidep|geovisor|conae`)
 - [x] Makefile con targets clave
 - [x] ADRs (001–004), CLAUDE.md, AGENTS.md
 
@@ -94,7 +94,7 @@
 - [x] 23 tests nuevos en `test_inidep_comparator.py` (triángulo, alerta_captura, sub-utilización)
 
 ### Tests y CI
-- [x] 915 tests totales, todos verdes
+- [x] 945 tests totales, todos verdes
 - [x] GitHub Actions CI — Python 3.10 y 3.11 + Docker build
 
 ### FisheriesAudit ALG — Serie de investigación y divulgación (Issue #15)
@@ -158,7 +158,9 @@
 - [ ] Modelo predictivo: ¿qué variables predicen cuota > CBA? (reemplazar target sintético — ver Model Card)
 - [x] Red de conflictos de interés: directores de empresas pesqueras en cargos públicos (Entrega #07)
 - [x] Geovisor SERE (INIDEP) — vedas geoespaciales como ground truth externo + cruce de cobertura del corpus (ADR-009, Entrega #09): `inidep_geovisor_scraper.py`, `geovisor_cross_validator.py`, dashboard `16_Geovisor.py`, `--step geovisor`
+- [x] **CONAE Geoportal Marino — 4° vértice satelital** (ADR-010): `conae_marine_scraper.py` (GFW AIS + SST + Clorofila, WMS GetFeatureInfo), `validar_cumplimiento_satelital()` en `geovisor_cross_validator.py`, dashboard `17_CONAE_Satelital.py`, `--step conae`. Tabla `esfuerzo_satelital` en SQLite. Ejecución periódica para serie temporal.
 - [ ] **Auditoría de citas INIDEP** (diferida — ver `docs/adr/008-auditoria-citas-inidep.md`): cuántas veces el CFP cita un ITO que recomienda X y aprueba algo que lo contradice. Requiere `cfp_cuotas` poblado + ETL de citas a SQLite
+- [ ] **Entrega #10 Serie ALG — Verificación satelital de vedas** (notebook): ejecutar `--step conae` periódicamente → acumular serie temporal → correlación GFW effort vs. períodos de veda → análisis Mann-Whitney por especie/zona
 - [ ] Comparación internacional con Chile, Perú, UE
 
 ---

@@ -76,6 +76,7 @@ src/
     fao_firms_scraper.py   → Datos FAO: capturas Argentina + estado stocks
     conicet_scraper.py     → Publicaciones científicas INIDEP/CONICET
     inidep_geovisor_scraper.py → Geovisor SERE (WFS GeoServer): vedas geoespaciales + link al PDF oficial
+    conae_marine_scraper.py    → Geoportal marino CONAE (WMS GetFeatureInfo): GFW AIS + SST + Clorofila (ADR-010)
 
   processing/
     pdf_extractor.py       → Cascada: pdfplumber → PyMuPDF → OCR Tesseract
@@ -86,7 +87,7 @@ src/
     audit_engine.py        → Claude API + prompt caching, análisis de resoluciones
     pattern_detector.py    → HHI concentración, votaciones, reversiones estadísticas
     inidep_comparator.py   → CBA vs CMP: 4 niveles de alerta
-    geovisor_cross_validator.py → Cruce vedas geovisor SERE vs. citas en corpus de actas (ground truth externo, ADR-009)
+    geovisor_cross_validator.py → Cruce vedas geovisor SERE vs. corpus (ADR-009) + validar_cumplimiento_satelital() CONAE (ADR-010)
     alert_engine.py        → Alertas: cuota > CBA, empresa recurrente, veda revertida
     graph_builder.py       → NetworkX + pyvis: empresas–resoluciones–miembros
     report_generator.py    → Reportlab: reporte PDF ejecutivo
@@ -124,6 +125,7 @@ src/
       14_Evaluacion.py     → Evaluación ground truth, groundedness, sensibilidad
       15_Conflictos.py     → Red de conflictos de interés CFP-industria
       16_Geovisor.py       → Vedas geoespaciales del geovisor SERE (INIDEP) + cobertura del corpus
+      17_CONAE_Satelital.py → Esfuerzo pesquero GFW AIS + SST + Clorofila (CONAE, 4° vértice, ADR-010)
 
 scripts/
   run_full_pipeline.py     → Pipeline CLI completo
@@ -153,7 +155,7 @@ data/                      → gitignored (solo .gitkeep)
   reports/                 → PDFs generados
 
 config/settings.yaml       → Especies, modelos, umbrales
-docs/adr/                  → ADR 001–004
+docs/adr/                  → ADR 001–010
 Dockerfile                 → Multi-stage, non-root
 docker-compose.yml         → api + dashboard con healthchecks
 .github/workflows/ci.yml   → lint + test (3.10/3.11) + docker-build
@@ -175,6 +177,7 @@ python scripts/run_full_pipeline.py --step audit --limit 50
 python scripts/run_full_pipeline.py --step inidep
 python scripts/run_full_pipeline.py --step inidep --limit 20 --enrich-pdf
 python scripts/run_full_pipeline.py --step geovisor
+python scripts/run_full_pipeline.py --step conae           # esfuerzo satelital CONAE (periódico)
 
 # Dashboard
 streamlit run src/dashboard/app.py
@@ -183,7 +186,7 @@ streamlit run src/dashboard/app.py
 uvicorn src.api.main:app --reload
 
 # Tests
-pytest                          # todos (915 actualmente)
+pytest                          # todos (945 actualmente)
 pytest tests/test_inidep_issue9.py -v
 pytest -k "inidep" -v
 
@@ -294,6 +297,13 @@ sipa_capturas(id, especie_code, year, captura_tn, buques, fuente, created_at)
 vedas_geoespaciales(id, capa, especie, especie_code, area, fecha_inicio, fecha_fin,
                     resolucion_numero, resolucion_fuente, resolucion_url, notas,
                     geometry_type, fuente, created_at)
+
+-- 4° vértice: verificación satelital CONAE (ADR-010)
+esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
+                   sst, sst_noche, clorofila, clorofila_8d,
+                   esfuerzo_gfw, luces_noche, fuente, created_at)
+  -- UNIQUE(zona, fecha) — idempotente
+  -- Fuente: CONAE WMS GetFeatureInfo (GFW AIS + VIIRS SNPP)
 ```
 
 ---
@@ -345,7 +355,8 @@ test(api): tests de endpoints /inidep con mocks HTTP
 - Publicaciones CONICET/INIDEP
 - Scraping completo 492 ITOs Mar Abierto (Issue #9)
 - Geovisor SERE (INIDEP): vedas geoespaciales + cruce de cobertura del corpus (ADR-009)
-- **915 tests pasando**
+- CONAE Geoportal Marino: esfuerzo GFW AIS + SST + Clorofila, 4° vértice satelital (ADR-010)
+- **945 tests pasando**
 
 ### Pendiente (ver TODO.md)
 - Mejoras al parser (fecha exacta, miembros disidentes por nombre)
