@@ -11,6 +11,77 @@
 
 ---
 
+## 🎓 Trabajo Final de Máster (TFM)
+
+Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA_** (campus.thebigschool.com).
+
+> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–010), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
+
+### Entregables
+
+| # | Entregable | Enlace |
+|---|-----------|--------|
+| 1 | Código fuente (repo público GitHub) | https://github.com/arielgiamportone/cfp-audit-intelligence |
+| 2 | Documentación (este README + `docs/`) | [`docs/`](docs/) |
+| 3 | Despliegue en funcionamiento (URL) | ⏳ _pendiente de publicar_ |
+| 4 | Slides de presentación | ⏳ _pendiente de publicar_ |
+| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de publicar_ |
+
+**Acceso a la aplicación:** la app es de acceso **público y no requiere login** (no hay usuario/contraseña de prueba). Las funciones de auditoría con IA requieren configurar `ANTHROPIC_API_KEY` como secreto de despliegue (ver [Variables de Entorno](#variables-de-entorno)).
+
+### Dónde está cada punto de la documentación exigida
+1. **Descripción general** → [Objetivo](#objetivo)
+2. **Stack tecnológico** → [Stack tecnológico](#stack-tecnológico)
+3. **Instalación y ejecución** → [Inicio Rápido](#inicio-rápido)
+4. **Estructura del proyecto** → [Estructura del proyecto](#estructura-del-proyecto)
+5. **Funcionalidades principales** → [Módulos](#módulos) y [Estado del Proyecto](#estado-del-proyecto-v04)
+6. **Credenciales de prueba** → no aplica (aplicación sin login, ver arriba)
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnologías |
+|------|-------------|
+| Lenguaje | Python 3.10+ |
+| Interfaz | Streamlit (dashboard 17 páginas) |
+| API | FastAPI + OpenAPI |
+| IA / LLM | Claude API (Anthropic) con prompt caching |
+| RAG / Vector store | ChromaDB + embeddings `paraphrase-multilingual-MiniLM-L12-v2` |
+| NLP | spaCy (NER pesquero: EntityRuler) |
+| Extracción PDF/OCR | pdfplumber · PyMuPDF · Tesseract |
+| Análisis / grafos | NetworkX · pyvis · pandas · scikit-learn |
+| Reportes | reportlab (PDF ejecutivo) |
+| Persistencia | SQLite (catálogo + modelo de datos) |
+| Infra / calidad | Docker · docker-compose · GitHub Actions (CI) · pytest (945 tests) · ruff |
+
+---
+
+## Estructura del proyecto
+
+```
+cfp-audit-intelligence/
+├── src/
+│   ├── acquisition/     # Scrapers: CFP, INIDEP, SIPA, FAO, CONICET, geovisor, CONAE
+│   ├── processing/      # Extracción PDF (cascada), parser de actas, NER pesquero
+│   ├── knowledge_base/  # ChromaDB + embeddings multilingües
+│   ├── analysis/        # audit_engine (Claude), comparador CBA/CMP, alertas, grafos, reportes
+│   ├── api/             # FastAPI (5 routers + OpenAPI)
+│   ├── dashboard/       # App Streamlit (17 páginas) — punto de entrada: app.py
+│   └── evaluation/      # Métricas y evaluación
+├── scripts/             # run_full_pipeline.py, scrapers, utilidades
+├── docs/                # ARCHITECTURE, DATA_PIPELINE, MODEL_CARD, DATASHEET, ADRs 001–010, bibliografía
+├── notebooks/           # Exploración y análisis
+├── tests/               # 945 tests (pytest)
+├── data/                # Datos del pipeline (SQLite, PDFs, artefactos)
+├── config/              # Configuración
+├── Dockerfile · docker-compose.yml · Makefile
+├── requirements.txt · requirements-deploy.txt · pyproject.toml
+└── README.md
+```
+
+---
+
 ## Objetivo
 
 Construir una **knowledge base** completa del CFP (1998–presente) y aplicar analítica + IA para:
