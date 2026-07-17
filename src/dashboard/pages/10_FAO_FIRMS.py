@@ -19,7 +19,8 @@ st.markdown(
     "Compara las cuotas CFP con la situación internacional de cada especie."
 )
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 # ── Inicializar datos ─────────────────────────────────────────────────────────
 

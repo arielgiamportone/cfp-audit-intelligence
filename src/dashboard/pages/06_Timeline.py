@@ -25,7 +25,8 @@ st.caption(
     "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados."
 )
 
-DB_PATH = ROOT / "data" / "processed" / "catalog.db"
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 if not DB_PATH.exists():
     st.error(

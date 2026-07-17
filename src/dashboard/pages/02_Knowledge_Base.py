@@ -16,7 +16,8 @@ st.caption("Búsqueda inteligente sobre el corpus completo de actas del CFP")
 
 from src.knowledge_base.vector_store import CFPVectorStore
 
-KB_DIR = ROOT / "data" / "knowledge_base"
+from src.config_loader import get_kb_dir
+KB_DIR = get_kb_dir()
 PROCESSED_DIR = ROOT / "data" / "processed"
 
 # ── Estado de la KB ───────────────────────────────────────────────────────────

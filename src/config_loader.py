@@ -58,3 +58,46 @@ def get_umbrales_cmp_cba(path: str | Path = DEFAULT_SETTINGS_PATH) -> dict[str, 
         "rojo_min": float(umbrales.get("rojo_min", DEFAULT_UMBRALES_CMP_CBA["rojo_min"])),
         "critico_min": float(umbrales.get("critico_min", DEFAULT_UMBRALES_CMP_CBA["critico_min"])),
     }
+
+
+# ── Rutas del proyecto (fuente única de verdad: DRY + DIP) ─────────────────────
+# Este archivo vive en src/config_loader.py, por lo que parent.parent es la raíz
+# del repositorio. Anclar las rutas aquí evita rutas hardcodeadas y dependientes
+# del directorio de trabajo (cwd) dispersas por las páginas del dashboard.
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _resolve_path(override: str | None, default_rel: str) -> Path:
+    """Devuelve una ruta absoluta anclada a la raíz del proyecto.
+
+    Si `override` es absoluto se respeta; si es relativo se ancla a PROJECT_ROOT;
+    si es None se usa `default_rel` (relativo a la raíz).
+    """
+    rel = override or default_rel
+    p = Path(rel)
+    return p if p.is_absolute() else PROJECT_ROOT / p
+
+
+def get_db_path(path: str | Path = DEFAULT_SETTINGS_PATH) -> Path:
+    """Ruta absoluta y única de la base de datos SQLite del catálogo.
+
+    Override opcional vía settings.yaml → `paths.db_path`.
+    """
+    settings = load_settings(path)
+    override = (
+        settings.get("paths", {}).get("db_path") if isinstance(settings, dict) else None
+    )
+    return _resolve_path(override, "data/processed/catalog.db")
+
+
+def get_kb_dir(path: str | Path = DEFAULT_SETTINGS_PATH) -> Path:
+    """Ruta absoluta del directorio de la Knowledge Base (ChromaDB).
+
+    Override opcional vía settings.yaml → `paths.kb_dir`.
+    """
+    settings = load_settings(path)
+    override = (
+        settings.get("paths", {}).get("kb_dir") if isinstance(settings, dict) else None
+    )
+    return _resolve_path(override, "data/knowledge_base")

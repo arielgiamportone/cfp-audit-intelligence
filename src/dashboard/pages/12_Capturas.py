@@ -20,7 +20,8 @@ st.markdown(
     "Permite detectar cuotas sobre la recomendación científica y capturas que superan las cuotas."
 )
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 ALERTA_COLORS = {
     "verde": "#2E7D32",

@@ -119,7 +119,8 @@ with s3:
 st.markdown("---")
 st.subheader("Estado del corpus de actas")
 
-db_path = ROOT / "data" / "processed" / "catalog.db"
+from src.config_loader import get_db_path
+db_path = get_db_path()
 loaded = False
 if db_path.exists():
     try:

@@ -25,7 +25,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-DB_PATH = ROOT / "data" / "processed" / "catalog.db"
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 if not DB_PATH.exists():
     st.warning("Base de datos aún no inicializada (modo demo). Visita el Comparador o ejecuta el pipeline.")

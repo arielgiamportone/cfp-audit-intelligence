@@ -48,7 +48,8 @@ with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
         "Abajo puedes ver las alertas activas, su **severidad** y configurar las reglas que las disparan."
     )
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 TIPO_LABELS = {
     TIPO_CBA_EXCESO: "Exceso de CBA",

@@ -22,7 +22,8 @@ from src.analysis.conflict_detector import ConflictDetector
 
 st.set_page_config(page_title="Red de Conflictos de Interés", layout="wide")
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 st.title("Red de Conflictos de Interés — CFP vs. Industria Pesquera")

@@ -32,8 +32,10 @@ from src.analysis.audit_engine import CFPAuditEngine
 from src.analysis.pattern_detector import PatternDetector
 from src.knowledge_base.vector_store import CFPVectorStore
 
-KB_DIR = ROOT / "data" / "knowledge_base"
-DB_PATH = ROOT / "data" / "processed" / "catalog.db"
+from src.config_loader import get_kb_dir
+KB_DIR = get_kb_dir()
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 

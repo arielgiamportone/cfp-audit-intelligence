@@ -18,7 +18,8 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 st.set_page_config(page_title="Evaluación del Sistema", layout="wide")
 st.title("🔬 Evaluación y Validación del Sistema de Auditoría")

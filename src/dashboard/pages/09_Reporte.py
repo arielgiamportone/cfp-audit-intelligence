@@ -18,7 +18,8 @@ st.info(
     icon="ℹ️",
 )
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 # ── Configuración del reporte ─────────────────────────────────────────────────
 

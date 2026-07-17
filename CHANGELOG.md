@@ -22,6 +22,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **UX:** intros "¿cómo leer esta página?" en Comparador y Alertas; estados vacíos amigables
   ("modo demo") en Adquisición, Knowledge Base, Auditoría IA y Reportes.
 
-### Por hacer (Unidad 1 · Buenas Prácticas)
-- Centralizar rutas en `config_loader.py` (`get_db_path`, `get_kb_dir`) aplicando **DRY + DIP**
-  y corrigiendo el bug latente de rutas relativas al *cwd*.
+### Refactorizado — Unidad 1 · Buenas Prácticas y Principios de Diseño
+- **DRY + DIP (fuente única de verdad):** se añadieron `get_db_path()` y `get_kb_dir()` a
+  `config_loader.py` y se refactorizaron las **18 páginas del dashboard + `app.py`** para
+  consumir esas funciones en lugar de rutas hardcodeadas (antes duplicadas en 18 sitios y en
+  dos formas distintas).
+- **Bug latente corregido (KISS/robustez):** las rutas eran relativas al *cwd* en ~12 páginas
+  (fallaban si el directorio de trabajo cambiaba). Ahora son **absolutas y ancladas a la raíz**
+  del proyecto, con override opcional vía `settings.yaml → paths.{db_path,kb_dir}`.

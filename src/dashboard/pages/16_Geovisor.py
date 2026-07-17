@@ -21,7 +21,8 @@ from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
 st.set_page_config(page_title="Geovisor SERE — Vedas Geoespaciales", layout="wide")
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 st.title("🗺️ Geovisor SERE (INIDEP) — Vedas Geoespaciales")

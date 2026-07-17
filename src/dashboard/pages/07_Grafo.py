@@ -27,7 +27,8 @@ st.caption(
     "en las decisiones del Consejo Federal Pesquero."
 )
 
-DB_PATH = Path("data/processed/catalog.db")
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 
 @st.cache_resource(show_spinner="Cargando grafo...")

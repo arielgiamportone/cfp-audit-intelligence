@@ -28,7 +28,8 @@ from src.acquisition.batch_scraper import CFPScraper
 from src.acquisition.catalog_manager import CatalogManager
 
 RAW_DIR = ROOT / "data" / "raw"
-DB_PATH = ROOT / "data" / "processed" / "catalog.db"
+from src.config_loader import get_db_path
+DB_PATH = get_db_path()
 
 catalog = CatalogManager(DB_PATH)
 
