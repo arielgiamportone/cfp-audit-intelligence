@@ -17,13 +17,15 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 
 > **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–010), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
 
+🔗 **App en vivo:** https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app
+
 ### Entregables
 
 | # | Entregable | Enlace |
 |---|-----------|--------|
 | 1 | Código fuente (repo público GitHub) | https://github.com/arielgiamportone/cfp-audit-intelligence |
 | 2 | Documentación (este README + `docs/`) | [`docs/`](docs/) |
-| 3 | Despliegue en funcionamiento (URL) | ⏳ _pendiente de publicar_ |
+| 3 | Despliegue en funcionamiento (URL) | **[App en vivo ↗](https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app)** |
 | 4 | Slides de presentación | ⏳ _pendiente de publicar_ |
 | 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de publicar_ |
 
