@@ -1,12 +1,8 @@
 """
-CFP Audit Intelligence – Dashboard Principal
+CFP Audit Intelligence – Dashboard Principal (Home)
 
-Navegación multipágina:
-  1. Inicio      → Estado del sistema y métricas globales
-  2. Adquisición → Descarga de actas
-  3. Knowledge Base → Búsqueda semántica
-  4. Auditoría   → Análisis con IA y patrones
-  5. Reportes    → Exportación y visualización
+Página de entrada pensada para que cualquier persona —también sin perfil técnico—
+entienda en 1 minuto qué hace la plataforma y por dónde empezar.
 """
 
 import sys
@@ -25,153 +21,158 @@ st.set_page_config(
     initial_sidebar_state="expanded",
     menu_items={
         "About": (
-            "**CFP Audit Intelligence Platform** v0.2\n\n"
+            "**CFP Audit Intelligence Platform** v0.4\n\n"
             "Plataforma de auditoría inteligente del Consejo Federal Pesquero de Argentina.\n\n"
             "Datos fuente: [cfp.gob.ar](https://cfp.gob.ar/actas-cfp)"
         )
     },
 )
 
-# ── Header ────────────────────────────────────────────────────────────────────
+# ── Hero ───────────────────────────────────────────────────────────────────────
 
-st.title("🐟 CFP Audit Intelligence Platform")
+st.title("🐟 CFP Audit Intelligence")
+st.subheader("¿Se reparten las cuotas de pesca respetando lo que dice la ciencia?")
 st.caption(
-    "Auditoría inteligente de las actas del Consejo Federal Pesquero de Argentina (1998–presente)"
+    "Plataforma que usa IA para auditar 25+ años de actas públicas del Consejo Federal "
+    "Pesquero de Argentina y contrastarlas con la recomendación científica."
 )
+
+st.info(
+    "🎓 **Demo del Trabajo Final de Máster.** Esta versión pública trae **datos verificados "
+    "ya cargados** para que puedas explorar el sistema. El corpus histórico completo "
+    "(cientos de actas) se construye con el pipeline — ver README del repositorio.",
+    icon="ℹ️",
+)
+
 st.markdown("---")
 
-# ── Métricas de estado del sistema ────────────────────────────────────────────
+# ── ¿Qué es esto? (lenguaje llano) ─────────────────────────────────────────────
 
-col1, col2, col3, col4, col5 = st.columns(5)
+col_left, col_right = st.columns([3, 2])
+
+with col_left:
+    st.subheader("¿Qué es esto, en simple?")
+    st.markdown("""
+    Cada año, un organismo del Estado (**el CFP**) decide **cuánto se puede pescar** de cada
+    especie. Los científicos (**INIDEP**) recomiendan un límite seguro para no agotar el recurso.
+
+    **La pregunta clave:** ¿la cantidad que autoriza la política (CFP) respeta ese límite
+    científico? Revisar eso a mano en miles de páginas de actas es inviable.
+
+    **Esta plataforma lo automatiza:** extrae las actas públicas, las analiza con IA y las
+    compara con la ciencia y con la pesca realmente capturada, marcando con un **semáforo**
+    cuándo se sobrepasan los límites.
+    """)
+
+with col_right:
+    st.subheader("Cómo funciona")
+    st.markdown("""
+    ```
+    CIENCIA (INIDEP)      →  límite recomendado (CBA)
+          │
+          ▼
+    POLÍTICA (CFP)        →  cuota aprobada (CMP)
+          │
+          ▼
+    REALIDAD (SIPA)       →  captura real
+          │
+          ▼
+       🚦 SEMÁFORO DE ALERTA
+    ```
+    """)
+
+# ── Leyenda de alertas ─────────────────────────────────────────────────────────
+
+st.subheader("El semáforo de sostenibilidad")
+a1, a2, a3, a4 = st.columns(4)
+a1.success("🟢 **Verde**\n\nDentro del límite científico (≤100%)")
+a2.warning("🟡 **Amarillo**\n\nA vigilar (101–115%)")
+a3.error("🔴 **Rojo**\n\nSobreasignación (116–130%)")
+a4.error("⚫ **Crítico**\n\nRiesgo alto (>130%)")
+
+st.markdown("---")
+
+# ── Empieza por aquí (páginas con datos listos para explorar) ───────────────────
+
+st.subheader("👉 Empieza por aquí")
+st.caption("Estas páginas ya tienen datos cargados y son el corazón del proyecto:")
+
+s1, s2, s3 = st.columns(3)
+with s1:
+    st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Comparador CFP vs INIDEP",
+                 help="El análisis estrella: ciencia vs política, con semáforo de alertas")
+    st.page_link("pages/08_Alertas.py", label="🚨 Sistema de Alertas",
+                 help="Alertas configurables sobre las decisiones del CFP")
+with s2:
+    st.page_link("pages/12_Capturas.py", label="🐟 Capturas reales (SIPA)",
+                 help="Cuánto se pescó realmente por especie y año")
+    st.page_link("pages/06_Timeline.py", label="📈 Timeline por especie",
+                 help="Evolución histórica de cuotas")
+with s3:
+    st.page_link("pages/10_FAO_FIRMS.py", label="🌎 Contexto FAO",
+                 help="Comparativa internacional de capturas y estado de stocks")
+    st.page_link("pages/11_CONICET.py", label="📚 Ciencia CONICET",
+                 help="Publicaciones científicas por especie")
+
+# ── Estado del sistema (métricas del corpus) ───────────────────────────────────
+
+st.markdown("---")
+st.subheader("Estado del corpus de actas")
 
 db_path = ROOT / "data" / "processed" / "catalog.db"
-
+loaded = False
 if db_path.exists():
     try:
         from src.acquisition.catalog_manager import CatalogManager
 
-        catalog = CatalogManager(db_path)
-        stats = catalog.stats()
-
-        with col1:
-            st.metric("Total Actas", stats["total"])
-        with col2:
-            st.metric("PDFs Descargados", stats["downloaded"])
-        with col3:
-            st.metric("Textos Extraídos", stats["processed"])
-        with col4:
-            st.metric("Indexadas en KB", stats["embedded"])
-        with col5:
-            st.metric("Analizadas con IA", stats["analyzed"])
+        stats = CatalogManager(db_path).stats()
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("Total actas", stats["total"])
+        c2.metric("PDFs descargados", stats["downloaded"])
+        c3.metric("Textos extraídos", stats["processed"])
+        c4.metric("Indexadas (KB)", stats["embedded"])
+        c5.metric("Analizadas con IA", stats["analyzed"])
+        loaded = stats.get("total", 0) > 0
     except Exception:
-        with col1:
-            st.metric("Catálogo", "No inicializado")
-else:
-    with col1:
-        st.info("Catálogo no inicializado. Ejecuta el pipeline de adquisición.")
+        pass
 
-st.markdown("---")
+if not loaded:
+    st.caption(
+        "📦 En esta demo el corpus completo de actas no está cargado (se genera con el "
+        "pipeline). Las páginas de **Adquisición**, **Knowledge Base** y **Auditoría IA** "
+        "requieren ese corpus; su funcionamiento se muestra en el vídeo del proyecto y "
+        "puede reproducirse en local (ver `docs/TFM_DEPLOY.md`)."
+    )
 
-# ── Descripción del proyecto ──────────────────────────────────────────────────
+# ── Glosario para no expertos ──────────────────────────────────────────────────
 
-col_left, col_right = st.columns([2, 1])
-
-with col_left:
-    st.subheader("Objetivo del Proyecto")
+with st.expander("📖 Glosario rápido (términos que verás en la app)"):
     st.markdown("""
-    Esta plataforma aplica **Inteligencia Artificial y Ciencia de Datos** al análisis de las
-    actas públicas del **Consejo Federal Pesquero (CFP)** para:
-
-    - **Auditar** la toma de decisiones sobre cuotas de captura, permisos y vedas
-    - **Detectar patrones** que atenten contra la sostenibilidad de la pesca argentina
-    - **Identificar** decisiones subjetivas o contrarias a la normativa (Ley 24.922)
-    - **Generar evidencia técnica** reproducible para el debate público y la política pesquera
-
-    > **Marco legal**: Todas las actas son documentos públicos del CFP, organismo creado por
-    > la Ley Federal de Pesca N° 24.922.
+    | Término | Qué significa |
+    |---|---|
+    | **CFP** | Consejo Federal Pesquero: el organismo que **decide** las cuotas de pesca (política). |
+    | **INIDEP** | Instituto de investigación pesquera: **recomienda** los límites (ciencia). |
+    | **CBA** | *Captura Biológicamente Aceptable*: el límite **seguro** que sugiere la ciencia. |
+    | **CMP** | *Captura Máxima Permisible*: la cuota que **aprueba** el CFP. |
+    | **SIPA** | Sistema de información de pesca: lo que **realmente** se capturó. |
+    | **Cuota / Veda** | Cantidad autorizada a pescar / prohibición temporal de pesca. |
+    | **Alerta** | Semáforo que indica si la cuota (CMP) supera el límite científico (CBA). |
     """)
 
-with col_right:
-    st.subheader("Pipeline de Procesamiento")
+# ── Para desarrolladores / evaluadores ─────────────────────────────────────────
+
+with st.expander("🛠️ Para desarrolladores y evaluadores (arquitectura y calidad)"):
     st.markdown("""
-    ```
-    1. ADQUISICIÓN
-       Scraping CFP → PDFs
-
-    2. PROCESAMIENTO
-       PDF → Texto → Estructura
-
-    3. KNOWLEDGE BASE
-       Embeddings + Vector DB
-
-    4. AUDITORÍA IA
-       Claude API + Patrones
-
-    5. REPORTES
-       Dashboard + Exportación
-    ```
+    - **Arquitectura por capas:** adquisición → procesamiento → knowledge base → análisis+IA → dashboard/API.
+    - **IA:** RAG con ChromaDB + embeddings multilingües y auditoría con Claude API (*prompt caching*).
+    - **Calidad:** 945 tests, CI (ruff + pytest), Docker, y **ADRs 001–010** documentando cada decisión.
+    - **IA responsable:** Model Card + Datasheet + marcado `[BAJA_EVIDENCIA]` para hallazgos sin anclaje textual.
+    - **Repositorio:** [github.com/arielgiamportone/cfp-audit-intelligence](https://github.com/arielgiamportone/cfp-audit-intelligence)
     """)
-
-st.markdown("---")
-
-# ── Acceso rápido ─────────────────────────────────────────────────────────────
-
-st.subheader("Acceso Rápido")
-
-quick_cols = st.columns(4)
-with quick_cols[0]:
-    st.page_link(
-        "pages/01_Adquisicion.py",
-        label="📥 Descargar Actas",
-        help="Scraping y descarga masiva de PDFs del CFP",
-    )
-with quick_cols[1]:
-    st.page_link(
-        "pages/02_Knowledge_Base.py",
-        label="🔍 Buscar en Actas",
-        help="Búsqueda semántica sobre todas las actas",
-    )
-with quick_cols[2]:
-    st.page_link(
-        "pages/03_Auditoria.py",
-        label="🧠 Auditoría IA",
-        help="Análisis con Claude API y detección de patrones",
-    )
-with quick_cols[3]:
-    st.page_link(
-        "pages/04_Reportes.py",
-        label="📊 Reportes",
-        help="Visualizaciones y exportación de resultados",
-    )
-
-# ── Noticias / Últimas actualizaciones ────────────────────────────────────────
-
-st.markdown("---")
-st.subheader("Estado del Pipeline")
-
-pipeline_status = {
-    "Scraper batch": ("✅ Listo", "Descarga masiva con retry y deduplicación"),
-    "Catálogo SQLite": ("✅ Listo", "Trazabilidad completa del pipeline"),
-    "Extracción PDF": ("✅ Listo", "pdfplumber + PyMuPDF + OCR Tesseract"),
-    "Parser estructural": ("✅ Listo", "Extracción de resoluciones, entidades, cuotas"),
-    "Vector Store": ("✅ Listo", "ChromaDB con embeddings multilingües"),
-    "Motor de Auditoría IA": ("✅ Listo", "Claude API con prompt caching"),
-    "Detector de Patrones": ("✅ Listo", "HHI, votaciones, reversiones"),
-    "Dashboard multipágina": ("🔄 En progreso", "Páginas de KB y Auditoría en desarrollo"),
-    "Reportes PDF": ("📅 Planificado", "Fase 5 del roadmap"),
-}
-
-for component, (status, desc) in pipeline_status.items():
-    col_s, col_c, col_d = st.columns([1, 2, 5])
-    with col_s:
-        st.write(status)
-    with col_c:
-        st.write(f"**{component}**")
-    with col_d:
-        st.caption(desc)
 
 st.markdown("---")
 st.caption(
-    "🇦🇷 Por la soberanía y sostenibilidad de los recursos pesqueros argentinos | "
+    "🇦🇷 Por la soberanía y sostenibilidad de los recursos pesqueros argentinos · "
+    "Los hallazgos son descriptivos y requieren verificación · "
     "Fuente: [cfp.gob.ar](https://cfp.gob.ar)"
 )
