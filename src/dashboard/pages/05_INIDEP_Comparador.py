@@ -26,6 +26,17 @@ st.caption(
     "recomendada por el INIDEP — Ley 24.922, Art. 9"
 )
 
+with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
+    st.markdown(
+        "Comparamos, por **especie** y **año**, tres cifras:\n\n"
+        "- **CBA** — límite *seguro* que recomienda la ciencia (INIDEP).\n"
+        "- **CMP** — cuota que *aprueba* la política (CFP).\n"
+        "- **Captura real** — lo que efectivamente se pescó (SIPA).\n\n"
+        "Si la cuota aprobada (CMP) supera el límite científico (CBA), se enciende una "
+        "**alerta**: 🟢 ok · 🟡 vigilar · 🔴 sobreasignación · ⚫ riesgo crítico. "
+        "Elige una especie o registra una cuota en el panel lateral para ver el cruce."
+    )
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go

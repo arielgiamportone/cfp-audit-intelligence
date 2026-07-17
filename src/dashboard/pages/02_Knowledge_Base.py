@@ -27,14 +27,23 @@ def get_vector_store():
     return CFPVectorStore(persist_dir=KB_DIR)
 
 
-vs = get_vector_store()
-
 try:
+    vs = get_vector_store()
     count = vs.count()
-    st.success(f"Knowledge Base activa: **{count:,}** resoluciones indexadas")
 except Exception:
     count = 0
-    st.warning("Knowledge Base no inicializada. Ejecuta el pipeline de procesamiento.")
+
+if count == 0:
+    st.info(
+        "🔎 **Modo demo:** la búsqueda semántica requiere el corpus de actas indexado en la "
+        "Knowledge Base (embeddings), que se construye con el pipeline. Esta función se muestra "
+        "en el vídeo del proyecto y puede reproducirse en local (ver `docs/TFM_DEPLOY.md`). "
+        "Mientras tanto, explora **🔬 Comparador CFP vs INIDEP**, que ya tiene datos cargados.",
+        icon="ℹ️",
+    )
+    st.stop()
+
+st.success(f"Knowledge Base activa: **{count:,}** resoluciones indexadas")
 
 st.markdown("---")
 

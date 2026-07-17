@@ -38,6 +38,16 @@ st.caption(
     "científicas del INIDEP y otros indicadores de riesgo pesquero."
 )
 
+with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
+    st.markdown(
+        "Una **alerta** salta cuando una decisión del CFP cruza un umbral de riesgo, por ejemplo:\n\n"
+        "- aprobar una **cuota por encima del límite científico** (CBA),\n"
+        "- un **stock en estado crítico**,\n"
+        "- la **reversión de una veda**, o\n"
+        "- decisiones tomadas con **quórum mínimo**.\n\n"
+        "Abajo puedes ver las alertas activas, su **severidad** y configurar las reglas que las disparan."
+    )
+
 DB_PATH = Path("data/processed/catalog.db")
 
 TIPO_LABELS = {

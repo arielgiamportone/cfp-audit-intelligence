@@ -14,6 +14,14 @@ st.set_page_config(page_title="Adquisición | CFP Audit", page_icon="📥", layo
 st.title("📥 Adquisición de Actas")
 st.caption("Scraping y descarga masiva de PDFs del Consejo Federal Pesquero")
 
+st.info(
+    "📥 **Modo demo:** la descarga masiva (scraping) está diseñada para ejecutarse en "
+    "**local** con el pipeline, no en el hosting público. Aquí puedes ver la interfaz; para "
+    "poblar el corpus real sigue `docs/TFM_DEPLOY.md`. Los datos verificados del comparador "
+    "ya están disponibles en **🔬 Comparador CFP vs INIDEP**.",
+    icon="ℹ️",
+)
+
 # ── Configuración ─────────────────────────────────────────────────────────────
 
 from src.acquisition.batch_scraper import CFPScraper

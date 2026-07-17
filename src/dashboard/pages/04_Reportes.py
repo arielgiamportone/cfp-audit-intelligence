@@ -14,6 +14,13 @@ st.set_page_config(page_title="Reportes | CFP Audit", page_icon="📊", layout="
 st.title("📊 Reportes y Visualizaciones")
 st.caption("Análisis estadístico y exportación de resultados de auditoría")
 
+st.info(
+    "📊 **Modo demo:** los reportes reflejan el corpus de actas cargado. En esta demo pública "
+    "ese corpus no está poblado (se genera con el pipeline), por lo que algunos paneles pueden "
+    "verse vacíos; su versión completa se muestra en el vídeo (ver `docs/TFM_DEPLOY.md`).",
+    icon="ℹ️",
+)
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -21,7 +28,7 @@ import plotly.graph_objects as go
 DB_PATH = ROOT / "data" / "processed" / "catalog.db"
 
 if not DB_PATH.exists():
-    st.error("Base de datos no encontrada. Ejecuta el pipeline de adquisición y procesamiento.")
+    st.warning("Base de datos aún no inicializada (modo demo). Visita el Comparador o ejecuta el pipeline.")
     st.stop()
 
 from src.acquisition.catalog_manager import CatalogManager

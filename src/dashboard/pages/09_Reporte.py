@@ -11,6 +11,13 @@ st.set_page_config(page_title="Reporte PDF — CFP", page_icon="📄", layout="w
 st.title("📄 Reporte PDF Ejecutivo")
 st.markdown("Genera un informe ejecutivo en PDF con todos los hallazgos de auditoría.")
 
+st.info(
+    "📄 **Modo demo:** el reporte se construye a partir del corpus y los análisis cargados. "
+    "En esta demo pública el corpus completo no está poblado, por lo que el PDF puede salir con "
+    "secciones limitadas; la versión completa se muestra en el vídeo (ver `docs/TFM_DEPLOY.md`).",
+    icon="ℹ️",
+)
+
 DB_PATH = Path("data/processed/catalog.db")
 
 # ── Configuración del reporte ─────────────────────────────────────────────────

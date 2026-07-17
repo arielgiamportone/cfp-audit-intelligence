@@ -19,9 +19,12 @@ st.caption("Análisis de resoluciones con Claude API y detección de patrones si
 
 api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 if not api_key:
-    st.error(
-        "ANTHROPIC_API_KEY no configurada. "
-        "Agrega tu clave en el archivo .env o como variable de entorno."
+    st.info(
+        "🧠 **Modo demo:** la Auditoría con IA usa la API de Claude y requiere una "
+        "`ANTHROPIC_API_KEY`, no habilitada en esta demo pública. Esta función se muestra en "
+        "el vídeo del proyecto y puede ejecutarse en local (ver `docs/TFM_DEPLOY.md`). "
+        "Para ver resultados sin IA, visita **🔬 Comparador CFP vs INIDEP** y **🚨 Alertas**.",
+        icon="ℹ️",
     )
     st.stop()
 
