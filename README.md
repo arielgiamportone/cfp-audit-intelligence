@@ -354,6 +354,22 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 
 ---
 
+## Escalabilidad y trabajo futuro
+
+El proyecto está diseñado para escalar del **modo demo** (entrega TFM) al **modo productivo** sin cambiar la arquitectura:
+
+| Dimensión | Modo demo (actual, coste ~0) | Modo productivo (futuro) |
+|-----------|------------------------------|--------------------------|
+| **Datos** | Comparador CBA/CMP y contexto (FAO, CONICET, capturas) **auto-sembrados** + subconjunto de actas | Corpus completo 1998–2025 (cientos de actas + 492 ITOs INIDEP) |
+| **Auditoría IA** | Muestra acotada (`--step audit --limit`) para demostrar el flujo | Auditoría masiva con Claude API + *prompt caching* sobre todo el corpus |
+| **Hosting** | Streamlit Community Cloud (gratuito, solo lectura sobre SQLite) | VPS / contenedor dedicado (Docker ya provisto) con más RAM/CPU |
+| **Vector store** | ChromaDB local | ChromaDB persistente / servicio gestionado para RAG a escala |
+| **Coste** | Sin coste de tokens (datos sembrados) | Presupuesto de API dimensionado al volumen del corpus |
+
+La arquitectura por capas, los contratos de datos, el pipeline idempotente (hashing SHA256, *provenance chain*) y el `docker-compose` permiten esta transición **sin reescritura**: basta con proveer infraestructura y presupuesto de API. El diseño demo↔producción es deliberado y forma parte de la estrategia del proyecto.
+
+---
+
 ## Variables de Entorno
 
 ```env

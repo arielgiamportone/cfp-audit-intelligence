@@ -49,3 +49,7 @@ htmlcov/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+# Permitir el config de Streamlit (NO los secrets)
+!.streamlit/
+!.streamlit/config.toml
+.streamlit/secrets.toml
