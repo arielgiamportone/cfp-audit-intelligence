@@ -86,8 +86,13 @@ if st.button("📥 Generar y descargar PDF", type="primary", use_container_width
                 use_container_width=True,
             )
         except Exception as e:
-            st.error(f"Error generando reporte: {e}")
-            st.exception(e)
+            st.error(
+                "No se pudo generar el reporte. Verifica que el corpus esté cargado; "
+                "si el problema persiste, revisa el detalle técnico.",
+                icon="⚠️",
+            )
+            with st.expander("🛠️ Detalle técnico del error"):
+                st.exception(e)
 
 st.divider()
 

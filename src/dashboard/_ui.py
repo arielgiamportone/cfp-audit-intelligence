@@ -102,3 +102,44 @@ def setup_page() -> None:
     """Atajo estándar para cada página: CSS base + marca de sidebar."""
     inject_base_css()
     sidebar_brand()
+
+
+# ── Paleta marina (coherente con .streamlit/config.toml) ───────────────────────
+TEAL = "#0E7490"
+SLATE = "#14303B"
+CARD_BG = "#ECF3F6"
+CARD_BORDER = "#D6E4EA"
+
+
+def demo_banner(text: str | None = None) -> None:
+    """Aviso estándar de 'modo demo' (unifica los 5 estilos que había dispersos)."""
+    st.info(
+        text
+        or (
+            "🎓 **Demo del TFM.** Esta vista requiere el corpus completo de actas "
+            "(se genera con el pipeline). Su funcionamiento se muestra en el vídeo del "
+            "proyecto y puede reproducirse en local — ver `docs/TFM_DEPLOY.md`."
+        ),
+        icon="ℹ️",
+    )
+
+
+def dev_note(text: str) -> None:
+    """Encapsula instrucciones técnicas (comandos de terminal) para que no invadan
+    la interfaz del usuario final, pero sigan disponibles para evaluadores."""
+    with st.expander("🛠️ Detalle técnico (para desarrolladores)"):
+        st.markdown(text)
+
+
+def style_plotly(fig, height: int | None = None):
+    """Aplica el tema claro marino a una figura Plotly (fondo transparente + texto
+    slate) para que los gráficos hereden la paleta en lugar de forzar fondo oscuro."""
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color=SLATE,
+        legend=dict(font=dict(color=SLATE)),
+    )
+    if height:
+        fig.update_layout(height=height)
+    return fig

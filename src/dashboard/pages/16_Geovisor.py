@@ -19,7 +19,7 @@ import streamlit as st
 from src.acquisition.inidep_geovisor_scraper import SEREGeovisorClient
 from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
-st.set_page_config(page_title="Geovisor SERE — Vedas Geoespaciales", layout="wide")
+st.set_page_config(page_title="Geovisor SERE — Vedas Geoespaciales", page_icon="🗺️", layout="wide")
 
 from src.dashboard._ui import setup_page
 setup_page()

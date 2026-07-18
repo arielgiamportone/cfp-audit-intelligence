@@ -22,7 +22,7 @@ from src.analysis.research_exporter import ResearchExporter
 
 st.set_page_config(
     page_title="FisheriesAudit ALG — Investigación",
-    page_icon="🔬",
+    page_icon="🧪",
     layout="wide",
 )
 

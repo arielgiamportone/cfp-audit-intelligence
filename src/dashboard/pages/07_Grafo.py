@@ -52,8 +52,8 @@ def render_pyvis(G: nx.Graph, height: int = 700) -> str:
     net = Network(
         height=f"{height}px",
         width="100%",
-        bgcolor="#0e1117",
-        font_color="white",
+        bgcolor="#FFFFFF",
+        font_color="#14303B",
         notebook=False,
         directed=False,
     )
@@ -334,7 +334,7 @@ with tab3:
             fig_hhi.update_layout(
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font_color="white",
+                font_color="#14303B",
                 showlegend=False,
             )
             st.plotly_chart(fig_hhi, use_container_width=True)

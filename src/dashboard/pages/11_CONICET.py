@@ -8,7 +8,7 @@ from src.acquisition.conicet_scraper import SEARCH_TERMS, CONICETScraper
 
 st.set_page_config(
     page_title="Publicaciones Científicas — CFP",
-    page_icon="🔬",
+    page_icon="📚",
     layout="wide",
 )
 

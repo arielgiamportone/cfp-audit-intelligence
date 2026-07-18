@@ -20,7 +20,7 @@ import streamlit as st
 from src.acquisition.boletin_oficial_scraper import seed_cargos_demo
 from src.analysis.conflict_detector import ConflictDetector
 
-st.set_page_config(page_title="Red de Conflictos de Interés", layout="wide")
+st.set_page_config(page_title="Red de Conflictos de Interés", page_icon="🕵️", layout="wide")
 
 from src.dashboard._ui import setup_page
 setup_page()
@@ -145,9 +145,9 @@ def _build_plotly_graph(G: nx.Graph) -> go.Figure:
         yaxis={"showgrid": False, "zeroline": False, "showticklabels": False},
         margin={"l": 20, "r": 20, "t": 20, "b": 20},
         height=520,
-        paper_bgcolor="#0E1117",
-        plot_bgcolor="#0E1117",
-        font={"color": "white"},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={"color": "#14303B"},
     )
     return go.Figure(data=edge_traces + [node_trace], layout=layout)
 

@@ -102,9 +102,11 @@ with tab_overview:
 
 with tab_species:
     st.subheader("Análisis por Especie Pesquera")
-    st.info(
-        "Esta sección muestra estadísticas de menciones por especie en las resoluciones. "
-        "Requiere que el pipeline de procesamiento y NER esté completo."
+    st.warning(
+        "⚠️ **Datos ILUSTRATIVOS (no reales).** Los gráficos de esta pestaña usan valores de "
+        "ejemplo para mostrar el formato de salida; se poblarán automáticamente cuando el "
+        "pipeline de procesamiento y NER esté completo. **No usar para conclusiones.**",
+        icon="⚠️",
     )
 
     # Placeholder con datos de ejemplo para demostración

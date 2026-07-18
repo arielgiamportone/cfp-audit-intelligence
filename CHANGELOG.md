@@ -35,6 +35,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   reutilizable `src/dashboard/_ui.py` (`inject_base_css`, `sidebar_brand`, `page_header`, `setup_page`)
   aplicado a **home + las 17 páginas** (DRY): métricas como tarjetas, espaciado, expanders suaves,
   barra lateral de marca con enlaces al repo y a la app, y footer de Streamlit oculto.
+- **UI · auditoría de usabilidad (tanda 1):** helpers `demo_banner()`, `dev_note()` y `style_plotly()`
+  en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
+  CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
+
+### Corregido
+- **Legibilidad en tema claro:** varios gráficos y tarjetas forzaban texto/fondo oscuro y quedaban
+  ilegibles con el nuevo tema claro. Alertas (texto blanco invisible + tarjeta translúcida negra),
+  Grafo y Conflictos (fondos `#0E1117` fijos) ahora usan fondo transparente y texto slate.
+- **Manejo de errores en la UI:** la generación de PDF (`09_Reporte`) ya no vuelca el *traceback*
+  crudo al usuario (`st.exception`); muestra un mensaje claro y esconde el detalle en un expander.
+- **Honestidad de datos:** la pestaña "Por especie" de Reportes marca ahora de forma inequívoca
+  que sus gráficos son **datos ILUSTRATIVOS (no reales)**, evitando que se tomen por hallazgos.
 
 ### Añadido — Unidad 4 · Fundamentos de la IA (IA responsable)
 - **`docs/IA_RESPONSABLE.md`**: mapa de los 4 pilares (Fairness · Safety · Explainability ·

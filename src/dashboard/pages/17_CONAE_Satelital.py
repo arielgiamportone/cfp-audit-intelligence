@@ -21,7 +21,7 @@ import streamlit as st
 from src.acquisition.conae_marine_scraper import ZONAS_MUESTRA, CONAEMarineClient, get_esfuerzo_df
 from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
-st.set_page_config(page_title="CONAE — Esfuerzo Pesquero Satelital", layout="wide")
+st.set_page_config(page_title="CONAE — Esfuerzo Pesquero Satelital", page_icon="🛰️", layout="wide")
 
 from src.dashboard._ui import setup_page
 setup_page()

@@ -190,7 +190,7 @@ with tab1:
                         tipo_label = TIPO_LABELS.get(row["tipo"], row["tipo"])
                         st.markdown(
                             f'<div style="border-left: 4px solid {color}; padding: 6px 12px; '
-                            f'margin-bottom: 8px; background: rgba(0,0,0,0.2)">'
+                            f'margin-bottom: 8px; background: #ECF3F6; border-radius: 6px">'
                             f"<small><b>{tipo_label}</b>"
                             + (f" · {row['year']}" if row.get("year") else "")
                             + (f" · {row['acta_referencia']}" if row.get("acta_referencia") else "")
@@ -375,7 +375,7 @@ with tab3:
                 fig.update_layout(
                     plot_bgcolor="rgba(0,0,0,0)",
                     paper_bgcolor="rgba(0,0,0,0)",
-                    font_color="white",
+                    font_color="#14303B",
                 )
                 st.plotly_chart(fig, use_container_width=True)
         except ImportError:
