@@ -32,6 +32,11 @@ st.info(
     icon="ℹ️",
 )
 
+st.page_link(
+    "pages/00_Informe_Ejecutivo.py",
+    label="📰 **Leer el Informe Ejecutivo** — el hallazgo central resumido en una página",
+)
+
 st.markdown("---")
 
 # ── ¿Qué es esto? (lenguaje llano) ─────────────────────────────────────────────

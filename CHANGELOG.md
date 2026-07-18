@@ -39,6 +39,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Añadido — Informe Ejecutivo (tanda 5)
+- **Nueva vista narrativa `Informe Ejecutivo`** (`pages/00_Informe_Ejecutivo.py`, sección *Inicio*):
+  scrollytelling en 4 pasos (el problema → números clave → foco por especie con **texto
+  autogenerado** a partir de los datos → cómo leerlo/limitaciones). Reutiliza `INIDEPComparator`,
+  gráficos temáticos y el helper `tabla()`. Pensada para leerse de una sola pasada y para el vídeo.
+- Acceso destacado al informe desde la portada.
+
+### Corregido
+- **`tabla()` con `height=None`:** Streamlit ≥1.59 rechaza `height=None` en `st.dataframe`
+  (`StreamlitInvalidHeightError`); el helper ahora solo pasa `height` cuando tiene valor. Detectado
+  con el smoke test de `AppTest` antes de publicar.
+
 ### Añadido — Valor de interfaz (tanda 4)
 - **Home como *dashboard vivo*:** la portada muestra cifras reales de los datos verificados
   (comparaciones analizadas, casos con captura sobre la CBA, casos críticos y especie con más

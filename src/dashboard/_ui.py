@@ -173,13 +173,14 @@ def nivel_chip(nivel: str) -> str:
 # ── Tablas legibles (st.column_config reutilizable) ────────────────────────────
 def tabla(df, column_config=None, height: int | None = None) -> None:
     """`st.dataframe` con formato estándar (sin índice, ancho completo)."""
-    st.dataframe(
-        df,
+    kwargs = dict(
         use_container_width=True,
         hide_index=True,
-        height=height,
         column_config=column_config or {},
     )
+    if height is not None:  # Streamlit rechaza height=None
+        kwargs["height"] = height
+    st.dataframe(df, **kwargs)
 
 
 def col_tn(label: str, help: str | None = None):

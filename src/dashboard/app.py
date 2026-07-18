@@ -38,9 +38,10 @@ setup_page()
 # Rutas relativas a este archivo (src/dashboard/). Títulos e iconos definen la nav.
 
 inicio = st.Page("home.py", title="Inicio", icon="🏠", default=True)
+informe = st.Page("pages/00_Informe_Ejecutivo.py", title="Informe ejecutivo", icon="📰")
 
 nav = {
-    "Inicio": [inicio],
+    "Inicio": [inicio, informe],
     "Núcleo · Triángulo de auditoría": [
         st.Page("pages/05_INIDEP_Comparador.py", title="Comparador INIDEP", icon="🔬"),
         st.Page("pages/06_Timeline.py", title="Timeline histórico", icon="📈"),
