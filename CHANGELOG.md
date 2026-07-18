@@ -32,6 +32,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **UX:** intros "¿cómo leer esta página?" en Comparador y Alertas; estados vacíos amigables
   ("modo demo") en Adquisición, Knowledge Base, Auditoría IA y Reportes.
 
+### Añadido — Unidad 4 · Fundamentos de la IA (IA responsable)
+- **`docs/IA_RESPONSABLE.md`**: mapa de los 4 pilares (Fairness · Safety · Explainability ·
+  Accountability) a la implementación real (groundedness, `[BAJA_EVIDENCIA]`, Model Card,
+  Datasheet, trazabilidad `prompt_hash`, ADR-007).
+- **Explainability en la UI**: expander de transparencia en la página de Auditoría.
+
 ### Añadido — Unidad 3 · Arquitectura (Hexagonal / DIP)
 - **Puertos del dominio** (`src/ports.py`): `VectorStorePort` y `AuditorPort` como
   `typing.Protocol` estructural; los adaptadores actuales (ChromaDB, Claude) los cumplen

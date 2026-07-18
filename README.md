@@ -114,6 +114,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | [`docs/adr/`](docs/adr/) | ADR 001–012: decisiones de arquitectura con contexto y justificación |
 | [`docs/REQUISITOS.md`](docs/REQUISITOS.md) | Requisitos RF/RNF, historias de usuario (Given-When-Then), MoSCoW y trazabilidad requisito → módulo |
 | [`docs/specs/`](docs/specs/) | Especificaciones Spec-Driven Development (Spec-First) de features |
+| [`docs/IA_RESPONSABLE.md`](docs/IA_RESPONSABLE.md) | IA responsable: 4 pilares (Fairness · Safety · Explainability · Accountability) mapeados al código |
 
 ---
 

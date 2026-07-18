@@ -15,6 +15,18 @@ st.set_page_config(page_title="Auditoría IA | CFP Audit", page_icon="🧠", lay
 st.title("🧠 Auditoría con Inteligencia Artificial")
 st.caption("Análisis de resoluciones con Claude API y detección de patrones sistémicos")
 
+with st.expander("🔍 IA responsable: cómo garantizamos transparencia", expanded=False):
+    st.markdown(
+        "- **Anclaje textual (groundedness):** cada hallazgo se contrasta con el texto fuente; "
+        "si el anclaje es insuficiente se marca **`[BAJA_EVIDENCIA]`** y no se presenta como firme.\n"
+        "- **Trazabilidad:** cada análisis se identifica por `prompt_hash` + `input_hash` + modelo + "
+        "temperatura → es **reproducible y auditable**.\n"
+        "- **Human-in-the-loop:** los resultados son **descriptivos** y **requieren verificación**; "
+        "no constituyen prueba ni acusación.\n"
+        "- Detalle completo en [`docs/IA_RESPONSABLE.md`](https://github.com/arielgiamportone/cfp-audit-intelligence/blob/main/docs/IA_RESPONSABLE.md) "
+        "y en el marco ético (ADR-007)."
+    )
+
 # ── Verificar API Key ─────────────────────────────────────────────────────────
 
 api_key = os.environ.get("ANTHROPIC_API_KEY", "")
