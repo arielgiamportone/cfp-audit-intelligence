@@ -141,7 +141,7 @@ with tab1:
                     "resolucion_url": "PDF oficial",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             height=420,
             column_config={
                 "PDF oficial": st.column_config.LinkColumn("PDF oficial", display_text="Ver PDF")
@@ -169,7 +169,7 @@ with tab2:
                     "encontrada_en_corpus": "¿En el corpus?",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             height=320,
             column_config={
                 "PDF oficial": st.column_config.LinkColumn("PDF oficial", display_text="Ver PDF")
@@ -195,7 +195,7 @@ with tab3:
         st.bar_chart(conteo.set_index("especie_code"))
         st.dataframe(
             conteo.rename(columns={"especie_code": "Especie", "n_zonas_veda": "Zonas de veda"}),
-            use_container_width=True,
+            width="stretch",
         )
 
 # ── Tab 4: Metodología ────────────────────────────────────────────────────────

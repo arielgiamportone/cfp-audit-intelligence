@@ -5,9 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.analysis.report_generator import CFPReportGenerator
-
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import import_guard, page_header_raw
 page_header_raw("📄 Reporte PDF Ejecutivo")
 st.markdown("Genera un informe ejecutivo en PDF con todos los hallazgos de auditoría.")
 
@@ -17,6 +15,9 @@ st.info(
     "secciones limitadas; la versión completa se muestra en el vídeo (ver `docs/TFM_DEPLOY.md`).",
     icon="ℹ️",
 )
+
+with import_guard("La generación de PDF"):
+    from src.analysis.report_generator import CFPReportGenerator
 
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
@@ -67,7 +68,7 @@ if not DB_PATH.exists():
     st.warning("Base de datos no encontrada. Ejecuta el pipeline primero.")
     st.stop()
 
-if st.button("📥 Generar y descargar PDF", type="primary", use_container_width=True):
+if st.button("📥 Generar y descargar PDF", type="primary", width="stretch"):
     with st.spinner("Generando reporte PDF..."):
         try:
             gen = CFPReportGenerator(db_path=DB_PATH)
@@ -80,7 +81,7 @@ if st.button("📥 Generar y descargar PDF", type="primary", use_container_width
                 data=pdf_bytes,
                 file_name=filename,
                 mime="application/pdf",
-                use_container_width=True,
+                width="stretch",
             )
         except Exception as e:
             st.error(
@@ -119,7 +120,7 @@ if DB_PATH.exists():
             for c in ["severidad", "tipo", "especie", "zona", "year", "mensaje"]
             if c in df_alertas.columns
         ]
-        st.dataframe(df_alertas[cols_show], use_container_width=True, hide_index=True)
+        st.dataframe(df_alertas[cols_show], width="stretch", hide_index=True)
 
     if comparaciones:
         st.markdown("**Comparaciones CFP vs INIDEP que se incluirán:**")
@@ -139,4 +140,4 @@ if DB_PATH.exists():
             ]
             if c in df_comp.columns
         ]
-        st.dataframe(df_comp[cols_comp], use_container_width=True, hide_index=True)
+        st.dataframe(df_comp[cols_comp], width="stretch", hide_index=True)

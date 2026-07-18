@@ -170,7 +170,7 @@ with tab_timeline:
                         "notas": "Notas",
                     }
                 ),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
     else:
@@ -260,7 +260,7 @@ with tab_timeline:
             height=480,
             hovermode="x unified",
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Tabla de referencia rápida
         if not df_cba.empty:
@@ -277,7 +277,7 @@ with tab_timeline:
                             "numero_ito": "ITO",
                         }
                     ),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
 
@@ -309,7 +309,7 @@ with tab_heatmap:
             aspect="auto",
         )
         fig_heat.update_layout(height=420)
-        st.plotly_chart(fig_heat, use_container_width=True)
+        st.plotly_chart(fig_heat, width="stretch")
 
     # CBA disponibles por especie (barra horizontal)
     st.subheader("ITOs con CBA numérica disponible")
@@ -335,7 +335,7 @@ with tab_heatmap:
             color_continuous_scale="Teal",
         )
         fig_bar.update_layout(height=350, showlegend=False)
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_bar, width="stretch")
 
 # ── Tab 3: Actividad total por especie ────────────────────────────────────────
 
@@ -377,7 +377,7 @@ with tab_actividad:
     )
     fig_donut.update_traces(textposition="outside")
     fig_donut.update_layout(height=420)
-    st.plotly_chart(fig_donut, use_container_width=True)
+    st.plotly_chart(fig_donut, width="stretch")
 
     # Tabla resumen
     st.dataframe(
@@ -393,7 +393,7 @@ with tab_actividad:
                 "ultimo_año": "Último año",
             }
         ),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -425,7 +425,7 @@ with tab_datos:
                 "notas": "Notas",
             }
         ),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 

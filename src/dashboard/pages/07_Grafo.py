@@ -8,16 +8,18 @@ en las decisiones del Consejo Federal Pesquero.
 import tempfile
 from pathlib import Path
 
-import networkx as nx
-import pandas as pd
 import streamlit as st
-from pyvis.network import Network
 
-from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
-
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import import_guard, page_header_raw
 page_header_raw("🕸️ Grafo de Relaciones CFP", "Red bipartita de co-menciones entre especies pesqueras y empresas "
     "en las decisiones del Consejo Federal Pesquero.")
+
+with import_guard("El grafo de relaciones"):
+    import networkx as nx
+    import pandas as pd
+    from pyvis.network import Network
+
+    from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
 
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
@@ -233,7 +235,7 @@ with tab2:
                 if top:
                     df_top = pd.DataFrame(top)
                     df_top.columns = ["Empresa", "Co-menciones"]
-                    st.dataframe(df_top, use_container_width=True, hide_index=True)
+                    st.dataframe(df_top, width="stretch", hide_index=True)
             elif tipo_nodo == NODE_EMPRESA:
                 vecinos = [
                     {
@@ -247,7 +249,7 @@ with tab2:
                     df_vec = pd.DataFrame(
                         sorted(vecinos, key=lambda x: x["Co-menciones"], reverse=True)
                     )
-                    st.dataframe(df_vec, use_container_width=True, hide_index=True)
+                    st.dataframe(df_vec, width="stretch", hide_index=True)
 
             st.metric("Grado", G.degree(nodo_ego))
             st.metric("Menciones totales", G.nodes[nodo_ego].get("menciones", 0))
@@ -321,11 +323,11 @@ with tab3:
                 font_color="#14303B",
                 showlegend=False,
             )
-            st.plotly_chart(fig_hhi, use_container_width=True)
+            st.plotly_chart(fig_hhi, width="stretch")
         except ImportError:
             pass
 
-        st.dataframe(df_hhi, use_container_width=True, hide_index=True)
+        st.dataframe(df_hhi, width="stretch", hide_index=True)
 
         st.subheader("Top empresas por especie")
         esp_sel = st.selectbox(
@@ -343,7 +345,7 @@ with tab3:
                     1
                 )
                 df_top_emp.columns = ["Empresa", "Co-menciones", "Participación %"]
-                st.dataframe(df_top_emp, use_container_width=True, hide_index=True)
+                st.dataframe(df_top_emp, width="stretch", hide_index=True)
     else:
         st.info("No hay datos HHI disponibles. Verifica que las actas estén procesadas.")
 
@@ -378,7 +380,7 @@ with tab4:
 
     st.dataframe(
         df_show.rename(columns={"co_menciones": "Co-menciones"}),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
     st.caption(f"Mostrando {len(df_show)} aristas de {len(df_edges)} totales.")
@@ -406,4 +408,4 @@ with tab4:
         ]
     ).sort_values("Grado", ascending=False)
 
-    st.dataframe(df_nodes, use_container_width=True, hide_index=True)
+    st.dataframe(df_nodes, width="stretch", hide_index=True)

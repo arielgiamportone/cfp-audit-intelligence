@@ -12,22 +12,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import networkx as nx
-import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
-
-from src.acquisition.boletin_oficial_scraper import seed_cargos_demo
-from src.analysis.conflict_detector import ConflictDetector
 
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-from src.dashboard._ui import page_header_raw
-page_header_raw("Red de Conflictos de Interés — CFP vs. Industria Pesquera", "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
+from src.dashboard._ui import import_guard, page_header_raw
+page_header_raw("🕵️ Red de Conflictos de Interés — CFP vs. Industria Pesquera", "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
     "y apariciones en actas del CFP. "
     "⚠️ Datos demo hasta verificación por experto legal.")
+
+with import_guard("La red de conflictos de interés"):
+    import networkx as nx
+    import pandas as pd
+    import plotly.graph_objects as go
+
+    from src.acquisition.boletin_oficial_scraper import seed_cargos_demo
+    from src.analysis.conflict_detector import ConflictDetector
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
@@ -155,7 +157,7 @@ with tab1:
         cd = ConflictDetector(DB_PATH)
         G = cd.build_conflict_graph(df_conf)
         fig = _build_plotly_graph(G)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         st.caption(
             "🟣 Personas con cargos en empresas pesqueras que aparecen en actas CFP  "
             "🟠 Empresas pesqueras  |  Grosor de arista = severidad del conflicto"
@@ -180,7 +182,7 @@ with tab2:
             }
         )
         cols = ["Persona", "Empresa", "Cargo", "Tipo", "Severidad", "Co-apariciones CFP"]
-        st.dataframe(df_display[cols], use_container_width=True, height=400)
+        st.dataframe(df_display[cols], width="stretch", height=400)
 
         csv = df_conf.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -212,7 +214,7 @@ with tab3:
                     "verificado": "Verificado",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
         )
         st.caption(
             f"**Fuente:** Boletín Oficial Sección 4 / datos.gob.ar — "

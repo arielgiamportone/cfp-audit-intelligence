@@ -184,7 +184,7 @@ with tab2:
             st.subheader("Gold set sintético (demo)")
             st.dataframe(
                 gold_df[["categoria_humana", "riesgo_score_humano", "notas"]].head(10),
-                use_container_width=True,
+                width="stretch",
             )
     else:
         # KPIs principales
@@ -199,7 +199,7 @@ with tab2:
         # Métricas por categoría
         st.subheader("Precisión / Recall / F1 por categoría")
         tabla_cat = pd.DataFrame(metrics["por_categoria"]).T
-        st.dataframe(tabla_cat.style.format("{:.3f}"), use_container_width=True)
+        st.dataframe(tabla_cat.style.format("{:.3f}"), width="stretch")
 
         # Distribución
         st.subheader("Distribución de categorías")
@@ -273,7 +273,7 @@ with tab3:
     if not gold_df.empty:
         st.dataframe(
             gold_df[["categoria_humana", "riesgo_score_humano", "notas"]].head(10),
-            use_container_width=True,
+            width="stretch",
         )
 
 # ─── Tab 4: Sensibilidad de Umbrales ─────────────────────────────────────────
@@ -339,7 +339,7 @@ with tab4:
                 "Críticos": v.get("n_critico", 0),
                 "Rojos": v.get("n_rojo", 0),
             })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
+        st.dataframe(pd.DataFrame(rows), width="stretch")
 
     # Grilla completa de sensibilidad
     st.subheader("Grilla de sensibilidad (grilla completa)")

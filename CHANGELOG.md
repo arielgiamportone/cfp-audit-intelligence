@@ -39,6 +39,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Corregido — Blindaje de imports y dependencias (tanda 6)
+- **Fin de los errores de importación:** helper `import_guard()` en `_ui.py` que envuelve los
+  imports pesados/opcionales; si una dependencia no está instalada, la página muestra un aviso claro
+  y un enlace al Comparador en vez de un *traceback*. Aplicado a Adquisición, Reportes, Grafo,
+  Reporte PDF, Investigación, Conflictos y CONAE.
+- **`requirements-deploy.txt` sincronizado:** añadidas `matplotlib`, `scipy`, `scikit-learn` y
+  `openpyxl` (las usaban Reportes/Investigación/Evaluación/CONAE y faltaban en el perfil de deploy).
+- **Bug real corregido (CONAE):** `get_esfuerzo_df(...) or pd.DataFrame()` lanzaba
+  *"The truth value of a DataFrame is ambiguous"*; ahora se comprueba `is not None`.
+- **Migración `use_container_width` → `width`:** 68 llamadas actualizadas a `width="stretch"`
+  (la API antigua está deprecada), evitando que una futura versión de Streamlit rompa la app.
+- **Validación:** smoke test con `AppTest` recorre **las 19 páginas** (router + navegación) sin
+  excepciones, tanto con dependencias ausentes (guard) como presentes (camino feliz).
+
 ### Añadido — Informe Ejecutivo (tanda 5)
 - **Nueva vista narrativa `Informe Ejecutivo`** (`pages/00_Informe_Ejecutivo.py`, sección *Inicio*):
   scrollytelling en 4 pasos (el problema → números clave → foco por especie con **texto

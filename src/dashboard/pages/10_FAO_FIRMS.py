@@ -99,7 +99,7 @@ with tab1:
             height=420,
             legend={"orientation": "h", "y": -0.15},
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Cards de share por especie
         st.markdown("**Participación de Argentina en Área FAO 41:**")
@@ -176,7 +176,7 @@ with tab1:
             yaxis_title="Toneladas",
             height=380,
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
 # ── Tab 2: Estado de Stocks ───────────────────────────────────────────────────
 
@@ -233,7 +233,7 @@ with tab2:
                         "year_evaluacion", "fuente", "notas"]
             if c in df_status.columns
         ]
-        st.dataframe(df_status[cols_show], use_container_width=True, hide_index=True)
+        st.dataframe(df_status[cols_show], width="stretch", hide_index=True)
 
         st.info(
             "**Leyenda FAO FIRMS**: F = Plena explotación | O = Sobrexplotado | "
@@ -261,7 +261,7 @@ with tab3:
         if not df_capturas.empty:
             st.dataframe(
                 df_capturas.drop(columns=["id", "created_at"], errors="ignore"),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
             csv_cap = df_capturas.to_csv(index=False)
@@ -277,7 +277,7 @@ with tab3:
         if not df_status.empty:
             st.dataframe(
                 df_status.drop(columns=["id", "created_at"], errors="ignore"),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
             csv_st = df_status.to_csv(index=False)

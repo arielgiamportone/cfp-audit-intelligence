@@ -365,7 +365,7 @@ with tab3:
                     paper_bgcolor="rgba(0,0,0,0)",
                     font_color="#14303B",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         except ImportError:
             pass
 
@@ -389,7 +389,7 @@ with tab3:
         )
         df_display["tipo"] = df_display["tipo"].map(lambda t: TIPO_LABELS.get(t, t))
 
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
+        st.dataframe(df_display, width="stretch", hide_index=True)
 
         csv = df_hist.to_csv(index=False).encode("utf-8")
         st.download_button(

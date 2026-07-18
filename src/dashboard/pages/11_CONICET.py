@@ -207,7 +207,7 @@ with tab3:
         ]
         if c in df_show.columns
     ]
-    st.dataframe(df_show[cols_show], use_container_width=True, hide_index=True)
+    st.dataframe(df_show[cols_show], width="stretch", hide_index=True)
     st.caption(f"{len(df_show)} publicaciones mostradas")
 
     csv = df_show.to_csv(index=False)

@@ -10,7 +10,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import import_guard, page_header_raw
 page_header_raw("📥 Adquisición de Actas", "Scraping y descarga masiva de PDFs del Consejo Federal Pesquero")
 
 st.info(
@@ -23,8 +23,9 @@ st.info(
 
 # ── Configuración ─────────────────────────────────────────────────────────────
 
-from src.acquisition.batch_scraper import CFPScraper
-from src.acquisition.catalog_manager import CatalogManager
+with import_guard("La adquisición de actas"):
+    from src.acquisition.batch_scraper import CFPScraper
+    from src.acquisition.catalog_manager import CatalogManager
 
 RAW_DIR = ROOT / "data" / "raw"
 from src.config_loader import get_db_path
@@ -69,7 +70,7 @@ with col_right:
         ).sort_values("Año")
         fig = px.bar(df_years, x="Año", y="Cantidad", color_discrete_sequence=["#0068c9"])
         fig.update_layout(height=250, margin=dict(t=10, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("Sin datos en el catálogo aún. Ejecuta el scraping para poblar.")
 

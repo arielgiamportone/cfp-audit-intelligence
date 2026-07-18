@@ -177,7 +177,7 @@ fig.update_layout(
     plot_bgcolor="rgba(0,0,0,0)",
     font_color="#14303B",
 )
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 # Tabla del foco con formato
 cols = [c for c in ["year", "zona", "cba_recomendada_tn", "captura_real_tn", "ratio_captura_cba"]

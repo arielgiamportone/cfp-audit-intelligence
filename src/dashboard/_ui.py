@@ -12,9 +12,34 @@ selectores `data-testid` estables para no depender de clases internas volátiles
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 
 import streamlit as st
+
+
+@contextmanager
+def import_guard(funcion: str):
+    """Envuelve imports pesados/opcionales para que una dependencia ausente muestre un
+    mensaje claro (en vez de un traceback) y detenga la página con elegancia.
+
+    Uso:
+        with import_guard("El grafo de relaciones"):
+            import networkx as nx
+            from src.analysis.graph_builder import CFPGraphBuilder
+    """
+    try:
+        yield
+    except ModuleNotFoundError as exc:
+        st.warning(
+            f"⚠️ **{funcion}** requiere una dependencia no disponible en este entorno "
+            f"(`{exc.name}`). En la demo pública algunas funciones avanzadas están limitadas; "
+            f"puedes reproducirlas en local (ver `docs/TFM_DEPLOY.md`).",
+            icon="⚠️",
+        )
+        st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Ir al Comparador INIDEP")
+        st.stop()
+
 
 REPO_URL = "https://github.com/arielgiamportone/cfp-audit-intelligence"
 APP_URL = "https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app"
@@ -174,7 +199,7 @@ def nivel_chip(nivel: str) -> str:
 def tabla(df, column_config=None, height: int | None = None) -> None:
     """`st.dataframe` con formato estándar (sin índice, ancho completo)."""
     kwargs = dict(
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config=column_config or {},
     )

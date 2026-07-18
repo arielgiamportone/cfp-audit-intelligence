@@ -189,7 +189,7 @@ with tab1:
                     }
                 ],
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Cards de ratios para el último año
             ultimo = df_esp.sort_values("year").iloc[-1]
@@ -256,7 +256,7 @@ with tab2:
             height=400,
             legend={"orientation": "h", "y": -0.2},
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     st.divider()
     st.subheader("Variación interanual")
@@ -284,7 +284,7 @@ with tab2:
             yaxis_title="Variación %",
             height=300,
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
 # ── Tab 3: Alertas ─────────────────────────────────────────────────────────────
 
@@ -371,7 +371,7 @@ with tab4:
     cols_show = [
         c for c in ["especie", "year", "captura_tn", "fuente", "notas"] if c in df_show.columns
     ]
-    st.dataframe(df_show[cols_show], use_container_width=True, hide_index=True)
+    st.dataframe(df_show[cols_show], width="stretch", hide_index=True)
     st.caption(f"{len(df_show)} registros mostrados")
 
     csv = df_show.to_csv(index=False)

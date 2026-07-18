@@ -16,13 +16,14 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.analysis.inidep_comparator import INIDEPComparator
-from src.analysis.linkedin_formatter import LinkedInFormatter
-from src.analysis.research_exporter import ResearchExporter
-
-from src.dashboard._ui import page_header_raw
-page_header_raw("🔬 FisheriesAudit ALG — Hub de Investigación", "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
+from src.dashboard._ui import import_guard, page_header_raw
+page_header_raw("🧪 FisheriesAudit ALG — Hub de Investigación", "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
     "Ariel L. Giamportone · Ing. Pesquero | Data Scientist")
+
+with import_guard("El hub de investigación (figuras/exportación)"):
+    from src.analysis.inidep_comparator import INIDEPComparator
+    from src.analysis.linkedin_formatter import LinkedInFormatter
+    from src.analysis.research_exporter import ResearchExporter
 
 st.info(
     "Genera outputs científicos publicables directamente desde los datos de la plataforma: "
@@ -156,7 +157,7 @@ with tab_tests:
 
             st.dataframe(
                 df_tests.style.applymap(_color_sig, subset=["significativo"]),
-                use_container_width=True,
+                width="stretch",
                 height=400,
             )
 
@@ -224,7 +225,7 @@ with tab_datos:
     st.subheader("Vista previa del dataset")
     df_preview = comp.get_triangulo_completo()
     if not df_preview.empty:
-        st.dataframe(df_preview, use_container_width=True, height=300)
+        st.dataframe(df_preview, width="stretch", height=300)
         st.caption(
             f"{len(df_preview)} registros · "
             "Fuentes: INIDEP Mar Abierto + CFP Actas Públicas + SAGPyA/SIPA"

@@ -339,7 +339,7 @@ with tab_triangulo:
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
                 height=500,
             )
-            st.plotly_chart(fig_tri, use_container_width=True)
+            st.plotly_chart(fig_tri, width="stretch")
 
             # Ratio captura_real / CBA
             df_ratio = df_tri_plot[df_tri_plot["ratio_captura_cba"].notna()].copy()
@@ -362,7 +362,7 @@ with tab_triangulo:
                     annotation_text="Límite CBA",
                 )
                 fig_ratio_tri.update_layout(height=400, coloraxis_showscale=False)
-                st.plotly_chart(fig_ratio_tri, use_container_width=True)
+                st.plotly_chart(fig_ratio_tri, width="stretch")
 
         # Tabla completa
         st.subheader("Tabla — Triángulo completo")
@@ -467,7 +467,7 @@ with tab_grafico:
             legend=dict(orientation="h", yanchor="bottom", y=1.02),
             height=450,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Gauge de ratio para alertas con datos
         st.subheader("Ratio de sobreasignación por especie/zona")
@@ -507,7 +507,7 @@ with tab_grafico:
             annotation_position="top right",
         )
         fig_ratio.update_layout(height=400)
-        st.plotly_chart(fig_ratio, use_container_width=True)
+        st.plotly_chart(fig_ratio, width="stretch")
 
 # ── Tab 4: Datos INIDEP ───────────────────────────────────────────────────────
 
@@ -539,7 +539,7 @@ with tab_inidep:
                     "notas": "Notas",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -571,7 +571,7 @@ with tab_inidep:
                     "resolucion_cfp": "Resolución CFP",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -591,7 +591,7 @@ with tab_inidep:
                     "notas": "Notas",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 

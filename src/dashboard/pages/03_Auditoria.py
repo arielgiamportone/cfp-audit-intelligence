@@ -200,7 +200,7 @@ with tab_patrones:
         if reversals:
             import pandas as pd
 
-            st.dataframe(pd.DataFrame(reversals), use_container_width=True)
+            st.dataframe(pd.DataFrame(reversals), width="stretch")
         else:
             st.info("No se detectaron reversiones o no hay datos suficientes.")
 

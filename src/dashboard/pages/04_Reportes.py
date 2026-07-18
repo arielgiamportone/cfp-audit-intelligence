@@ -10,7 +10,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import import_guard, page_header_raw
 page_header_raw("📊 Reportes y Visualizaciones", "Análisis estadístico y exportación de resultados de auditoría")
 
 st.info(
@@ -31,8 +31,9 @@ if not DB_PATH.exists():
     st.warning("Base de datos aún no inicializada (modo demo). Visita el Comparador o ejecuta el pipeline.")
     st.stop()
 
-from src.acquisition.catalog_manager import CatalogManager
-from src.analysis.pattern_detector import PatternDetector
+with import_guard("Los reportes avanzados"):
+    from src.acquisition.catalog_manager import CatalogManager
+    from src.analysis.pattern_detector import PatternDetector
 
 catalog = CatalogManager(DB_PATH)
 detector = PatternDetector(DB_PATH)
@@ -68,7 +69,7 @@ with tab_overview:
             color_continuous_scale="Blues",
         )
         fig.update_layout(showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         # Métricas de cobertura
         col1, col2, col3 = st.columns(3)
@@ -128,7 +129,7 @@ with tab_species:
         color="Menciones",
         color_continuous_scale="Teal",
     )
-    st.plotly_chart(fig_esp, use_container_width=True)
+    st.plotly_chart(fig_esp, width="stretch")
     st.caption("Datos ilustrativos hasta completar el pipeline de NER")
 
     # Radar de sostenibilidad por especie (placeholder)
@@ -149,7 +150,7 @@ with tab_species:
             go.Scatterpolar(r=values, theta=categorias, fill="toself", name=especie)
         )
     fig_radar.update_layout(title="Perfil de Presión Pesquera (Ilustrativo)")
-    st.plotly_chart(fig_radar, use_container_width=True)
+    st.plotly_chart(fig_radar, width="stretch")
     st.caption("Datos ilustrativos. Se poblará automáticamente con el análisis IA completo.")
 
 # ── Tab 3: Riesgo y anomalías ─────────────────────────────────────────────────
@@ -170,7 +171,7 @@ with tab_risk:
             y=60, line_dash="dash", line_color="orange", annotation_text="Riesgo medio"
         )
         fig_risk.add_hline(y=80, line_dash="dash", line_color="red", annotation_text="Riesgo alto")
-        st.plotly_chart(fig_risk, use_container_width=True)
+        st.plotly_chart(fig_risk, width="stretch")
     else:
         st.info("Sin datos de riesgo. Ejecuta el análisis IA sobre las resoluciones.")
 
@@ -181,7 +182,7 @@ with tab_risk:
     reversals = detector.reversals_detection()
     if reversals:
         df_rev = pd.DataFrame(reversals)
-        st.dataframe(df_rev, use_container_width=True)
+        st.dataframe(df_rev, width="stretch")
         st.warning(
             f"{len(reversals)} reversiones detectadas (cuotas otorgadas poco después de vedas). "
             "Cada caso requiere verificación de la justificación técnica subyacente."
@@ -217,7 +218,7 @@ with tab_risk:
         )
     )
     gauge_hhi.update_layout(height=300)
-    st.plotly_chart(gauge_hhi, use_container_width=True)
+    st.plotly_chart(gauge_hhi, width="stretch")
     st.caption(hhi_data.get("interpretation", "Sin datos"))
 
 # ── Tab 4: Exportar ───────────────────────────────────────────────────────────

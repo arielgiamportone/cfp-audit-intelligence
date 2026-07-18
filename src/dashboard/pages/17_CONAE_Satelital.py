@@ -18,17 +18,18 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from src.acquisition.conae_marine_scraper import ZONAS_MUESTRA, CONAEMarineClient, get_esfuerzo_df
-from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
-
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import import_guard, page_header_raw
 page_header_raw("🛰️ CONAE — Esfuerzo Pesquero Satelital", "Datos satelitales del geoportal marino de la CONAE. "
     "Verifica si el esfuerzo pesquero real (GFW AIS) disminuye durante períodos de veda "
     "— evidencia independiente del corpus de actas CFP (ADR-010).")
+
+with import_guard("El módulo satelital CONAE"):
+    from src.acquisition.conae_marine_scraper import ZONAS_MUESTRA, CONAEMarineClient, get_esfuerzo_df
+    from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,8 @@ with st.sidebar:
 
 @st.cache_data(ttl=120)
 def _cargar_datos() -> pd.DataFrame:
-    return get_esfuerzo_df(DB_PATH) or pd.DataFrame()
+    df = get_esfuerzo_df(DB_PATH)
+    return df if df is not None else pd.DataFrame()
 
 df = _cargar_datos()
 
@@ -95,7 +97,7 @@ if df.empty:
         )
         fig.update_traces(textposition="top center", marker_size=12)
         fig.update_layout(height=500)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     except ImportError:
         st.dataframe(zonas_df)
     st.stop()
@@ -127,7 +129,7 @@ with tab_mapa:
         )
         fig.update_traces(textposition="top center", marker_size=14)
         fig.update_layout(height=520)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     except ImportError:
         st.dataframe(ultimo_por_zona)
 
@@ -159,7 +161,7 @@ with tab_sst:
                 labels={"sst": "SST diurna (°C)", "fecha": "Fecha"},
                 title="Evolución de la SST diurna por zona de muestreo",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             if df["sst_noche"].notna().any():
                 fig2 = px.line(
@@ -171,7 +173,7 @@ with tab_sst:
                     labels={"sst_noche": "SST nocturna (°C)", "fecha": "Fecha"},
                     title="SST nocturna por zona",
                 )
-                st.plotly_chart(fig2, use_container_width=True)
+                st.plotly_chart(fig2, width="stretch")
         except ImportError:
             st.dataframe(df_sst[["zona", "fecha", "sst", "sst_noche"]])
 
@@ -199,7 +201,7 @@ with tab_clorofila:
                 labels={col_usar: label_chla, "fecha": "Fecha"},
                 title=f"Evolución de clorofila-a ({label_chla}) por zona",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         except ImportError:
             st.dataframe(df_chla[["zona", "fecha", "clorofila", "clorofila_8d"]])
 
@@ -224,7 +226,7 @@ with tab_esfuerzo:
                 labels={"esfuerzo_gfw": "Esfuerzo GFW (h/km²)", "fecha": "Fecha"},
                 title="Esfuerzo pesquero GFW AIS por zona (Global Fishing Watch)",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             st.caption(
                 "Fuente: Global Fishing Watch — Kroodsma et al. (2018). "
@@ -241,7 +243,7 @@ with tab_esfuerzo:
             .reset_index()
             .rename(columns={"mean": "Promedio", "median": "Mediana", "count": "N muestreos"})
         )
-        st.dataframe(resumen_zona, use_container_width=True)
+        st.dataframe(resumen_zona, width="stretch")
 
 # ── Tab 5: Veda vs. Esfuerzo ──────────────────────────────────────────────────
 
@@ -319,6 +321,6 @@ with tab_veda:
                     labels={"esfuerzo_gfw": "Esfuerzo GFW (h/km²)", "zona": "Zona"},
                 )
                 fig.update_xaxes(tickangle=30)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         except ImportError:
             pass
