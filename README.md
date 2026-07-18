@@ -17,6 +17,12 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 
 > **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–011), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
 
+> **Motivación del autor:** mi perfil profesional viene del **Data Analytics y la Data Science**.
+> Este máster en Desarrollo con IA me aporta un gran valor para **ampliar mis capacidades hacia el
+> desarrollo (DEV)** —arquitectura, buenas prácticas, testing, despliegue— y **fortalecer mi perfil**,
+> llevando mis proyectos de análisis a **software mantenible y en producción**. Este TFM materializa
+> ese salto **Data Science → DEV**.
+
 🔗 **App en vivo:** https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app
 
 ### Entregables

@@ -20,6 +20,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   evidencia de que el dominio no depende de la UI.
 
 ### Cambiado
+- **Narrativa TFM (autor):** se incorpora el arco personal **Data Science → DEV** en el guion
+  de vídeo (`docs/TFM_GUION_VIDEO.md`) y una nota de motivación en el README.
 - **UX (enfoque desarrollo):** home reescrito para público no experto (explicación en lenguaje
   llano, diagrama ciencia→política→realidad, leyenda de alertas, glosario, "empieza por aquí").
 - **UX:** intros "¿cómo leer esta página?" en Comparador y Alertas; estados vacíos amigables
