@@ -39,6 +39,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Añadido — Selector de especie global (tanda 7)
+- **Especie sincronizada entre páginas:** helper `especie_selector()` en `_ui.py` que guarda la
+  especie elegida en `st.session_state` y la propaga como predeterminada. Aplicado a **Timeline,
+  Comparador (triángulo) y Capturas** → eliges una especie una vez y las tres páginas del triángulo
+  quedan sincronizadas. Test de regresión en `tests/test_dashboard_smoke.py`.
+
 ### Corregido — Blindaje de imports y dependencias (tanda 6)
 - **Fin de los errores de importación:** helper `import_guard()` en `_ui.py` que envuelve los
   imports pesados/opcionales; si una dependencia no está instalada, la página muestra un aviso claro

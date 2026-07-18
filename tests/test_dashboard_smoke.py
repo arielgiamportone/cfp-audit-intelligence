@@ -57,3 +57,23 @@ def test_page_renders_without_exception(page):
     """Cada página del dashboard renderiza sin excepción (guard o camino feliz)."""
     at = _run(page)
     assert not at.exception, f"{page}: {_first_exception(at)}"
+
+
+def test_especie_selector_sincroniza_entre_paginas():
+    """La especie elegida en Timeline se propaga a Capturas y Comparador (session_state)."""
+    at = AppTest.from_file(APP, default_timeout=90)
+    at.run()
+    at.switch_page("pages/06_Timeline.py").run()
+    sb = at.selectbox(key="esp_timeline")
+    if not sb.options or len(sb.options) < 2:
+        pytest.skip("No hay suficientes especies con datos para probar la sincronización")
+
+    pick = sb.options[-1]
+    sb.set_value(pick).run()
+    global_code = at.session_state["especie_global"]
+
+    at.switch_page("pages/12_Capturas.py").run()
+    assert at.selectbox(key="cap_triangulo").value == global_code
+
+    at.switch_page("pages/05_INIDEP_Comparador.py").run()
+    assert at.selectbox(key="tri_especie").value == global_code

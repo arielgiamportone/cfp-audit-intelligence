@@ -35,7 +35,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from src.config_loader import get_db_path
-from src.dashboard._ui import col_ratio, col_tn, data_source, tabla
+from src.dashboard._ui import col_ratio, col_tn, data_source, especie_selector, tabla
 
 DB_PATH = get_db_path()
 
@@ -277,15 +277,23 @@ with tab_triangulo:
     if df_tri.empty:
         st.info("No hay datos suficientes para el triángulo. Se necesitan al menos CBA e INIDEP.")
     else:
-        # Filtro por especie
-        especies_disponibles = sorted(df_tri["especie"].dropna().unique())
-        especie_sel_tri = st.selectbox(
-            "Filtrar por especie",
-            ["Todas"] + especies_disponibles,
-            key="tri_especie",
+        # Filtro por especie (sincronizado con Timeline y Capturas)
+        codes_tri = sorted(df_tri["especie_code"].dropna().unique())
+        _name_by_code = (
+            df_tri.dropna(subset=["especie_code"])
+            .drop_duplicates("especie_code")
+            .set_index("especie_code")["especie"]
+            .to_dict()
         )
-        if especie_sel_tri != "Todas":
-            df_tri_filtrado = df_tri[df_tri["especie"] == especie_sel_tri].copy()
+        especie_sel_tri = especie_selector(
+            codes_tri,
+            lambda c: str(_name_by_code.get(c, c)).title(),
+            key="tri_especie",
+            label="Filtrar por especie",
+            include_todas=True,
+        )
+        if especie_sel_tri and especie_sel_tri != "__todas__":
+            df_tri_filtrado = df_tri[df_tri["especie_code"] == especie_sel_tri].copy()
         else:
             df_tri_filtrado = df_tri.copy()
 

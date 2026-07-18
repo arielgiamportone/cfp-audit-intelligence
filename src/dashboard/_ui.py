@@ -220,6 +220,56 @@ def col_ratio(label: str, help: str | None = None, max_value: float = 2.0):
     )
 
 
+# ── Selector de especie global (sincronizado entre páginas) ────────────────────
+ESPECIE_GLOBAL_KEY = "especie_global"
+
+
+def especie_selector(
+    codes,
+    format_func,
+    *,
+    key: str,
+    label: str = "Especie",
+    include_todas: bool = False,
+    todas_label: str = "Todas",
+):
+    """Selectbox de especie **sincronizado entre páginas** vía `session_state`.
+
+    Al elegir una especie aquí, las demás páginas que usen este helper la toman como
+    predeterminada. Devuelve el `especie_code` elegido (o `"__todas__"` si aplica).
+    """
+    opts = (["__todas__"] + list(codes)) if include_todas else list(codes)
+    if not opts:
+        return None
+
+    g = st.session_state.get(ESPECIE_GLOBAL_KEY)
+    # Inicializa el estado del widget desde el global (o el primero disponible).
+    if key not in st.session_state:
+        st.session_state[key] = g if g in opts else opts[0]
+    # Si el global cambió en otra página, refléjalo en este widget (evita ping-pong).
+    seen_key = f"_seen_global_{key}"
+    if g in opts and st.session_state.get(seen_key) != g and st.session_state[key] != g:
+        st.session_state[key] = g
+    st.session_state[seen_key] = g
+
+    def _on_change():
+        v = st.session_state[key]
+        if v != "__todas__":
+            st.session_state[ESPECIE_GLOBAL_KEY] = v
+
+    st.selectbox(
+        label,
+        opts,
+        format_func=lambda x: todas_label if x == "__todas__" else format_func(x),
+        key=key,
+        on_change=_on_change,
+    )
+    sel = st.session_state[key]
+    if sel != "__todas__":
+        st.session_state[ESPECIE_GLOBAL_KEY] = sel
+    return sel
+
+
 def style_plotly(fig, height: int | None = None):
     """Aplica el tema claro marino a una figura Plotly (fondo transparente + texto
     slate) para que los gráficos hereden la paleta en lugar de forzar fondo oscuro."""

@@ -8,7 +8,7 @@ import streamlit as st
 
 from src.acquisition.sipa_scraper import SIPAScraper
 
-from src.dashboard._ui import data_source, page_header_raw
+from src.dashboard._ui import data_source, especie_selector, page_header_raw
 page_header_raw("🐟 Capturas Reales — SIPA / SAGPyA")
 data_source("SAGPyA / SIPA — desembarques (semilla verificada)", estado="verificado")
 st.markdown(
@@ -119,10 +119,11 @@ with tab1:
         )
 
         especies_disp = sorted(df_tri["especie_code"].unique())
-        especie_sel = st.selectbox(
-            "Especie",
-            options=especies_disp,
-            format_func=lambda x: x.replace("_", " ").title(),
+        especie_sel = especie_selector(
+            especies_disp,
+            lambda x: x.replace("_", " ").title(),
+            key="cap_triangulo",
+            label="Especie",
         )
 
         df_esp = df_tri[df_tri["especie_code"] == especie_sel].sort_values("year")
@@ -261,11 +262,11 @@ with tab2:
     st.divider()
     st.subheader("Variación interanual")
 
-    especie_var = st.selectbox(
-        "Especie para variación",
-        options=sorted(df_capturas["especie_code"].unique()),
-        format_func=lambda x: x.replace("_", " ").title(),
+    especie_var = especie_selector(
+        sorted(df_capturas["especie_code"].unique()),
+        lambda x: x.replace("_", " ").title(),
         key="var_especie",
+        label="Especie para variación",
     )
     df_var = df_capturas[df_capturas["especie_code"] == especie_var].sort_values("year").copy()
     if len(df_var) >= 2:

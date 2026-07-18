@@ -14,7 +14,7 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.dashboard._ui import data_source, page_header_raw
+from src.dashboard._ui import data_source, especie_selector, page_header_raw
 page_header_raw("📈 Timeline Histórico por Especie", "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
     "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados.")
 data_source("INIDEP Mar Abierto (492 ITOs)", estado="verificado")
@@ -88,13 +88,13 @@ with st.sidebar:
     st.header("Filtros")
 
     especies_disp = sorted(df_inidep["especie_code"].dropna().unique())
-    especies_labels = [ESPECIE_LABELS.get(e, e.replace("_", " ").title()) for e in especies_disp]
-    especie_sel = st.selectbox(
-        "Especie",
-        options=especies_disp,
-        format_func=lambda e: ESPECIE_LABELS.get(e, e.replace("_", " ").title()),
-        index=especies_disp.index("merluza_hubbsi") if "merluza_hubbsi" in especies_disp else 0,
+    especie_sel = especie_selector(
+        especies_disp,
+        lambda e: ESPECIE_LABELS.get(e, e.replace("_", " ").title()),
+        key="esp_timeline",
+        label="Especie",
     )
+    st.caption("🔗 La especie se **sincroniza** con Comparador y Capturas.")
 
     year_min = int(df_inidep["year"].min())
     year_max = int(df_inidep["year"].max())
