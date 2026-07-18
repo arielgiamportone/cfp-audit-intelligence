@@ -52,7 +52,7 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 | Capa | Tecnologías |
 |------|-------------|
 | Lenguaje | Python 3.10+ |
-| Interfaz | Streamlit (dashboard 17 páginas) |
+| Interfaz | Streamlit (dashboard 18 páginas, navegación por secciones con `st.navigation`) |
 | API | FastAPI + OpenAPI |
 | IA / LLM | Claude API (Anthropic) con prompt caching |
 | RAG / Vector store | ChromaDB + embeddings `paraphrase-multilingual-MiniLM-L12-v2` |
@@ -75,7 +75,7 @@ cfp-audit-intelligence/
 │   ├── knowledge_base/  # ChromaDB + embeddings multilingües
 │   ├── analysis/        # audit_engine (Claude), comparador CBA/CMP, alertas, grafos, reportes
 │   ├── api/             # FastAPI (5 routers + OpenAPI)
-│   ├── dashboard/       # App Streamlit (17 páginas) — punto de entrada: app.py
+│   ├── dashboard/       # App Streamlit (18 páginas, router st.navigation) — entrypoint: app.py
 │   └── evaluation/      # Métricas y evaluación
 ├── scripts/             # run_full_pipeline.py, scrapers, utilidades
 ├── docs/                # ARCHITECTURE, DATA_PIPELINE, MODEL_CARD, DATASHEET, ADRs 001–012, bibliografía
@@ -135,7 +135,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 └────────────┴───────────────┴──────────────┴──────────────────────────┘
                                     │
               ┌─────────────────────▼─────────────────────────┐
-              │           DASHBOARD STREAMLIT (17 páginas)       │
+              │           DASHBOARD STREAMLIT (18 páginas)       │
               │  Adquisición │ KB │ Auditoría │ INIDEP │ FAO     │
               │  Timeline │ Grafo │ Alertas │ Reporte │ CONICET  │
               │  Capturas │ Investigación │ Evaluación │ Conflictos│
@@ -352,7 +352,7 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 - [x] Docker multi-stage + GitHub Actions CI (Python 3.10/3.11)
 - [x] Integración FAO FIRMS (capturas mundiales, estado de stocks)
 - [x] Publicaciones científicas CONICET/INIDEP por especie
-- [x] Dashboard Streamlit de 17 páginas
+- [x] Dashboard Streamlit de 18 páginas (navegación por secciones + Informe Ejecutivo)
 - [x] Integración CONAE Geoportal Marino — 4° vértice satelital (GFW AIS + SST + Clorofila, ADR-010)
 - [x] **945 tests pasando**
 

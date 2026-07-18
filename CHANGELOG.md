@@ -52,6 +52,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   (la API antigua está deprecada), evitando que una futura versión de Streamlit rompa la app.
 - **Validación:** smoke test con `AppTest` recorre **las 19 páginas** (router + navegación) sin
   excepciones, tanto con dependencias ausentes (guard) como presentes (camino feliz).
+- **Test permanente:** `tests/test_dashboard_smoke.py` (regresión de las 19 páginas) + integración en
+  el CI (`.github/workflows/tests.yml` instala streamlit/plotly/pyvis/openpyxl).
+- **Docs:** guía de despliegue actualizada (`docs/TFM_DEPLOY.md`: usar `requirements-deploy.txt`,
+  paso *Reboot app*, nota de resiliencia `import_guard`); convenciones del dashboard en `CLAUDE.md`
+  (router `st.navigation`, helpers de `_ui.py`, `width="stretch"`); README al día (18 páginas).
 
 ### Añadido — Informe Ejecutivo (tanda 5)
 - **Nueva vista narrativa `Informe Ejecutivo`** (`pages/00_Informe_Ejecutivo.py`, sección *Inicio*):
