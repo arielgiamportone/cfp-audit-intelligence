@@ -18,6 +18,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **ADR-011**: decisión de mantener **Streamlit como adaptador de entrega (UI)** sobre un
   dominio agnóstico y junto a la API REST (patrón hexagonal / Ports & Adapters), con
   evidencia de que el dominio no depende de la UI.
+- **Unidad 2 (Análisis de Requisitos):** `docs/REQUISITOS.md` con fichas RF/RNF, historias
+  de usuario (Given-When-Then), priorización MoSCoW y **trazabilidad requisito → módulo**.
 
 ### Cambiado
 - **Narrativa TFM (autor):** se incorpora el arco personal **Data Science → DEV** en el guion
