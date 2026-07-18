@@ -26,15 +26,6 @@ from src.analysis.alert_engine import (
     AlertEngine,
 )
 
-st.set_page_config(
-    page_title="Alertas CFP",
-    page_icon="🚨",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 st.title("🚨 Sistema de Alertas Configurables")
 st.caption(
     "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
@@ -67,11 +58,9 @@ SEV_LABELS = {
     SEV_CRITICAL: "🔴 Crítica",
 }
 
-
 @st.cache_resource(show_spinner=False)
 def get_engine():
     return AlertEngine(db_path=DB_PATH)
-
 
 if not DB_PATH.exists():
     st.warning(
@@ -107,7 +96,6 @@ tab1, tab2, tab3 = st.tabs(
         "📋 Historial",
     ]
 )
-
 
 # ─── Tab 1: Alertas activas ────────────────────────────────────────────────────
 
@@ -201,7 +189,6 @@ with tab1:
                         if st.button("✓", key=f"res_{row['id']}", help="Marcar como resuelta"):
                             engine.resolve_alerta(int(row["id"]))
                             st.rerun()
-
 
 # ─── Tab 2: Gestión de reglas ──────────────────────────────────────────────────
 
@@ -309,7 +296,6 @@ with tab2:
                 engine.upsert_regla(nueva)
                 st.success(f"Regla '{nombre}' guardada.")
                 st.rerun()
-
 
 # ─── Tab 3: Historial ─────────────────────────────────────────────────────────
 

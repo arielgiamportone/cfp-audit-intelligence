@@ -39,6 +39,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Cambiado — Navegación temática (st.navigation)
+- **Menú lateral agrupado en 6 secciones** (Inicio · Núcleo/Triángulo · Análisis IA · Contexto
+  externo · Gobernanza · Ingesta y rigor) en lugar de una lista plana de 17 páginas. `app.py` pasa
+  a ser un **router** (`st.navigation` + `st.Page`, Streamlit ≥1.36) que fija `set_page_config` y el
+  tema/marca **una sola vez**; el contenido del home se movió a `src/dashboard/home.py`.
+- Se retiró `set_page_config`/`setup_page()` de las 17 páginas (ahora los aporta el router → DRY).
+- **Validación:** smoke test headless con `streamlit.testing.v1.AppTest` (router + navegación +
+  render del home sin excepciones). `requirements` sube a `streamlit>=1.36.0`.
+
 ### Corregido
 - **Legibilidad en tema claro:** varios gráficos y tarjetas forzaban texto/fondo oscuro y quedaban
   ilegibles con el nuevo tema claro. Alertas (texto blanco invisible + tarjeta translúcida negra),

@@ -19,11 +19,6 @@ import streamlit as st
 from src.acquisition.inidep_geovisor_scraper import SEREGeovisorClient
 from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
-st.set_page_config(page_title="Geovisor SERE — Vedas Geoespaciales", page_icon="🗺️", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -60,7 +55,6 @@ with st.sidebar:
 
 # ── Carga de datos ────────────────────────────────────────────────────────────
 
-
 @st.cache_data(ttl=120)
 def cargar_vedas(db: str) -> pd.DataFrame:
     import sqlite3
@@ -70,7 +64,6 @@ def cargar_vedas(db: str) -> pd.DataFrame:
             return pd.read_sql_query("SELECT * FROM vedas_geoespaciales", conn)
     except Exception:  # noqa: BLE001
         return pd.DataFrame()
-
 
 @st.cache_data(ttl=120)
 def cargar_cobertura(db: str) -> tuple[pd.DataFrame, dict]:
@@ -90,7 +83,6 @@ def cargar_cobertura(db: str) -> tuple[pd.DataFrame, dict]:
         ]
     )
     return df, resumen
-
 
 df_vedas = cargar_vedas(str(DB_PATH))
 df_cobertura, resumen_cobertura = cargar_cobertura(str(DB_PATH))

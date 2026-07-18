@@ -14,14 +14,6 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.set_page_config(
-    page_title="Timeline Histórico | CFP Audit",
-    page_icon="📈",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("📈 Timeline Histórico por Especie")
 st.caption(
     "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
@@ -36,7 +28,6 @@ if not DB_PATH.exists():
         "Base de datos no encontrada. Ejecuta: `python scripts/scrape_inidep.py --mode metadata`"
     )
     st.stop()
-
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -62,7 +53,6 @@ def load_data():
     )
     conn.close()
     return df_inidep, df_cfp
-
 
 df_inidep, df_cfp = load_data()
 

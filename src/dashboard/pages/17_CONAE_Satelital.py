@@ -21,11 +21,6 @@ import streamlit as st
 from src.acquisition.conae_marine_scraper import ZONAS_MUESTRA, CONAEMarineClient, get_esfuerzo_df
 from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
-st.set_page_config(page_title="CONAE — Esfuerzo Pesquero Satelital", page_icon="🛰️", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -70,11 +65,9 @@ with st.sidebar:
 
 # ── Carga de datos ────────────────────────────────────────────────────────────
 
-
 @st.cache_data(ttl=120)
 def _cargar_datos() -> pd.DataFrame:
     return get_esfuerzo_df(DB_PATH) or pd.DataFrame()
-
 
 df = _cargar_datos()
 

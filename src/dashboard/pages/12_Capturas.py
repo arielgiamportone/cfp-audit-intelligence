@@ -8,14 +8,6 @@ import streamlit as st
 
 from src.acquisition.sipa_scraper import SIPAScraper
 
-st.set_page_config(
-    page_title="Capturas Reales — CFP Audit",
-    page_icon="🐟",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("🐟 Capturas Reales — SIPA / SAGPyA")
 st.markdown(
     "Cierre del triángulo de auditoría: **CBA (INIDEP)** → **CMP aprobada (CFP)** → "
@@ -53,13 +45,11 @@ ALERTA_LABELS = {
     "sin_datos": "⬜ Sin datos",
 }
 
-
 @st.cache_resource(show_spinner="Cargando datos de capturas...")
 def get_scraper():
     s = SIPAScraper(db_path=DB_PATH)
     s.seed_data()
     return s
-
 
 scraper = get_scraper()
 df_capturas = scraper.get_capturas_df()
@@ -94,7 +84,6 @@ tab1, tab2, tab3, tab4 = st.tabs(
         "📋 Datos completos",
     ]
 )
-
 
 # ── Tab 1: Triángulo ─────────────────────────────────────────────────────────
 
@@ -233,7 +222,6 @@ with tab1:
                     ultimo["Captura real"] / ultimo["CMP CFP"],
                 )
 
-
 # ── Tab 2: Series temporales ──────────────────────────────────────────────────
 
 with tab2:
@@ -296,7 +284,6 @@ with tab2:
         )
         st.plotly_chart(fig3, use_container_width=True)
 
-
 # ── Tab 3: Alertas ─────────────────────────────────────────────────────────────
 
 with tab3:
@@ -352,7 +339,6 @@ with tab3:
             "**Metodología**: La alerta se activa cuando la captura real supera el 100% de la CBA "
             "recomendada por INIDEP. Niveles: ⚠️ 100-110% | 🔴 110-130% | 🚨 >130%."
         )
-
 
 # ── Tab 4: Datos completos ────────────────────────────────────────────────────
 

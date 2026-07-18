@@ -15,15 +15,6 @@ from pyvis.network import Network
 
 from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
 
-st.set_page_config(
-    page_title="Grafo CFP",
-    page_icon="🕸️",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 st.title("🕸️ Grafo de Relaciones CFP")
 st.caption(
     "Red bipartita de co-menciones entre especies pesqueras y empresas "
@@ -33,11 +24,9 @@ st.caption(
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
-
 @st.cache_resource(show_spinner="Cargando grafo...")
 def get_builder():
     return CFPGraphBuilder(db_path=DB_PATH)
-
 
 @st.cache_data(show_spinner="Construyendo grafo...")
 def build_cached_graph(min_coocurrencias: int):
@@ -45,7 +34,6 @@ def build_cached_graph(min_coocurrencias: int):
     G = builder.build_graph(min_coocurrencias=min_coocurrencias)
     stats = builder.compute_stats(G)
     return G, stats
-
 
 def render_pyvis(G: nx.Graph, height: int = 700) -> str:
     """Renderiza el grafo NetworkX con pyvis y retorna HTML."""
@@ -105,12 +93,10 @@ def render_pyvis(G: nx.Graph, height: int = 700) -> str:
         net.save_graph(f.name)
         return Path(f.name).read_text(encoding="utf-8")
 
-
 def render_ego_pyvis(G: nx.Graph, nodo: str, radio: int) -> str:
     builder = CFPGraphBuilder(db_path=DB_PATH)
     ego = builder.get_ego_graph(G, nodo, radio=radio)
     return render_pyvis(ego, height=500)
-
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
@@ -176,7 +162,6 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ]
 )
 
-
 # ─── Tab 1: Grafo completo ─────────────────────────────────────────────────────
 
 with tab1:
@@ -202,7 +187,6 @@ with tab1:
     with col_info:
         html_grafo = render_pyvis(G, height=graph_height)
         st.components.v1.html(html_grafo, height=graph_height + 20, scrolling=False)
-
 
 # ─── Tab 2: Ego-grafo ─────────────────────────────────────────────────────────
 
@@ -267,7 +251,6 @@ with tab2:
             st.metric("Grado", G.degree(nodo_ego))
             st.metric("Menciones totales", G.nodes[nodo_ego].get("menciones", 0))
             st.metric("Resoluciones", G.nodes[nodo_ego].get("n_resoluciones", 0))
-
 
 # ─── Tab 3: HHI ───────────────────────────────────────────────────────────────
 
@@ -362,7 +345,6 @@ with tab3:
                 st.dataframe(df_top_emp, use_container_width=True, hide_index=True)
     else:
         st.info("No hay datos HHI disponibles. Verifica que las actas estén procesadas.")
-
 
 # ─── Tab 4: Datos ─────────────────────────────────────────────────────────────
 

@@ -20,11 +20,6 @@ import streamlit as st
 from src.acquisition.boletin_oficial_scraper import seed_cargos_demo
 from src.analysis.conflict_detector import ConflictDetector
 
-st.set_page_config(page_title="Red de Conflictos de Interés", page_icon="🕵️", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +68,6 @@ def cargar_conflictos(db: str, solo_alta: bool, min_res: int) -> tuple[pd.DataFr
         df = df[df["n_resoluciones"] >= min_res]
     summary = cd.conflict_summary(df)
     return df, summary
-
 
 df_conf, resumen = cargar_conflictos(str(DB_PATH), mostrar_solo_alta, min_resoluciones)
 
@@ -151,7 +145,6 @@ def _build_plotly_graph(G: nx.Graph) -> go.Figure:
     )
     return go.Figure(data=edge_traces + [node_trace], layout=layout)
 
-
 # ── Tab 1: Grafo ──────────────────────────────────────────────────────────────
 
 with tab1:
@@ -169,7 +162,6 @@ with tab1:
             "🟣 Personas con cargos en empresas pesqueras que aparecen en actas CFP  "
             "🟠 Empresas pesqueras  |  Grosor de arista = severidad del conflicto"
         )
-
 
 # ── Tab 2: Tabla ──────────────────────────────────────────────────────────────
 

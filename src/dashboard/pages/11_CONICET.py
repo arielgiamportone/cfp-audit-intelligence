@@ -6,14 +6,6 @@ import streamlit as st
 
 from src.acquisition.conicet_scraper import SEARCH_TERMS, CONICETScraper
 
-st.set_page_config(
-    page_title="Publicaciones Científicas — CFP",
-    page_icon="📚",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("🔬 Publicaciones Científicas CONICET/INIDEP")
 st.markdown(
     "Literatura científica verificada sobre las especies pesqueras analizadas por el CFP. "
@@ -23,13 +15,11 @@ st.markdown(
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
-
 @st.cache_resource(show_spinner="Cargando publicaciones científicas...")
 def get_scraper():
     s = CONICETScraper(db_path=DB_PATH)
     s.seed_data()
     return s
-
 
 scraper = get_scraper()
 df_pubs = scraper.get_publicaciones_df()
@@ -118,7 +108,6 @@ with tab1:
                 if pub.get("url"):
                     cols_link[1].markdown(f"[Ver en repositorio]({pub['url']})")
 
-
 # ── Tab 2: Buscar ─────────────────────────────────────────────────────────────
 
 with tab2:
@@ -174,7 +163,6 @@ with tab2:
                 pubs = scraper.search_conicet(term, limit=10, especie_code=especie_auto)
                 total_nuevas += scraper.save_publicaciones(pubs)
         st.success(f"{total_nuevas} publicaciones nuevas guardadas para {especie_auto}")
-
 
 # ── Tab 3: Tabla completa ─────────────────────────────────────────────────────
 

@@ -21,10 +21,6 @@ import streamlit as st
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
-st.set_page_config(page_title="Evaluación del Sistema", page_icon="📐", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("🔬 Evaluación y Validación del Sistema de Auditoría")
 
 st.info(
@@ -46,16 +42,13 @@ except ImportError as e:
     st.error(f"Error importando módulos de evaluación: {e}")
     st.stop()
 
-
 @st.cache_resource
 def get_evaluator():
     return GroundTruthEvaluator(DB_PATH)
 
-
 @st.cache_resource
 def get_sensitivity():
     return SensitivityAnalyzer(DB_PATH)
-
 
 evaluator = get_evaluator()
 sensitivity = get_sensitivity()

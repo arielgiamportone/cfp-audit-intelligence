@@ -7,10 +7,6 @@ import streamlit as st
 
 from src.analysis.report_generator import CFPReportGenerator
 
-st.set_page_config(page_title="Reporte PDF — CFP", page_icon="📄", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("📄 Reporte PDF Ejecutivo")
 st.markdown("Genera un informe ejecutivo en PDF con todos los hallazgos de auditoría.")
 

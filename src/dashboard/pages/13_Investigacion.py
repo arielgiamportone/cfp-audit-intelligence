@@ -20,15 +20,6 @@ from src.analysis.inidep_comparator import INIDEPComparator
 from src.analysis.linkedin_formatter import LinkedInFormatter
 from src.analysis.research_exporter import ResearchExporter
 
-st.set_page_config(
-    page_title="FisheriesAudit ALG — Investigación",
-    page_icon="🧪",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
-
 st.title("🔬 FisheriesAudit ALG — Hub de Investigación")
 st.caption(
     "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
@@ -45,18 +36,15 @@ from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 OUT_DIR = Path("outputs/FisheriesAudit_ALG")
 
-
 @st.cache_resource
 def get_comparator():
     comp = INIDEPComparator(DB_PATH)
     comp.compute_comparisons()
     return comp
 
-
 @st.cache_resource
 def get_exporter(_comp):
     return ResearchExporter(_comp, output_dir=OUT_DIR)
-
 
 comp = get_comparator()
 exp = get_exporter(comp)

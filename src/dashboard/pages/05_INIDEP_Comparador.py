@@ -15,14 +15,6 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.set_page_config(
-    page_title="Comparador INIDEP | CFP Audit",
-    page_icon="🔬",
-    layout="wide",
-)
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("🔬 Comparador CFP vs. INIDEP")
 st.caption(
     "Cuotas aprobadas por el CFP vs. Captura Biológicamente Aceptable (CBA) "
@@ -49,13 +41,11 @@ DB_PATH = get_db_path()
 
 # ── Inicializar comparador ─────────────────────────────────────────────────────
 
-
 @st.cache_resource(show_spinner="Inicializando base de datos INIDEP...")
 def get_comparator():
     from src.analysis.inidep_comparator import INIDEPComparator
 
     return INIDEPComparator(DB_PATH)
-
 
 try:
     comp = get_comparator()

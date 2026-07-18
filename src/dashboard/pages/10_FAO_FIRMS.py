@@ -12,10 +12,6 @@ from src.acquisition.fao_firms_scraper import (
     estado_stock_color,
 )
 
-st.set_page_config(page_title="FAO FIRMS — Contexto Internacional", page_icon="🌎", layout="wide")
-
-from src.dashboard._ui import setup_page
-setup_page()
 st.title("🌎 Contexto Internacional FAO FIRMS")
 st.markdown(
     "Capturas globales y estado de stocks en el **Área FAO 41 — Atlántico Sudoccidental**. "
@@ -32,7 +28,6 @@ def get_scraper():
     s = FAOFIRMSScraper(db_path=DB_PATH)
     s.seed_data()
     return s
-
 
 scraper = get_scraper()
 df_capturas = scraper.get_capturas_df()
@@ -181,7 +176,6 @@ with tab1:
         )
         st.plotly_chart(fig2, use_container_width=True)
 
-
 # ── Tab 2: Estado de Stocks ───────────────────────────────────────────────────
 
 with tab2:
@@ -252,7 +246,6 @@ with tab2:
                 f"según FAO FIRMS: {', '.join(sobreexp['especie'].str.title())}. "
                 "Las cuotas CFP para estas especies deberían revisarse con especial atención."
             )
-
 
 # ── Tab 3: Datos completos ────────────────────────────────────────────────────
 
