@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 st.set_page_config(page_title="Auditoría IA | CFP Audit", page_icon="🧠", layout="wide")
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("🧠 Auditoría con Inteligencia Artificial")
 st.caption("Análisis de resoluciones con Claude API y detección de patrones sistémicos")
 

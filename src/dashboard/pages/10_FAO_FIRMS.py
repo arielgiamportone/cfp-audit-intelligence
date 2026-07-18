@@ -13,6 +13,9 @@ from src.acquisition.fao_firms_scraper import (
 )
 
 st.set_page_config(page_title="FAO FIRMS — Contexto Internacional", page_icon="🌎", layout="wide")
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("🌎 Contexto Internacional FAO FIRMS")
 st.markdown(
     "Capturas globales y estado de stocks en el **Área FAO 41 — Atlántico Sudoccidental**. "

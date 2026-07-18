@@ -22,6 +22,9 @@ from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
 st.set_page_config(page_title="Evaluación del Sistema", layout="wide")
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("🔬 Evaluación y Validación del Sistema de Auditoría")
 
 st.info(

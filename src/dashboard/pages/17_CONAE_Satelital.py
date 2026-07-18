@@ -23,6 +23,9 @@ from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
 st.set_page_config(page_title="CONAE — Esfuerzo Pesquero Satelital", layout="wide")
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)

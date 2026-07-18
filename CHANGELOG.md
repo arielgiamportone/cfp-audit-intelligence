@@ -31,6 +31,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   llano, diagrama ciencia→política→realidad, leyenda de alertas, glosario, "empieza por aquí").
 - **UX:** intros "¿cómo leer esta página?" en Comparador y Alertas; estados vacíos amigables
   ("modo demo") en Adquisición, Knowledge Base, Auditoría IA y Reportes.
+- **UI (identidad visual y consistencia):** paleta marina en `.streamlit/config.toml` y componente
+  reutilizable `src/dashboard/_ui.py` (`inject_base_css`, `sidebar_brand`, `page_header`, `setup_page`)
+  aplicado a **home + las 17 páginas** (DRY): métricas como tarjetas, espaciado, expanders suaves,
+  barra lateral de marca con enlaces al repo y a la app, y footer de Streamlit oculto.
 
 ### Añadido — Unidad 4 · Fundamentos de la IA (IA responsable)
 - **`docs/IA_RESPONSABLE.md`**: mapa de los 4 pilares (Fairness · Safety · Explainability ·

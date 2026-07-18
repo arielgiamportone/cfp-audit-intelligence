@@ -21,6 +21,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 st.title("🕸️ Grafo de Relaciones CFP")
 st.caption(
     "Red bipartita de co-menciones entre especies pesqueras y empresas "

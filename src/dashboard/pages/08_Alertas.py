@@ -32,6 +32,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 st.title("🚨 Sistema de Alertas Configurables")
 st.caption(
     "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "

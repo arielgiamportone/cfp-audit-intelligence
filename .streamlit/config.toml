@@ -1,9 +1,10 @@
 [theme]
 base = "light"
-primaryColor = "#1565C0"
+primaryColor = "#0E7490"            # teal marino (acento)
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F4F8"
-textColor = "#1A1A1A"
+secondaryBackgroundColor = "#ECF3F6" # azul-gris muy claro (sidebar/cards)
+textColor = "#14303B"               # slate profundo
+font = "sans serif"
 
 [server]
 headless = true

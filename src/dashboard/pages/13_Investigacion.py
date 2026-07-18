@@ -26,6 +26,9 @@ st.set_page_config(
     layout="wide",
 )
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 st.title("🔬 FisheriesAudit ALG — Hub de Investigación")
 st.caption(
     "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "

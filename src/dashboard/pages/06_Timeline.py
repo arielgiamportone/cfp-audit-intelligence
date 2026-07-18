@@ -19,6 +19,9 @@ st.set_page_config(
     page_icon="📈",
     layout="wide",
 )
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("📈 Timeline Histórico por Especie")
 st.caption(
     "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "

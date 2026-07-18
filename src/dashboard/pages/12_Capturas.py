@@ -13,6 +13,9 @@ st.set_page_config(
     page_icon="🐟",
     layout="wide",
 )
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("🐟 Capturas Reales — SIPA / SAGPyA")
 st.markdown(
     "Cierre del triángulo de auditoría: **CBA (INIDEP)** → **CMP aprobada (CFP)** → "

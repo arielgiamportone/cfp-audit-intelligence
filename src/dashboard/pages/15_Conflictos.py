@@ -22,6 +22,9 @@ from src.analysis.conflict_detector import ConflictDetector
 
 st.set_page_config(page_title="Red de Conflictos de Interés", layout="wide")
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)

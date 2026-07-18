@@ -11,6 +11,9 @@ st.set_page_config(
     page_icon="🔬",
     layout="wide",
 )
+
+from src.dashboard._ui import setup_page
+setup_page()
 st.title("🔬 Publicaciones Científicas CONICET/INIDEP")
 st.markdown(
     "Literatura científica verificada sobre las especies pesqueras analizadas por el CFP. "

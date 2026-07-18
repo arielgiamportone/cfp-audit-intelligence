@@ -28,6 +28,9 @@ st.set_page_config(
     },
 )
 
+from src.dashboard._ui import setup_page
+setup_page()
+
 # ── Hero ───────────────────────────────────────────────────────────────────────
 
 st.title("🐟 CFP Audit Intelligence")
