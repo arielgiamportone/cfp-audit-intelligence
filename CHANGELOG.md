@@ -32,6 +32,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **UX:** intros "¿cómo leer esta página?" en Comparador y Alertas; estados vacíos amigables
   ("modo demo") en Adquisición, Knowledge Base, Auditoría IA y Reportes.
 
+### Añadido — Unidad 3 · Arquitectura (Hexagonal / DIP)
+- **Puertos del dominio** (`src/ports.py`): `VectorStorePort` y `AuditorPort` como
+  `typing.Protocol` estructural; los adaptadores actuales (ChromaDB, Claude) los cumplen
+  sin cambios. Test de conformidad en `tests/test_ports.py`. Decisión en **ADR-012**.
+
 ### Refactorizado — Unidad 1 · Buenas Prácticas y Principios de Diseño
 - **DRY + DIP (fuente única de verdad):** se añadieron `get_db_path()` y `get_kb_dir()` a
   `config_loader.py` y se refactorizaron las **18 páginas del dashboard + `app.py`** para
