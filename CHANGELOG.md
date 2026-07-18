@@ -15,6 +15,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   y runbook de despliegue (`docs/TFM_DEPLOY.md`).
 - **Despliegue** en Streamlit Community Cloud (URL pública) + `.streamlit/config.toml`.
 - **Plan de mejoras del TFM** (`docs/TFM_PLAN_MEJORAS.md`): aplicación de conceptos del máster.
+- **ADR-011**: decisión de mantener **Streamlit como adaptador de entrega (UI)** sobre un
+  dominio agnóstico y junto a la API REST (patrón hexagonal / Ports & Adapters), con
+  evidencia de que el dominio no depende de la UI.
 
 ### Cambiado
 - **UX (enfoque desarrollo):** home reescrito para público no experto (explicación en lenguaje

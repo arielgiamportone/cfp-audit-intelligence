@@ -15,7 +15,7 @@
 
 Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA_** (campus.thebigschool.com).
 
-> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–010), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
+> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–011), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
 
 🔗 **App en vivo:** https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app
 
@@ -72,7 +72,7 @@ cfp-audit-intelligence/
 │   ├── dashboard/       # App Streamlit (17 páginas) — punto de entrada: app.py
 │   └── evaluation/      # Métricas y evaluación
 ├── scripts/             # run_full_pipeline.py, scrapers, utilidades
-├── docs/                # ARCHITECTURE, DATA_PIPELINE, MODEL_CARD, DATASHEET, ADRs 001–010, bibliografía
+├── docs/                # ARCHITECTURE, DATA_PIPELINE, MODEL_CARD, DATASHEET, ADRs 001–011, bibliografía
 ├── notebooks/           # Exploración y análisis
 ├── tests/               # 945 tests (pytest)
 ├── data/                # Datos del pipeline (SQLite, PDFs, artefactos)
@@ -105,7 +105,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | Model Card (Mitchell 2019): audit_engine + modelo predictivo |
 | [`docs/DATASHEET.md`](docs/DATASHEET.md) | Datasheet for Datasets (Gebru 2021): composición, procesamiento, limitaciones |
 | [`docs/bibliography.md`](docs/bibliography.md) | Bibliografía académica verificada (30+ refs con DOI) |
-| [`docs/adr/`](docs/adr/) | ADR 001–010: decisiones de arquitectura con contexto y justificación |
+| [`docs/adr/`](docs/adr/) | ADR 001–011: decisiones de arquitectura con contexto y justificación |
 
 ---
 

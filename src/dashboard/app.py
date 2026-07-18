@@ -166,7 +166,7 @@ with st.expander("🛠️ Para desarrolladores y evaluadores (arquitectura y cal
     st.markdown("""
     - **Arquitectura por capas:** adquisición → procesamiento → knowledge base → análisis+IA → dashboard/API.
     - **IA:** RAG con ChromaDB + embeddings multilingües y auditoría con Claude API (*prompt caching*).
-    - **Calidad:** 945 tests, CI (ruff + pytest), Docker, y **ADRs 001–010** documentando cada decisión.
+    - **Calidad:** 945 tests, CI (ruff + pytest), Docker, y **ADRs 001–011** documentando cada decisión.
     - **IA responsable:** Model Card + Datasheet + marcado `[BAJA_EVIDENCIA]` para hallazgos sin anclaje textual.
     - **Repositorio:** [github.com/arielgiamportone/cfp-audit-intelligence](https://github.com/arielgiamportone/cfp-audit-intelligence)
     """)
