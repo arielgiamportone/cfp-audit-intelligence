@@ -39,6 +39,23 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Añadido — Valor de interfaz (tanda 4)
+- **Home como *dashboard vivo*:** la portada muestra cifras reales de los datos verificados
+  (comparaciones analizadas, casos con captura sobre la CBA, casos críticos y especie con más
+  presión) reutilizando `INIDEPComparator`, con enlace al análisis completo. Antes la portada solo
+  mostraba el estado del corpus (vacío en la demo).
+- **Tablas legibles (`st.column_config`):** helper `tabla()` + columnas `col_tn` (toneladas con
+  separador de miles) y `col_ratio` (barra de progreso, 1.0 = límite científico); aplicado a la
+  tabla del triángulo del Comparador.
+- **Sellos de procedencia y confianza:** componente `data_source(fuente, fecha, estado)` con estado
+  🟢 verificado / 🟡 demo / 🔵 ilustrativo, añadido a Comparador, Timeline, Alertas, FAO, CONICET
+  y Capturas.
+- **Polish de accesibilidad:** tooltips `help=` en las métricas del Comparador y del home; helper
+  `nivel_chip()` (icono + etiqueta, no depende solo del color); botones de acción ("Ir al
+  Comparador") en los estados vacíos de Timeline, Grafo y Alertas.
+- **Validación:** smoke test con `AppTest` confirma que el home renderiza métricas reales
+  (35 comparaciones · 19 sobre el límite · 10 críticas · Merluza Común) sin excepciones.
+
 ### Cambiado — Consistencia de UI (tanda 2)
 - **Cabecera unificada:** las 17 páginas usan ahora `page_header_raw()` de `_ui.py` (punto único de
   formato del encabezado) en lugar de `st.title`/`st.caption` sueltos → DRY.

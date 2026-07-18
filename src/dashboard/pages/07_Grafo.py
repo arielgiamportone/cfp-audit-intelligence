@@ -127,6 +127,7 @@ if not DB_PATH.exists():
         "local — ver `docs/TFM_DEPLOY.md`.",
         icon="ℹ️",
     )
+    st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Ir al Comparador INIDEP")
     st.stop()
 
 # ── Construir grafo ────────────────────────────────────────────────────────────

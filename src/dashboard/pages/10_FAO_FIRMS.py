@@ -12,8 +12,9 @@ from src.acquisition.fao_firms_scraper import (
     estado_stock_color,
 )
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import data_source, page_header_raw
 page_header_raw("🌎 Contexto Internacional FAO FIRMS")
+data_source("FAO FIRMS — Área de pesca 41 (Atlántico SO)", estado="verificado")
 st.markdown(
     "Capturas globales y estado de stocks en el **Área FAO 41 — Atlántico Sudoccidental**. "
     "Compara las cuotas CFP con la situación internacional de cada especie."

@@ -80,6 +80,76 @@ a4.error("⚫ **Crítico**\n\nRiesgo alto (>130%)")
 
 st.markdown("---")
 
+# ── Qué encontramos (dashboard vivo con datos verificados) ─────────────────────
+
+st.subheader("📊 Qué encontramos en los datos verificados")
+
+from collections import Counter
+
+from src.config_loader import get_db_path
+from src.dashboard._ui import data_source
+
+db_path = get_db_path()
+
+try:
+    from src.analysis.inidep_comparator import INIDEPComparator
+
+    _comp = INIDEPComparator(db_path)
+    _alertas = _comp.compute_comparisons()
+    _cap = Counter(a.alerta_captura for a in _alertas)
+    _con_dato = sum(v for k, v in _cap.items() if k not in (None, "sin_datos"))
+    _excede = _cap.get("critico", 0) + _cap.get("rojo", 0) + _cap.get("amarillo", 0)
+    _criticos = _cap.get("critico", 0)
+
+    _tri = _comp.get_triangulo_completo()
+    _top = "—"
+    if not _tri.empty and "ratio_captura_cba" in _tri.columns:
+        _t = _tri.dropna(subset=["ratio_captura_cba"]).sort_values(
+            "ratio_captura_cba", ascending=False
+        )
+        if not _t.empty:
+            _top = str(_t.iloc[0]["especie"]).title()
+
+    if _con_dato > 0:
+        d1, d2, d3, d4 = st.columns(4)
+        d1.metric(
+            "Comparaciones analizadas", _con_dato,
+            help="Casos especie/año con captura real y CBA disponibles.",
+        )
+        d2.metric(
+            "Captura sobre el límite (CBA)", _excede,
+            help="Casos en los que la captura real superó el límite recomendado por la ciencia.",
+        )
+        d3.metric(
+            "⚫ Casos críticos", _criticos,
+            help="Captura real superior al 130% de la CBA.",
+        )
+        d4.metric(
+            "Especie con más presión", _top,
+            help="Mayor ratio captura real / CBA en los datos semilla verificados.",
+        )
+        st.caption(
+            "Comparación **captura real vs. CBA** con datos semilla verificados (INIDEP + SAGPyA). "
+            "Es **indicativa**: las capturas son totales nacionales y la CBA es por zona, por lo que "
+            "el detalle y la metodología completa están en el Comparador INIDEP."
+        )
+        st.page_link(
+            "pages/05_INIDEP_Comparador.py",
+            label="🔬 Ver el análisis completo en el Comparador",
+        )
+        data_source("INIDEP (Mar Abierto) + SAGPyA/SIPA", estado="verificado")
+    else:
+        st.caption(
+            "Aún no hay comparaciones con datos suficientes. Explora el **Comparador INIDEP**."
+        )
+except Exception:
+    st.caption(
+        "El resumen en vivo no está disponible ahora mismo. Entra al **Comparador INIDEP** "
+        "para ver el análisis con datos verificados."
+    )
+
+st.markdown("---")
+
 # ── Empieza por aquí (páginas con datos listos para explorar) ───────────────────
 
 st.subheader("👉 Empieza por aquí")

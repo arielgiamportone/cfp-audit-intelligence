@@ -26,9 +26,10 @@ from src.analysis.alert_engine import (
     AlertEngine,
 )
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import data_source, page_header_raw
 page_header_raw("🚨 Sistema de Alertas Configurables", "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
     "científicas del INIDEP y otros indicadores de riesgo pesquero.")
+data_source("Motor de reglas sobre el corpus de actas CFP", estado="demo")
 
 with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
     st.markdown(
@@ -67,6 +68,7 @@ if not DB_PATH.exists():
         "local — ver `docs/TFM_DEPLOY.md`.",
         icon="ℹ️",
     )
+    st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Ir al Comparador INIDEP")
     st.stop()
 
 engine = get_engine()

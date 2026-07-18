@@ -6,8 +6,9 @@ import streamlit as st
 
 from src.acquisition.conicet_scraper import SEARCH_TERMS, CONICETScraper
 
-from src.dashboard._ui import page_header_raw
+from src.dashboard._ui import data_source, page_header_raw
 page_header_raw("🔬 Publicaciones Científicas CONICET/INIDEP")
+data_source("CONICET Digital / INIDEP (literatura verificada)", estado="verificado")
 st.markdown(
     "Literatura científica verificada sobre las especies pesqueras analizadas por el CFP. "
     "Fuente: **CONICET Digital** y repositorios institucionales de INIDEP."

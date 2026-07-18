@@ -35,7 +35,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from src.config_loader import get_db_path
+from src.dashboard._ui import col_ratio, col_tn, data_source, tabla
+
 DB_PATH = get_db_path()
+
+data_source("INIDEP (Mar Abierto, 492+ ITOs) + SAGPyA/SIPA", estado="verificado")
 
 # ── Inicializar comparador ─────────────────────────────────────────────────────
 
@@ -134,12 +138,18 @@ verdes = sum(1 for a in alertas if a.nivel == "verde")
 sub_utilizacion = sum(1 for a in alertas if a.alerta_captura == "sub_utilizacion")
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total comparaciones", total)
-col2.metric("🚨 Crítico (>130%)", criticos)
-col3.metric("⚠️ Rojo (116–130%)", rojos)
-col4.metric("🟡 Amarillo (101–115%)", amarillos)
-col5.metric("✅ Verde (≤100%)", verdes)
-col6.metric("📉 Sub-utilización", sub_utilizacion)
+col1.metric("Total comparaciones", total,
+            help="Número de cruces especie/año/zona evaluados.")
+col2.metric("🚨 Crítico (>130%)", criticos,
+            help="Cuota CFP (CMP) supera en más del 30% el límite científico (CBA).")
+col3.metric("⚠️ Rojo (116–130%)", rojos,
+            help="CMP entre 16% y 30% por encima de la CBA.")
+col4.metric("🟡 Amarillo (101–115%)", amarillos,
+            help="CMP entre 1% y 15% por encima de la CBA.")
+col5.metric("✅ Verde (≤100%)", verdes,
+            help="CMP dentro del límite recomendado por la ciencia.")
+col6.metric("📉 Sub-utilización", sub_utilizacion,
+            help="Captura real muy por debajo (<70%) de la cuota aprobada.")
 
 st.divider()
 
@@ -360,7 +370,7 @@ with tab_triangulo:
             "especie", "zona", "year", "cba_recomendada_tn",
             "cmp_aprobada_tn", "captura_real_tn", "ratio_cmp_cba", "ratio_captura_cba",
         ] if c in df_tri_filtrado.columns]
-        st.dataframe(
+        tabla(
             df_tri_filtrado[cols_show].rename(columns={
                 "especie": "Especie",
                 "zona": "Zona",
@@ -371,8 +381,14 @@ with tab_triangulo:
                 "ratio_cmp_cba": "Ratio CMP/CBA",
                 "ratio_captura_cba": "Ratio Captura/CBA",
             }),
-            use_container_width=True,
-            hide_index=True,
+            column_config={
+                "Año": st.column_config.NumberColumn("Año", format="%d"),
+                "CBA (tn)": col_tn("CBA (tn)", help="Límite recomendado por la ciencia (INIDEP)."),
+                "CMP (tn)": col_tn("CMP (tn)", help="Cuota aprobada por el CFP."),
+                "Captura Real (tn)": col_tn("Captura Real (tn)", help="Desembarque real (SAGPyA/SIPA)."),
+                "Ratio CMP/CBA": col_ratio("Ratio CMP/CBA", help="1.0 = límite científico. >1 = sobreasignación."),
+                "Ratio Captura/CBA": col_ratio("Ratio Captura/CBA", help="1.0 = límite científico. >1 = captura por encima.", max_value=3.0),
+            },
         )
 
         col_dl_tri = st.columns(1)[0]

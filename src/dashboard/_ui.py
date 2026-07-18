@@ -137,6 +137,63 @@ def dev_note(text: str) -> None:
         st.markdown(text)
 
 
+# ── Procedencia / confianza del dato ───────────────────────────────────────────
+_ESTADO_DATO = {
+    "verificado": ("🟢", "Verificado", "Contrastado con fuentes oficiales publicadas"),
+    "demo": ("🟡", "Demo", "Requiere el corpus completo; en la demo pública puede estar vacío"),
+    "ilustrativo": ("🔵", "Ilustrativo", "Datos de ejemplo para mostrar el formato — no reales"),
+}
+
+
+def data_source(fuente: str, actualizado: str | None = None, estado: str = "verificado") -> None:
+    """Sello de procedencia y confianza del dato (fuente · fecha · estado)."""
+    icon, label, tip = _ESTADO_DATO.get(estado, _ESTADO_DATO["verificado"])
+    partes = [f"{icon} **{label}**", f"Fuente: {fuente}"]
+    if actualizado:
+        partes.append(f"Actualizado: {actualizado}")
+    st.caption(" · ".join(partes), help=tip)
+
+
+# ── Semáforo accesible (icono + etiqueta, nunca solo color) ─────────────────────
+NIVEL_CHIP = {
+    "critico": "⚫ Crítico",
+    "rojo": "🔴 Rojo",
+    "amarillo": "🟡 Amarillo",
+    "verde": "🟢 Verde",
+    "sub_utilizacion": "📉 Sub-utilización",
+    "sin_datos": "⬜ Sin datos",
+}
+
+
+def nivel_chip(nivel: str) -> str:
+    """Etiqueta accesible de un nivel de alerta (icono + texto, no depende del color)."""
+    return NIVEL_CHIP.get(nivel, f"⬜ {str(nivel).replace('_', ' ').title()}")
+
+
+# ── Tablas legibles (st.column_config reutilizable) ────────────────────────────
+def tabla(df, column_config=None, height: int | None = None) -> None:
+    """`st.dataframe` con formato estándar (sin índice, ancho completo)."""
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        height=height,
+        column_config=column_config or {},
+    )
+
+
+def col_tn(label: str, help: str | None = None):
+    """Columna numérica en toneladas con separador de miles."""
+    return st.column_config.NumberColumn(label, format="localized", help=help)
+
+
+def col_ratio(label: str, help: str | None = None, max_value: float = 2.0):
+    """Columna de ratio como barra de progreso (1.0 = límite científico)."""
+    return st.column_config.ProgressColumn(
+        label, format="%.2f", min_value=0.0, max_value=max_value, help=help
+    )
+
+
 def style_plotly(fig, height: int | None = None):
     """Aplica el tema claro marino a una figura Plotly (fondo transparente + texto
     slate) para que los gráficos hereden la paleta en lugar de forzar fondo oscuro."""
