@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="56" viewBox="0 0 240 56" role="img" aria-label="CFP Audit Intelligence">
+  <g transform="translate(8,10)">
+    <!-- cuerpo del pez -->
+    <path d="M6 18 C 6 8, 24 4, 34 18 C 24 32, 6 28, 6 18 Z" fill="#0E7490"/>
+    <!-- cola -->
+    <path d="M34 18 L 44 10 L 42 18 L 44 26 Z" fill="#0E7490"/>
+    <!-- ojo -->
+    <circle cx="14" cy="15" r="2.2" fill="#FFFFFF"/>
+    <!-- ola bajo el pez -->
+    <path d="M4 34 q 6 -5 12 0 t 12 0 t 12 0" fill="none" stroke="#0E7490" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  </g>
+  <g transform="translate(62,0)" font-family="'Segoe UI', system-ui, sans-serif">
+    <text x="0" y="24" font-size="17" font-weight="700" fill="#14303B">CFP Audit</text>
+    <text x="0" y="43" font-size="17" font-weight="700" fill="#0E7490">Intelligence</text>
+  </g>
+</svg>

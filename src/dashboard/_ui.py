@@ -1,8 +1,8 @@
 """
 Componentes de UI reutilizables para el dashboard (DRY + consistencia visual).
 
-- `inject_base_css()`  → estilos sutiles (cards de métricas, espaciado, expanders).
-- `sidebar_brand()`    → bloque de marca + enlaces en la barra lateral.
+- `inject_base_css()`  → estilos sutiles (cards de métricas, nav, espaciado, expanders).
+- `sidebar_brand()`    → logo/wordmark (arriba de la navegación) + enlaces en la barra lateral.
 - `page_header()`      → cabecera consistente (icono + título + subtítulo).
 - `setup_page()`       → atajo: inyecta CSS + marca de sidebar (llamar tras set_page_config).
 
@@ -12,24 +12,47 @@ selectores `data-testid` estables para no depender de clases internas volátiles
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 REPO_URL = "https://github.com/arielgiamportone/cfp-audit-intelligence"
 APP_URL = "https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app"
+LOGO_PATH = Path(__file__).parent / "assets" / "logo.svg"
 
 _BASE_CSS = """
 <style>
+/* Franja de acento marino en la parte superior */
+[data-testid="stHeader"] {
+  background: linear-gradient(90deg, #0E7490 0%, #14303B 100%);
+  height: 4px;
+}
+
 /* Ancho y aire de la página */
-.block-container { padding-top: 2.2rem; padding-bottom: 3rem; max-width: 1200px; }
+.block-container { padding-top: 2.4rem; padding-bottom: 3rem; max-width: 1200px; }
 
 /* Métricas como tarjetas */
 [data-testid="stMetric"] {
   background: #ECF3F6;
   border: 1px solid #D6E4EA;
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 2px rgba(20,48,59,.06);
 }
 [data-testid="stMetricLabel"] { opacity: .75; }
+
+/* Navegación del sidebar: items tipo "pill" */
+[data-testid="stSidebarNav"] ul { padding-top: .25rem; }
+[data-testid="stSidebarNav"] a {
+  border-radius: 8px;
+  margin: 1px 6px;
+  padding: 4px 10px;
+}
+[data-testid="stSidebarNav"] a:hover { background: rgba(14,116,144,.10); }
+[data-testid="stSidebarNav"] a[aria-current="page"] {
+  background: rgba(14,116,144,.16);
+  font-weight: 600;
+}
 
 /* Expanders más suaves */
 div[data-testid="stExpander"] details {
@@ -55,10 +78,15 @@ def inject_base_css() -> None:
 
 
 def sidebar_brand() -> None:
-    """Bloque de marca y enlaces en la barra lateral."""
+    """Logo/wordmark arriba de la navegación + enlaces en la barra lateral."""
+    # `st.logo` (Streamlit >= 1.35) coloca la imagen ENCIMA de la navegación.
+    try:
+        if LOGO_PATH.exists():
+            st.logo(str(LOGO_PATH), link=REPO_URL, icon_image=str(LOGO_PATH))
+    except Exception:
+        pass  # versiones antiguas de Streamlit: se usa solo el bloque de abajo
     with st.sidebar:
-        st.markdown("### 🐟 CFP Audit Intelligence")
-        st.caption("Auditoría pesquera con IA · TFM")
+        st.caption("🐟 Auditoría pesquera con IA · **TFM**")
         st.markdown(f"[💻 Repositorio]({REPO_URL}) · [🚀 App]({APP_URL})")
         st.divider()
 
