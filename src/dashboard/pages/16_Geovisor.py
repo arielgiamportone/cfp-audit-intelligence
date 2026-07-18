@@ -23,12 +23,10 @@ from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-st.title("🗺️ Geovisor SERE (INIDEP) — Vedas Geoespaciales")
-st.caption(
-    "Cada zona de veda publicada por el geovisor cita directamente el número de "
+from src.dashboard._ui import page_header_raw
+page_header_raw("🗺️ Geovisor SERE (INIDEP) — Vedas Geoespaciales", "Cada zona de veda publicada por el geovisor cita directamente el número de "
     "resolución, el organismo emisor (CFP/CTMFM) y un link al PDF oficial — una "
-    "fuente externa verificable para auditar la cobertura del parser de actas CFP."
-)
+    "fuente externa verificable para auditar la cobertura del parser de actas CFP.")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
@@ -109,8 +107,9 @@ tab1, tab2, tab3, tab4 = st.tabs(
 with tab1:
     if df_vedas.empty:
         st.info(
-            "Sin datos cargados. Hacé clic en **«Descargar vedas del geovisor SERE»** "
-            "en la barra lateral, o ejecutá `--step geovisor` del pipeline."
+            "Sin datos cargados todavía. Usa **«Descargar vedas del geovisor SERE»** "
+            "en la barra lateral para traerlos.",
+            icon="ℹ️",
         )
     else:
         especies_disp = sorted(e for e in df_vedas["especie_code"].dropna().unique())

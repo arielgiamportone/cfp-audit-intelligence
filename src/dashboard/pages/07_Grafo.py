@@ -15,11 +15,9 @@ from pyvis.network import Network
 
 from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
 
-st.title("🕸️ Grafo de Relaciones CFP")
-st.caption(
-    "Red bipartita de co-menciones entre especies pesqueras y empresas "
-    "en las decisiones del Consejo Federal Pesquero."
-)
+from src.dashboard._ui import page_header_raw
+page_header_raw("🕸️ Grafo de Relaciones CFP", "Red bipartita de co-menciones entre especies pesqueras y empresas "
+    "en las decisiones del Consejo Federal Pesquero.")
 
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
@@ -123,9 +121,11 @@ with st.sidebar:
 # ── Verificar BD ───────────────────────────────────────────────────────────────
 
 if not DB_PATH.exists():
-    st.warning(
-        "⚠️ Base de datos no encontrada en `data/processed/catalog.db`. "
-        "Ejecuta primero `make pipeline` o `python scripts/run_full_pipeline.py --step process`."
+    st.info(
+        "📦 Esta vista necesita el corpus de actas, que en la demo pública no está "
+        "cargado. Empieza por el **Comparador INIDEP** o reproduce el pipeline en "
+        "local — ver `docs/TFM_DEPLOY.md`.",
+        icon="ℹ️",
     )
     st.stop()
 

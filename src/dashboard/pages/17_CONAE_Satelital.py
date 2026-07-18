@@ -25,12 +25,10 @@ from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-st.title("🛰️ CONAE — Esfuerzo Pesquero Satelital")
-st.caption(
-    "Datos satelitales del geoportal marino de la CONAE. "
+from src.dashboard._ui import page_header_raw
+page_header_raw("🛰️ CONAE — Esfuerzo Pesquero Satelital", "Datos satelitales del geoportal marino de la CONAE. "
     "Verifica si el esfuerzo pesquero real (GFW AIS) disminuye durante períodos de veda "
-    "— evidencia independiente del corpus de actas CFP (ADR-010)."
-)
+    "— evidencia independiente del corpus de actas CFP (ADR-010).")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 

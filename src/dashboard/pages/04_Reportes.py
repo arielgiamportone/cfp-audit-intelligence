@@ -10,8 +10,8 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.title("📊 Reportes y Visualizaciones")
-st.caption("Análisis estadístico y exportación de resultados de auditoría")
+from src.dashboard._ui import page_header_raw
+page_header_raw("📊 Reportes y Visualizaciones", "Análisis estadístico y exportación de resultados de auditoría")
 
 st.info(
     "📊 **Modo demo:** los reportes reflejan el corpus de actas cargado. En esta demo pública "

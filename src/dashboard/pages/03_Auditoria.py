@@ -11,8 +11,8 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.title("🧠 Auditoría con Inteligencia Artificial")
-st.caption("Análisis de resoluciones con Claude API y detección de patrones sistémicos")
+from src.dashboard._ui import page_header_raw
+page_header_raw("🧠 Auditoría con Inteligencia Artificial", "Análisis de resoluciones con Claude API y detección de patrones sistémicos")
 
 with st.expander("🔍 IA responsable: cómo garantizamos transparencia", expanded=False):
     st.markdown(

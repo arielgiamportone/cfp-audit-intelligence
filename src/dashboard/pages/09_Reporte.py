@@ -7,7 +7,8 @@ import streamlit as st
 
 from src.analysis.report_generator import CFPReportGenerator
 
-st.title("📄 Reporte PDF Ejecutivo")
+from src.dashboard._ui import page_header_raw
+page_header_raw("📄 Reporte PDF Ejecutivo")
 st.markdown("Genera un informe ejecutivo en PDF con todos los hallazgos de auditoría.")
 
 st.info(

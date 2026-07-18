@@ -92,8 +92,14 @@ def sidebar_brand() -> None:
 
 
 def page_header(icon: str, title: str, subtitle: str | None = None) -> None:
-    """Cabecera consistente de página."""
-    st.title(f"{icon} {title}")
+    """Cabecera consistente de página (icono + título + subtítulo)."""
+    page_header_raw(f"{icon} {title}", subtitle)
+
+
+def page_header_raw(title: str, subtitle: str | None = None) -> None:
+    """Cabecera consistente cuando el título ya incluye el icono (o es una f-string).
+    Punto único para dar formato al encabezado de cada página (DRY)."""
+    st.title(title)
     if subtitle:
         st.caption(subtitle)
 

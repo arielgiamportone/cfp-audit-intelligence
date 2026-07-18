@@ -21,7 +21,8 @@ import streamlit as st
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
-st.title("🔬 Evaluación y Validación del Sistema de Auditoría")
+from src.dashboard._ui import page_header_raw
+page_header_raw("🔬 Evaluación y Validación del Sistema de Auditoría")
 
 st.info(
     "**Rigor metodológico**: este módulo permite validar el audit_engine contra anotaciones "
@@ -30,8 +31,11 @@ st.info(
 )
 
 if not DB_PATH.exists():
-    st.warning("Base de datos no encontrada. Ejecutar el pipeline primero.")
-    st.code("python scripts/run_full_pipeline.py --step process")
+    st.info(
+        "📦 Esta página valida el motor contra el corpus de actas, que en la demo no "
+        "está cargado. Reproduce el pipeline en local — ver `docs/TFM_DEPLOY.md`.",
+        icon="ℹ️",
+    )
     st.stop()
 
 try:

@@ -20,11 +20,9 @@ from src.analysis.inidep_comparator import INIDEPComparator
 from src.analysis.linkedin_formatter import LinkedInFormatter
 from src.analysis.research_exporter import ResearchExporter
 
-st.title("🔬 FisheriesAudit ALG — Hub de Investigación")
-st.caption(
-    "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
-    "Ariel L. Giamportone · Ing. Pesquero | Data Scientist"
-)
+from src.dashboard._ui import page_header_raw
+page_header_raw("🔬 FisheriesAudit ALG — Hub de Investigación", "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
+    "Ariel L. Giamportone · Ing. Pesquero | Data Scientist")
 
 st.info(
     "Genera outputs científicos publicables directamente desde los datos de la plataforma: "

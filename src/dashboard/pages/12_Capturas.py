@@ -8,7 +8,8 @@ import streamlit as st
 
 from src.acquisition.sipa_scraper import SIPAScraper
 
-st.title("🐟 Capturas Reales — SIPA / SAGPyA")
+from src.dashboard._ui import page_header_raw
+page_header_raw("🐟 Capturas Reales — SIPA / SAGPyA")
 st.markdown(
     "Cierre del triángulo de auditoría: **CBA (INIDEP)** → **CMP aprobada (CFP)** → "
     "**Captura real desembarcada (SAGPyA)**. "

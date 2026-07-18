@@ -24,12 +24,10 @@ from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-st.title("Red de Conflictos de Interés — CFP vs. Industria Pesquera")
-st.caption(
-    "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
+from src.dashboard._ui import page_header_raw
+page_header_raw("Red de Conflictos de Interés — CFP vs. Industria Pesquera", "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
     "y apariciones en actas del CFP. "
-    "⚠️ Datos demo hasta verificación por experto legal."
-)
+    "⚠️ Datos demo hasta verificación por experto legal.")
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 

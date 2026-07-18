@@ -10,8 +10,8 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.title("🔍 Knowledge Base Semántica")
-st.caption("Búsqueda inteligente sobre el corpus completo de actas del CFP")
+from src.dashboard._ui import page_header_raw
+page_header_raw("🔍 Knowledge Base Semántica", "Búsqueda inteligente sobre el corpus completo de actas del CFP")
 
 from src.knowledge_base.vector_store import CFPVectorStore
 
@@ -61,18 +61,20 @@ with col_filters:
     n_results = st.slider("Resultados", 5, 20, 10)
     year_from_f = st.number_input("Desde año", 1998, 2025, 1998, key="kb_year_from")
     year_to_f = st.number_input("Hasta año", 1998, 2025, 2025, key="kb_year_to")
+    _TIPO_LABELS = {
+        "Todos": "Todos",
+        "cuota_captura": "Cuota de captura",
+        "veda": "Veda",
+        "habilitacion_buque": "Habilitación de buque",
+        "area_protegida": "Área protegida",
+        "convenio_internacional": "Convenio internacional",
+        "investigacion": "Investigación",
+        "sancion": "Sanción",
+    }
     tipo_filter = st.selectbox(
         "Tipo de resolución",
-        [
-            "Todos",
-            "cuota_captura",
-            "veda",
-            "habilitacion_buque",
-            "area_protegida",
-            "convenio_internacional",
-            "investigacion",
-            "sancion",
-        ],
+        list(_TIPO_LABELS.keys()),
+        format_func=lambda x: _TIPO_LABELS.get(x, x.replace("_", " ").capitalize()),
     )
 
 if query and count > 0:
@@ -86,6 +88,10 @@ if query and count > 0:
         )
 
     st.success(f"{len(results)} resultados encontrados")
+    st.caption(
+        "La **similitud** mide cuánto se parece cada resolución a tu consulta "
+        "(100% = coincidencia máxima; se calcula sobre el significado, no las palabras exactas)."
+    )
     st.markdown("---")
 
     for i, r in enumerate(results, 1):

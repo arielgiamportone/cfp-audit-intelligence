@@ -26,11 +26,9 @@ from src.analysis.alert_engine import (
     AlertEngine,
 )
 
-st.title("🚨 Sistema de Alertas Configurables")
-st.caption(
-    "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
-    "científicas del INIDEP y otros indicadores de riesgo pesquero."
-)
+from src.dashboard._ui import page_header_raw
+page_header_raw("🚨 Sistema de Alertas Configurables", "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
+    "científicas del INIDEP y otros indicadores de riesgo pesquero.")
 
 with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
     st.markdown(
@@ -63,9 +61,11 @@ def get_engine():
     return AlertEngine(db_path=DB_PATH)
 
 if not DB_PATH.exists():
-    st.warning(
-        "⚠️ Base de datos no encontrada en `data/processed/catalog.db`. "
-        "Ejecuta primero `make pipeline` o `python scripts/run_full_pipeline.py --step process`."
+    st.info(
+        "📦 Esta vista necesita el corpus de actas, que en la demo pública no está "
+        "cargado. Empieza por el **Comparador INIDEP** o reproduce el pipeline en "
+        "local — ver `docs/TFM_DEPLOY.md`.",
+        icon="ℹ️",
     )
     st.stop()
 

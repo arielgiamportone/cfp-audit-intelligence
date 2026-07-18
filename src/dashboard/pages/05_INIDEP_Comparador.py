@@ -15,11 +15,9 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.title("🔬 Comparador CFP vs. INIDEP")
-st.caption(
-    "Cuotas aprobadas por el CFP vs. Captura Biológicamente Aceptable (CBA) "
-    "recomendada por el INIDEP — Ley 24.922, Art. 9"
-)
+from src.dashboard._ui import page_header_raw
+page_header_raw("🔬 Comparador CFP vs. INIDEP", "Cuotas aprobadas por el CFP vs. Captura Biológicamente Aceptable (CBA) "
+    "recomendada por el INIDEP — Ley 24.922, Art. 9")
 
 with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
     st.markdown(

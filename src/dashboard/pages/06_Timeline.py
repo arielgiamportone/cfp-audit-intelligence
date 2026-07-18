@@ -14,18 +14,19 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-st.title("📈 Timeline Histórico por Especie")
-st.caption(
-    "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
-    "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados."
-)
+from src.dashboard._ui import page_header_raw
+page_header_raw("📈 Timeline Histórico por Especie", "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
+    "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados.")
 
 from src.config_loader import get_db_path
 DB_PATH = get_db_path()
 
 if not DB_PATH.exists():
-    st.error(
-        "Base de datos no encontrada. Ejecuta: `python scripts/scrape_inidep.py --mode metadata`"
+    st.info(
+        "📦 En esta demo aún no hay datos históricos cargados. Empieza por el "
+        "**Comparador INIDEP** (trae datos verificados) o reproduce el pipeline en "
+        "local — ver `docs/TFM_DEPLOY.md`.",
+        icon="ℹ️",
     )
     st.stop()
 

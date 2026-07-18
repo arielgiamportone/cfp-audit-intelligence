@@ -39,6 +39,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Cambiado — Consistencia de UI (tanda 2)
+- **Cabecera unificada:** las 17 páginas usan ahora `page_header_raw()` de `_ui.py` (punto único de
+  formato del encabezado) en lugar de `st.title`/`st.caption` sueltos → DRY.
+- **Sin jerga de terminal para el usuario:** los estados vacíos de Timeline, Grafo, Alertas,
+  Evaluación y Geovisor ya no muestran comandos (`--step process`, `make pipeline`, …); ahora guían
+  al usuario ("empieza por el Comparador / reproduce el pipeline en local, ver `docs/TFM_DEPLOY.md`").
+- **Selectores legibles:** el filtro "Tipo de resolución" (Knowledge Base) muestra etiquetas
+  humanas (`Cuota de captura`, `Habilitación de buque`, …) vía `format_func` en vez de valores con
+  guiones bajos; se añadió una explicación de qué significa la métrica de **similitud**.
+
 ### Cambiado — Navegación temática (st.navigation)
 - **Menú lateral agrupado en 6 secciones** (Inicio · Núcleo/Triángulo · Análisis IA · Contexto
   externo · Gobernanza · Ingesta y rigor) en lugar de una lista plana de 17 páginas. `app.py` pasa
