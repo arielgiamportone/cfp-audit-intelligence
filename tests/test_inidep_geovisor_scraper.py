@@ -16,11 +16,73 @@ from src.acquisition.inidep_geovisor_scraper import (
     VEDAS_LAYERS,
     SEREGeovisorClient,
     VedaGeoespacial,
+    _centroid,
     _clean_date,
     _especie_code,
     resoluciones_citadas,
     save_vedas_to_db,
 )
+
+
+class TestCentroid:
+    """Punto representativo (centroide aproximado) de geometrías GeoJSON."""
+
+    def test_point(self):
+        assert _centroid({"type": "Point", "coordinates": [-60.0, -45.0]}) == (-45.0, -60.0)
+
+    def test_polygon_promedia_vertices(self):
+        poly = {
+            "type": "Polygon",
+            "coordinates": [[[-62, -46], [-58, -46], [-58, -44], [-62, -44]]],
+        }
+        lat, lon = _centroid(poly)
+        assert lat == pytest.approx(-45.0)
+        assert lon == pytest.approx(-60.0)
+
+    def test_multipolygon(self):
+        geom = {
+            "type": "MultiPolygon",
+            "coordinates": [[[[-62, -46], [-58, -46], [-58, -44], [-62, -44]]]],
+        }
+        lat, lon = _centroid(geom)
+        assert lat == pytest.approx(-45.0)
+        assert lon == pytest.approx(-60.0)
+
+    def test_vacio_o_none(self):
+        assert _centroid({}) == (None, None)
+        assert _centroid(None) == (None, None)
+        assert _centroid({"type": "Point", "coordinates": None}) == (None, None)
+
+
+class TestPersistenciaCoordenadas:
+    """El centroide (lat/lon) se persiste y se puede recuperar."""
+
+    def test_guarda_y_lee_lat_lon(self, tmp_path):
+        db = tmp_path / "vedas.db"
+        rec = VedaGeoespacial(
+            capa="test", especie="Merluza", area="Zona X",
+            resolucion_numero="R1", lat=-45.5, lon=-61.0,
+        )
+        assert save_vedas_to_db([rec], db) == 1
+        with sqlite3.connect(db) as conn:
+            row = conn.execute("SELECT lat, lon FROM vedas_geoespaciales").fetchone()
+        assert row == (-45.5, -61.0)
+
+    def test_migracion_agrega_columnas(self, tmp_path):
+        """Una BD sin columnas lat/lon se migra sin perder datos."""
+        db = tmp_path / "old.db"
+        with sqlite3.connect(db) as conn:
+            conn.execute(
+                "CREATE TABLE vedas_geoespaciales ("
+                "id INTEGER PRIMARY KEY, capa TEXT, especie TEXT, especie_code TEXT, "
+                "area TEXT, fecha_inicio TEXT, fecha_fin TEXT, resolucion_numero TEXT, "
+                "resolucion_fuente TEXT, resolucion_url TEXT, notas TEXT, geometry_type TEXT)"
+            )
+        rec = VedaGeoespacial(capa="c", area="A", resolucion_numero="R", lat=-40.0, lon=-58.0)
+        save_vedas_to_db([rec], db)  # debe migrar (ALTER TABLE) y no fallar
+        with sqlite3.connect(db) as conn:
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(vedas_geoespaciales)")}
+        assert {"lat", "lon"} <= cols
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

@@ -67,6 +67,38 @@ class VedaGeoespacial:
     resolucion_url: str | None = None
     notas: str | None = None
     geometry_type: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+
+
+def _centroid(geom: dict | None) -> tuple[float | None, float | None]:
+    """Punto representativo (promedio de vértices) de una geometría GeoJSON.
+
+    Sirve para Point / LineString / Polygon / MultiPolygon. No es el centroide
+    geométrico exacto, sino una ubicación aproximada suficiente para el mapa.
+    Devuelve (lat, lon) o (None, None).
+    """
+    if not geom:
+        return None, None
+    coords = geom.get("coordinates")
+    if coords is None:
+        return None, None
+    xs: list[float] = []
+    ys: list[float] = []
+
+    def _walk(c) -> None:
+        if isinstance(c, (list, tuple)):
+            if len(c) >= 2 and all(isinstance(v, (int, float)) for v in c[:2]):
+                xs.append(float(c[0]))
+                ys.append(float(c[1]))
+            else:
+                for sub in c:
+                    _walk(sub)
+
+    _walk(coords)
+    if not xs:
+        return None, None
+    return sum(ys) / len(ys), sum(xs) / len(xs)  # (lat, lon)
 
 
 def _clean_date(raw: str | None) -> str | None:
@@ -124,6 +156,7 @@ class SEREGeovisorClient:
         for feat in data.get("features", []):
             props = feat.get("properties", {}) or {}
             geom = feat.get("geometry") or {}
+            lat, lon = _centroid(geom)
             out.append(
                 VedaGeoespacial(
                     capa=type_name,
@@ -136,6 +169,8 @@ class SEREGeovisorClient:
                     resolucion_url=props.get("Link_res") or props.get("Res_link"),
                     notas=props.get("Notas") or props.get("Nota"),
                     geometry_type=geom.get("type"),
+                    lat=lat,
+                    lon=lon,
                 )
             )
         return out
@@ -202,6 +237,8 @@ CREATE TABLE IF NOT EXISTS vedas_geoespaciales (
     resolucion_url      TEXT,
     notas               TEXT,
     geometry_type       TEXT,
+    lat                 REAL,
+    lon                 REAL,
     fuente              TEXT DEFAULT 'INIDEP SERE geovisor',
     created_at          TEXT DEFAULT (datetime('now'))
 );
@@ -222,6 +259,11 @@ def save_vedas_to_db(records: list[VedaGeoespacial], db_path: str | Path) -> int
     inserted = 0
     with sqlite3.connect(db_path) as conn:
         conn.executescript(SCHEMA_VEDAS_GEO)
+        # Migración para BDs creadas antes de añadir lat/lon
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(vedas_geoespaciales)")}
+        for col in ("lat", "lon"):
+            if col not in cols:
+                conn.execute(f"ALTER TABLE vedas_geoespaciales ADD COLUMN {col} REAL")
         for rec in records:
             exists = conn.execute(
                 """
@@ -239,8 +281,9 @@ def save_vedas_to_db(records: list[VedaGeoespacial], db_path: str | Path) -> int
                 """
                 INSERT INTO vedas_geoespaciales
                     (capa, especie, especie_code, area, fecha_inicio, fecha_fin,
-                     resolucion_numero, resolucion_fuente, resolucion_url, notas, geometry_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     resolucion_numero, resolucion_fuente, resolucion_url, notas, geometry_type,
+                     lat, lon)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     rec.capa,
@@ -254,6 +297,8 @@ def save_vedas_to_db(records: list[VedaGeoespacial], db_path: str | Path) -> int
                     rec.resolucion_url,
                     rec.notas,
                     rec.geometry_type,
+                    rec.lat,
+                    rec.lon,
                 ),
             )
             inserted += 1

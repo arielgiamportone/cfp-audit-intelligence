@@ -98,9 +98,68 @@ col4.metric("% cobertura", f"{resumen_cobertura.get('pct_cobertura', 0.0)}%")
 
 st.divider()
 
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["🚫 Zonas de veda", "🔗 Cobertura del corpus", "🐟 Especies", "📖 Metodología"]
+tab_mapa, tab1, tab2, tab3, tab4 = st.tabs(
+    ["🗺️ Mapa", "🚫 Zonas de veda", "🔗 Cobertura del corpus", "🐟 Especies", "📖 Metodología"]
 )
+
+# ── Tab Mapa: zonas de veda georreferenciadas ─────────────────────────────────
+
+with tab_mapa:
+    st.subheader("Mapa de zonas de veda (INIDEP SERE)")
+    if df_vedas.empty:
+        st.info(
+            "Sin datos cargados. Usa **«Descargar vedas del geovisor SERE»** en la barra lateral "
+            "para traer las zonas y verlas en el mapa."
+        )
+    elif "lat" not in df_vedas.columns or df_vedas["lat"].notna().sum() == 0:
+        st.info(
+            "Las vedas cargadas no tienen coordenadas (se descargaron con una versión previa del "
+            "scraper). Vuelve a descargarlas desde la barra lateral para ver el mapa."
+        )
+    else:
+        df_geo = df_vedas.dropna(subset=["lat", "lon"]).copy()
+        try:
+            import plotly.express as px
+
+            fig_mapa = px.scatter_geo(
+                df_geo,
+                lat="lat",
+                lon="lon",
+                color="especie_code",
+                hover_name="area",
+                hover_data={
+                    "especie": True,
+                    "fecha_inicio": True,
+                    "fecha_fin": True,
+                    "lat": False,
+                    "lon": False,
+                    "especie_code": False,
+                },
+                title="Centroides de zonas de veda — Mar Argentino",
+            )
+            fig_mapa.update_traces(marker={"size": 11, "line": {"width": 1, "color": "white"}})
+            fig_mapa.update_geos(
+                lataxis_range=[-56, -34],
+                lonaxis_range=[-70, -52],
+                showland=True,
+                landcolor="#ECF3F6",
+                showocean=True,
+                oceancolor="#D6E4EA",
+                showcountries=True,
+            )
+            fig_mapa.update_layout(
+                height=560,
+                paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#14303B",
+                legend_title_text="Especie",
+            )
+            st.plotly_chart(fig_mapa, width="stretch")
+        except ImportError:
+            st.map(df_geo[["lat", "lon"]])
+        st.caption(
+            "📍 Ubicación **aproximada** (centroide de cada zona de veda). "
+            "El polígono exacto está en el geovisor oficial del INIDEP (columna «PDF oficial»)."
+        )
 
 # ── Tab 1: Zonas de veda ──────────────────────────────────────────────────────
 

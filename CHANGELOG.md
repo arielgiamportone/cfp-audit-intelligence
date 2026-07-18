@@ -39,6 +39,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Añadido — Mapa real en el Geovisor (tanda 8)
+- **El Geovisor ahora muestra un mapa** (antes solo tablas pese al nombre 🗺️). El scraper WFS
+  (`inidep_geovisor_scraper`) persiste el **centroide** (lat/lon) de cada zona de veda —función
+  `_centroid()` para Point/LineString/Polygon/MultiPolygon— con migración de esquema para BDs
+  previas. La página añade una pestaña **🗺️ Mapa** (`plotly.scatter_geo` del Mar Argentino, con
+  fallback a `st.map`) etiquetada como *ubicación aproximada*. Sin coordenadas inventadas: el mapa
+  se puebla al re-descargar las vedas. Tests: `_centroid`, persistencia lat/lon y migración.
+
 ### Añadido — Selector de especie global (tanda 7)
 - **Especie sincronizada entre páginas:** helper `especie_selector()` en `_ui.py` que guarda la
   especie elegida en `st.session_state` y la propaga como predeterminada. Aplicado a **Timeline,
