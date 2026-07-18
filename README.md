@@ -112,6 +112,8 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 | [`docs/DATASHEET.md`](docs/DATASHEET.md) | Datasheet for Datasets (Gebru 2021): composición, procesamiento, limitaciones |
 | [`docs/bibliography.md`](docs/bibliography.md) | Bibliografía académica verificada (30+ refs con DOI) |
 | [`docs/adr/`](docs/adr/) | ADR 001–011: decisiones de arquitectura con contexto y justificación |
+| [`docs/REQUISITOS.md`](docs/REQUISITOS.md) | Requisitos RF/RNF, historias de usuario (Given-When-Then), MoSCoW y trazabilidad requisito → módulo |
+| [`docs/specs/`](docs/specs/) | Especificaciones Spec-Driven Development (Spec-First) de features |
 
 ---
 

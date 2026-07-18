@@ -20,6 +20,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   evidencia de que el dominio no depende de la UI.
 - **Unidad 2 (Análisis de Requisitos):** `docs/REQUISITOS.md` con fichas RF/RNF, historias
   de usuario (Given-When-Then), priorización MoSCoW y **trazabilidad requisito → módulo**.
+- **Unidad 2 (Spec Driven Development):** `docs/specs/SPEC-001-export-comparador.md`,
+  ejemplo Spec-First (la spec como fuente de verdad) para exportar la comparación CBA/CMP.
+  Enlaces a REQUISITOS y specs añadidos a la Documentación Técnica del README.
 
 ### Cambiado
 - **Narrativa TFM (autor):** se incorpora el arco personal **Data Science → DEV** en el guion
