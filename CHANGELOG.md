@@ -39,6 +39,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Corregido — Infraestructura Docker (tanda 9)
+- **`Dockerfile`**: `streamlit>=1.32.0` → **`>=1.36.0`** (la navegación por secciones usa
+  `st.navigation`, que requiere 1.36; con 1.32 el dashboard en contenedor fallaba). Añadidas
+  `matplotlib`, `scipy`, `scikit-learn`, `openpyxl` a la imagen (Reportes/Investigación/Evaluación)
+  y nota de alineación con `requirements-deploy.txt`. Se mantiene sin torch/chromadb/anthropic
+  (imagen ligera; esas páginas degradan con aviso vía `import_guard`).
+- **`docker-compose.yml`**: el dashboard ya **no** `depends_on` la API (lee SQLite directamente;
+  eran servicios acoplados sin relación real) → arrancan en paralelo.
+
 ### Añadido — Mapa real en el Geovisor (tanda 8)
 - **El Geovisor ahora muestra un mapa** (antes solo tablas pese al nombre 🗺️). El scraper WFS
   (`inidep_geovisor_scraper`) persiste el **centroide** (lat/lon) de cada zona de veda —función

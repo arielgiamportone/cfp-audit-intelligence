@@ -7,12 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Web-service dependencies only (no torch/chromadb/heavy ML)
+# Dependencias del servicio web (SIN torch/chromadb/anthropic: la imagen es ligera;
+# las páginas de KB/Auditoría IA degradan con aviso vía `import_guard`).
+# NOTA: mantener alineado con requirements-deploy.txt (mismas versiones mínimas).
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir \
         "fastapi>=0.111.0" \
         "uvicorn[standard]>=0.30.0" \
         "httpx>=0.27.0" \
-        "streamlit>=1.32.0" \
+        "streamlit>=1.36.0" \
         "pandas>=2.1.0" \
         "numpy>=1.26.0" \
         "pydantic>=2.5.0" \
@@ -28,6 +30,10 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir \
         "pyvis>=0.3.2" \
         "plotly>=5.18.0" \
         "altair>=5.2.0" \
+        "matplotlib>=3.7.0" \
+        "scipy>=1.10.0" \
+        "scikit-learn>=1.3.0" \
+        "openpyxl>=3.1.0" \
         "python-dotenv>=1.0.0" \
         "PyYAML>=6.0.0" \
         "python-dateutil>=2.8.0" \

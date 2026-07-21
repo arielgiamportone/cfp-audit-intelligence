@@ -55,7 +55,6 @@ services:
         required: false
     environment:
       - PYTHONPATH=/app
-    depends_on:
-      api:
-        condition: service_healthy
+    # El dashboard lee SQLite directamente (no consume la API REST), por lo que
+    # ambos servicios son independientes y pueden arrancar en paralelo.
     restart: unless-stopped
