@@ -39,6 +39,18 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Añadido — Tests del núcleo (tanda 11)
+- **Cubiertas las 3 piezas críticas que no tenían test** (detectadas en la auditoría de subsistemas):
+  - `tests/test_audit_engine.py` — motor de auditoría IA: parseo de respuesta, construcción del
+    `AuditResult`, reproducibilidad (`prompt_hash`/`input_hash`) y manejo de errores, **mockeando el
+    LLM** (sin red ni API key).
+  - `tests/test_vector_store.py` — capa RAG: sanitización de metadatos, filtros de búsqueda
+    (`$and`), mapeo de resultados e indexación desde JSON (colisiones de ID, saltos de vacíos),
+    **sin ChromaDB** (imports perezosos + colección simulada).
+  - `tests/test_pdf_extractor.py` — cascada pdfplumber→PyMuPDF→OCR, umbral de texto, limpieza y
+    guardado por lotes, **sin librerías de PDF** (extractores mockeados).
+- CI instala `anthropic` para ejecutar el test del motor IA (26 tests nuevos, verde en local).
+
 ### Cambiado — Pipeline de corpus turnkey (tanda 10, parcial)
 - **Consistencia de rutas:** `scripts/run_full_pipeline.py` usa por defecto las **mismas rutas que
   el dashboard** (`config_loader.get_db_path`/`get_kb_dir`, absolutas) en vez de `./data` relativo al
