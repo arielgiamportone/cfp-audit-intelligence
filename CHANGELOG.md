@@ -51,16 +51,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
     guardado por lotes, **sin librerías de PDF** (extractores mockeados).
 - CI instala `anthropic` para ejecutar el test del motor IA (26 tests nuevos, verde en local).
 
-### Cambiado — Pipeline de corpus turnkey (tanda 10, parcial)
-- **Consistencia de rutas:** `scripts/run_full_pipeline.py` usa por defecto las **mismas rutas que
-  el dashboard** (`config_loader.get_db_path`/`get_kb_dir`, absolutas) en vez de `./data` relativo al
-  *cwd* → el corpus que puebla el pipeline es exactamente el que la app muestra. Loguea las rutas
-  resueltas. `--data-dir` sigue disponible como override.
-- **Muestra barata:** `--limit` ahora aplica también al paso `download`; nuevo target
-  `make demo-corpus` (5 actas 2024-25 → process → KB → audit 3) para poblar una muestra real con
-  coste mínimo. Documentado en `docs/TFM_DEPLOY.md`.
-- _Nota:_ la ejecución (descarga + auditoría IA) es local (requiere red a cfp.gob.ar y
-  `ANTHROPIC_API_KEY`); no se ejecuta en este entorno.
+### Añadido — Corpus real de actas + pipeline turnkey (tanda 10)
+- **El deploy ya muestra corpus real:** se versiona `data/processed/catalog.db` con **68 actas
+  reales del CFP (2024-2025) y 754 resoluciones parseadas** (+ semillas INIDEP/FAO/SIPA). El home
+  pasa de "corpus no cargado" a **Total actas: 68 · Textos extraídos: 68**. La auditoría IA
+  (`analisis_sesiones`) queda para ejecutar en local con `ANTHROPIC_API_KEY`.
+- **Puente resoluciones→SQL (bug de pipeline corregido):** `step_process` ahora **persiste las
+  resoluciones parseadas en la tabla `resoluciones`** de `catalog.db` (la que leen la API y el
+  dashboard). Antes solo se escribían a JSON/ChromaDB (gitignored) → la tabla SQL quedaba vacía
+  aun tras correr el pipeline. Nuevos métodos `catalog_manager.acta_id_by_filename` (tolera
+  `.txt`/`.pdf`) y `count_resoluciones` (idempotencia).
+- **Fix RAG:** `vector_store.index_from_json_dir` usaba `res['numero']`, pero el parser emite
+  `numero_resolucion` → la Knowledge Base fallaba al indexar. Ahora usa `numero_resolucion` con
+  *fallback*.
+- **Consistencia de rutas:** el pipeline usa por defecto las mismas rutas que el dashboard
+  (`config_loader`), no `./data` relativo al *cwd*. `--limit` aplica al paso `download`; nuevo
+  target `make demo-corpus`. Documentado en `docs/TFM_DEPLOY.md`.
 
 ### Corregido — Infraestructura Docker (tanda 9)
 - **`Dockerfile`**: `streamlit>=1.32.0` → **`>=1.36.0`** (la navegación por secciones usa
