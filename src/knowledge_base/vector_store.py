@@ -202,7 +202,10 @@ class CFPVectorStore:
                     if not texto:
                         continue
 
-                    base_id = f"{acta_key}_{res['numero']}"
+                    # El parser emite `numero_resolucion` (a veces None); `numero` es
+                    # el formato legado. Fallback al índice para garantizar un ID.
+                    numero = res.get("numero_resolucion") or res.get("numero") or f"r{i}"
+                    base_id = f"{acta_key}_{numero}"
                     # Resolver colisiones residuales con índice secuencial
                     doc_id = base_id
                     if doc_id in seen_ids:
@@ -214,7 +217,7 @@ class CFPVectorStore:
                     metas.append(
                         {
                             "year": year,
-                            "numero": res.get("numero", ""),
+                            "numero": str(numero),
                             "tipo": res.get("tipo", "otro"),
                             "fecha_acta": res.get("fecha_acta") or "",
                             "acta_filename": acta_filename,

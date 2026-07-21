@@ -78,10 +78,10 @@ class TestIndexFromJsonDir:
                     "filename": "acta1.pdf",
                     "year": 2024,
                     "resoluciones": [
-                        {"numero": "1", "texto": "texto uno", "tipo": "cuota_captura",
+                        {"numero_resolucion": "1", "texto": "texto uno", "tipo": "cuota_captura",
                          "especies_mencionadas": ["merluza"]},
-                        {"numero": "1", "texto": "texto dos"},  # colisión de número
-                        {"numero": "2", "texto": "   "},        # vacío → se salta
+                        {"numero_resolucion": "1", "texto": "texto dos"},  # colisión de número
+                        {"numero_resolucion": None, "texto": "   "},        # vacío → se salta
                     ],
                 }
             ),

@@ -97,7 +97,60 @@ def step_process(raw_dir: Path, processed_dir: Path, db_path: Path) -> None:
             pass
     logger.info(f"Marcadas {marked} actas como procesadas en catálogo")
 
+    # Persistir las resoluciones parseadas en la tabla SQL (viaja en catalog.db;
+    # la consumen la API y el dashboard). El JSON y ChromaDB quedan gitignored.
+    _persist_resoluciones(catalog, json_dir)
+
     logger.success("Procesamiento completado")
+
+
+def _persist_resoluciones(catalog, json_dir: Path) -> int:
+    """Vuelca las resoluciones de los JSON parseados a la tabla `resoluciones`.
+
+    Idempotente: no reinserta si el acta ya tiene resoluciones. Enlaza por filename.
+    """
+    import json as _json
+
+    inserted = 0
+    for jp in sorted(Path(json_dir).rglob("*.json")):
+        try:
+            data = _json.loads(jp.read_text(encoding="utf-8"))
+            filename = data.get("filename")
+            acta_id = catalog.acta_id_by_filename(filename) if filename else None
+            if acta_id is None or catalog.count_resoluciones(acta_id) > 0:
+                continue
+
+            acta_fecha = data.get("fecha")
+            quorum = data.get("quorum")
+            quorum = quorum if isinstance(quorum, int) else None
+
+            for i, res in enumerate(data.get("resoluciones", []), 1):
+                texto = (res.get("texto") or "").strip()
+                if not texto:
+                    continue
+                numero = res.get("numero_resolucion") or f"{data.get('numero') or filename}-{i}"
+                catalog.insert_resolucion(
+                    {
+                        "acta_id": acta_id,
+                        "numero": str(numero),
+                        "tipo": res.get("tipo"),
+                        "fecha": res.get("fecha") or acta_fecha,
+                        "texto_completo": texto,
+                        "texto_resumen": texto[:300],
+                        "votos_favor": len(res.get("votos_favor") or []),
+                        "votos_contra": len(res.get("votos_en_contra") or []),
+                        "abstenciones": len(res.get("abstenciones") or []),
+                        "quorum": quorum,
+                        "categoria": None,
+                    }
+                )
+                inserted += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error persistiendo resoluciones de {jp.name}: {exc}")
+
+    if inserted:
+        logger.success(f"Persistidas {inserted} resoluciones en catalog.db (tabla SQL)")
+    return inserted
 
 
 def step_knowledge_base(processed_dir: Path, kb_dir: Path) -> None:

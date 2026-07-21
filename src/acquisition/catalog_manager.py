@@ -278,6 +278,29 @@ class CatalogManager:
             )
             return cur.lastrowid
 
+    def acta_id_by_filename(self, filename: str) -> int | None:
+        """Devuelve el id de un acta por su filename (o None).
+
+        Tolera diferencias de extensión (el JSON parseado guarda `.txt` mientras el
+        catálogo guarda el `.pdf` original): se compara también por nombre base.
+        """
+        from pathlib import Path as _P
+
+        stem_pdf = _P(filename).stem + ".pdf"
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT id FROM actas WHERE filename IN (?, ?)", (filename, stem_pdf)
+            ).fetchone()
+            return row["id"] if row else None
+
+    def count_resoluciones(self, acta_id: int) -> int:
+        """Número de resoluciones ya persistidas para un acta (idempotencia)."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS n FROM resoluciones WHERE acta_id = ?", (acta_id,)
+            ).fetchone()
+            return int(row["n"])
+
     def update_resolucion_analisis(
         self, resolucion_id: int, riesgo_score: float, analisis_ia: str
     ) -> None:

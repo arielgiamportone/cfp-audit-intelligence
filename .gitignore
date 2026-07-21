@@ -42,6 +42,11 @@ logs/
 !data/reports/.gitkeep
 !logs/.gitkeep
 
+# Excepción: se versiona una MUESTRA del catálogo (actas 2024-25 + resoluciones +
+# semillas INIDEP/FAO/SIPA) para que el despliegue muestre datos reales sin ejecutar
+# el pipeline. Refrescar con: make demo-corpus && git add -f data/processed/catalog.db
+!data/processed/catalog.db
+
 # Coverage
 .coverage
 coverage.xml
