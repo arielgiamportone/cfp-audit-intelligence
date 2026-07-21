@@ -30,7 +30,7 @@ from loguru import logger
 load_dotenv(ROOT / ".env")
 
 
-def step_download(years: list[int], raw_dir: Path, db_path: Path) -> None:
+def step_download(years: list[int], raw_dir: Path, db_path: Path, limit: int = 0) -> None:
     from src.acquisition.batch_scraper import CFPScraper
     from src.acquisition.catalog_manager import CatalogManager
 
@@ -39,6 +39,9 @@ def step_download(years: list[int], raw_dir: Path, db_path: Path) -> None:
     scraper = CFPScraper(delay=1.5)
 
     actas = scraper.scrape_years(years)
+    if limit:
+        actas = actas[:limit]
+        logger.info(f"Límite aplicado: se descargarán {len(actas)} actas (muestra)")
     for acta in actas:
         catalog.upsert_acta(
             {
@@ -265,14 +268,30 @@ def main():
     )
     parser.add_argument("--years", default="1998-2025", help="Rango de años (ej: 2020-2025)")
     parser.add_argument("--limit", type=int, default=0, help="Límite de documentos a procesar")
-    parser.add_argument("--data-dir", default="./data", help="Directorio base de datos")
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Directorio base de datos (por defecto: rutas del proyecto, iguales a las del dashboard)",
+    )
     args = parser.parse_args()
 
-    data_dir = Path(args.data_dir)
+    # Rutas: por defecto se usan las MISMAS que consume el dashboard (config_loader),
+    # de modo que el corpus poblado por el pipeline sea el que la app muestra —
+    # independientemente del directorio de trabajo (cwd). Ver ADR-001/DRY (Unidad 1).
+    from src.config_loader import get_db_path, get_kb_dir
+
+    if args.data_dir:
+        data_dir = Path(args.data_dir).resolve()
+        processed_dir = data_dir / "processed"
+        db_path = processed_dir / "catalog.db"
+        kb_dir = data_dir / "knowledge_base"
+    else:
+        db_path = get_db_path()
+        kb_dir = get_kb_dir()
+        processed_dir = db_path.parent
+        data_dir = processed_dir.parent
     raw_dir = data_dir / "raw"
-    processed_dir = data_dir / "processed"
-    kb_dir = data_dir / "knowledge_base"
-    db_path = processed_dir / "catalog.db"
+    logger.info(f"Rutas → db={db_path} | kb={kb_dir} | raw={raw_dir}")
 
     # Parsear años
     if "-" in args.years:
@@ -288,7 +307,7 @@ def main():
     logger.info(f"Pipeline CFP Audit Intelligence | Pasos: {steps}")
 
     if "download" in steps:
-        step_download(years, raw_dir, db_path)
+        step_download(years, raw_dir, db_path, limit=args.limit)
     if "process" in steps:
         step_process(raw_dir, processed_dir, db_path)
     if "knowledge_base" in steps:

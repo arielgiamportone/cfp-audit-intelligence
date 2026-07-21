@@ -1,4 +1,4 @@
-.PHONY: install download process build-kb audit dashboard pipeline clean \
+.PHONY: install download process build-kb audit audit-sample demo-corpus dashboard pipeline clean \
         docker-build docker-up docker-down docker-logs docker-api docker-shell
 
 YEARS ?= 1998-2025
@@ -24,6 +24,15 @@ audit:
 
 audit-sample:
 	$(PYTHON) scripts/run_full_pipeline.py --step audit --limit 50
+
+# Muestra reproducible y barata para la demo/TFM: pocas actas recientes + auditoría mínima.
+# Requiere red (cfp.gob.ar) y, para el paso audit, ANTHROPIC_API_KEY en .env.
+demo-corpus:
+	$(PYTHON) scripts/run_full_pipeline.py --step download --years 2024-2025 --limit 5
+	$(PYTHON) scripts/run_full_pipeline.py --step process
+	$(PYTHON) scripts/run_full_pipeline.py --step knowledge_base
+	$(PYTHON) scripts/run_full_pipeline.py --step audit --limit 3
+	@echo "Muestra de corpus poblada (rutas del proyecto). Lanza: make dashboard"
 
 pipeline:
 	$(PYTHON) scripts/run_full_pipeline.py --step all --years $(YEARS)
@@ -121,6 +130,7 @@ help:
 	@echo "  build-kb       Construir knowledge base vectorial"
 	@echo "  audit          Correr análisis IA (requiere ANTHROPIC_API_KEY)"
 	@echo "  audit-sample   Auditar muestra de 50 documentos"
+	@echo "  demo-corpus    Poblar muestra barata (5 actas 2024-25 + audit 3) para la demo"
 	@echo "  pipeline       Pipeline completo end-to-end"
 	@echo ""
 	@echo "  Web services:"

@@ -39,6 +39,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   en `_ui.py`; `page_icon` añadido a las 4 páginas que no lo tenían (Evaluación, Conflictos, Geovisor,
   CONAE) y de-duplicación del icono 🔬 (CONICET→📚, Investigación→🧪) para una navegación coherente.
 
+### Cambiado — Pipeline de corpus turnkey (tanda 10, parcial)
+- **Consistencia de rutas:** `scripts/run_full_pipeline.py` usa por defecto las **mismas rutas que
+  el dashboard** (`config_loader.get_db_path`/`get_kb_dir`, absolutas) en vez de `./data` relativo al
+  *cwd* → el corpus que puebla el pipeline es exactamente el que la app muestra. Loguea las rutas
+  resueltas. `--data-dir` sigue disponible como override.
+- **Muestra barata:** `--limit` ahora aplica también al paso `download`; nuevo target
+  `make demo-corpus` (5 actas 2024-25 → process → KB → audit 3) para poblar una muestra real con
+  coste mínimo. Documentado en `docs/TFM_DEPLOY.md`.
+- _Nota:_ la ejecución (descarga + auditoría IA) es local (requiere red a cfp.gob.ar y
+  `ANTHROPIC_API_KEY`); no se ejecuta en este entorno.
+
 ### Corregido — Infraestructura Docker (tanda 9)
 - **`Dockerfile`**: `streamlit>=1.32.0` → **`>=1.36.0`** (la navegación por secciones usa
   `st.navigation`, que requiere 1.36; con 1.32 el dashboard en contenedor fallaba). Añadidas
