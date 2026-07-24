@@ -190,7 +190,9 @@ class CFPVectorStore:
         for json_path in sorted(json_dir.rglob("*.json")):
             try:
                 data = json.loads(json_path.read_text(encoding="utf-8"))
-                acta_filename = data.get("filename", json_path.stem)
+                # Guardar el `acta_filename` como STEM (sin extensión) para que el filtro
+                # sea agnóstico a .txt/.pdf (el JSON guarda .txt, el catálogo .pdf).
+                acta_filename = Path(data.get("filename", json_path.stem)).stem
                 year = data.get("year", 0)
 
                 # Path relativo al json_dir garantiza unicidad global (incluye año/subdir)

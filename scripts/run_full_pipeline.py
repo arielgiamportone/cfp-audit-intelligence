@@ -275,8 +275,12 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
         acta_id = row["id"]
         filename = row["filename"]
 
-        # Buscar resoluciones en KB para esta acta
-        results = vs.search(filename, n_results=10, where={"acta_filename": {"$eq": filename}})
+        # Buscar resoluciones en KB para esta acta (la KB guarda el `acta_filename`
+        # como stem, sin extensión → filtrar por el stem del PDF).
+        acta_stem = Path(filename).stem
+        results = vs.search(
+            filename, n_results=10, where={"acta_filename": {"$eq": acta_stem}}
+        )
 
         if not results:
             catalog.mark_analyzed(acta_id)
