@@ -64,6 +64,9 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 - **Fix RAG:** `vector_store.index_from_json_dir` usaba `res['numero']`, pero el parser emite
   `numero_resolucion` → la Knowledge Base fallaba al indexar. Ahora usa `numero_resolucion` con
   *fallback*.
+- **Fix pipeline (audit veía 0 pendientes):** `step_knowledge_base` no marcaba las actas como
+  `embedded`, y `get_pending("analyze")` exige `embedded=TRUE` → la auditoría IA no procesaba nada.
+  Ahora, tras indexar la KB, se marcan las actas como `embedded` (habilita el paso `audit`).
 - **Consistencia de rutas:** el pipeline usa por defecto las mismas rutas que el dashboard
   (`config_loader`), no `./data` relativo al *cwd*. `--limit` aplica al paso `download`; nuevo
   target `make demo-corpus`. Documentado en `docs/TFM_DEPLOY.md`.

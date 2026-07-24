@@ -153,7 +153,8 @@ def _persist_resoluciones(catalog, json_dir: Path) -> int:
     return inserted
 
 
-def step_knowledge_base(processed_dir: Path, kb_dir: Path) -> None:
+def step_knowledge_base(processed_dir: Path, kb_dir: Path, db_path: Path) -> None:
+    from src.acquisition.catalog_manager import CatalogManager
     from src.knowledge_base.vector_store import CFPVectorStore
 
     logger.info("=== ETAPA 3: KNOWLEDGE BASE ===")
@@ -166,6 +167,15 @@ def step_knowledge_base(processed_dir: Path, kb_dir: Path) -> None:
     vs = CFPVectorStore(persist_dir=kb_dir)
     count = vs.index_from_json_dir(json_dir, overwrite=False)
     logger.success(f"Knowledge Base construida: {count:,} resoluciones indexadas")
+
+    # Marcar como `embedded` las actas ya indexadas → habilita el paso `audit`
+    # (get_pending('analyze') exige embedded=TRUE). Sin esto, la auditoría no ve nada.
+    catalog = CatalogManager(db_path)
+    marked = 0
+    for acta in catalog.get_pending("embed"):  # text_extracted=TRUE AND embedded=FALSE
+        catalog.mark_embedded(acta["id"])
+        marked += 1
+    logger.info(f"Marcadas {marked} actas como embedded (listas para auditoría)")
 
 
 def step_inidep(db_path: Path, max_items: int | None = None, enrich_pdf: bool = False) -> None:
@@ -364,7 +374,7 @@ def main():
     if "process" in steps:
         step_process(raw_dir, processed_dir, db_path)
     if "knowledge_base" in steps:
-        step_knowledge_base(processed_dir, kb_dir)
+        step_knowledge_base(processed_dir, kb_dir, db_path)
     if "audit" in steps:
         step_audit(db_path, kb_dir, limit=args.limit)
     if "inidep" in steps:
