@@ -286,10 +286,14 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
             catalog.mark_analyzed(acta_id)
             continue
 
-        # Analizar cada resolución
+        # Analizar cada resolución (solo se guarda/cuenta lo que NO dio error)
         analisis_results = []
+        n_ok = 0
         for r in results:
             audit = engine.analyze_resolucion(r["id"], r["texto"])
+            if audit.categoria_riesgo == "error":
+                continue  # no ensuciar la BD con análisis fallidos (p.ej. error de API)
+            n_ok += 1
             analisis_results.append(
                 {
                     "id": r["id"],
@@ -311,10 +315,19 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
                 tokens_usados=audit.tokens_entrada + audit.tokens_salida,
             )
 
+        # Si TODAS las resoluciones fallaron (p.ej. clave/cuota de API), no marcar
+        # la acta como analizada → queda pendiente para reintentar.
+        if results and n_ok == 0:
+            logger.warning(
+                f"  {filename}: todas las resoluciones fallaron (¿API key/cuota?); "
+                "no se marca como analizada (reintentable)."
+            )
+            continue
+
         catalog.mark_analyzed(acta_id)
         max_risk = max((a["riesgo_score"] for a in analisis_results), default=0)
         logger.info(
-            f"  {filename}: {len(analisis_results)} resoluciones, riesgo máx: {max_risk:.0f}"
+            f"  {filename}: {n_ok} resoluciones analizadas, riesgo máx: {max_risk:.0f}"
         )
 
     logger.success("Auditoría completada")
