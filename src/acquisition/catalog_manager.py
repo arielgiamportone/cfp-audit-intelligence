@@ -302,17 +302,19 @@ class CatalogManager:
             return int(row["n"])
 
     def update_resolucion_riesgo(
-        self, acta_id: int, numero: str, riesgo_score: float, categoria: str
+        self, acta_id: int, texto: str, riesgo_score: float, categoria: str
     ) -> None:
-        """Fija el riesgo/categoría de una resolución identificada por (acta_id, numero).
+        """Fija el riesgo/categoría de una resolución identificada por (acta_id, texto).
 
-        Lo usa la auditoría IA para que el riesgo sea visible en la tabla `resoluciones`
-        (la leen Reportes y PatternDetector), no solo en `analisis_sesiones`.
+        Se enlaza por el TEXTO (fuente común entre la KB y la tabla `resoluciones`),
+        porque el `numero` se deriva distinto en cada capa cuando el parser no lo trae.
+        Así el riesgo queda visible en la tabla `resoluciones` (Reportes/PatternDetector).
         """
         with self._conn() as conn:
             conn.execute(
-                "UPDATE resoluciones SET riesgo_score=?, categoria=? WHERE acta_id=? AND numero=?",
-                (riesgo_score, categoria, acta_id, numero),
+                "UPDATE resoluciones SET riesgo_score=?, categoria=? "
+                "WHERE acta_id=? AND texto_completo=?",
+                (riesgo_score, categoria, acta_id, texto),
             )
 
     def update_resolucion_analisis(

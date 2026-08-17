@@ -318,11 +318,10 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
             )
 
             # Reflejar el riesgo en la tabla `resoluciones` (la leen Reportes/PatternDetector).
-            # Se enlaza por (acta_id, numero) usando el metadato de la KB.
-            numero = (r.get("metadata") or {}).get("numero")
-            if numero:
+            # Se enlaza por TEXTO (fuente común KB↔resoluciones; el `numero` difiere entre capas).
+            if r.get("texto"):
                 catalog.update_resolucion_riesgo(
-                    acta_id, str(numero), audit.riesgo_score, audit.categoria_riesgo
+                    acta_id, r["texto"], audit.riesgo_score, audit.categoria_riesgo
                 )
 
         # Si TODAS las resoluciones fallaron (p.ej. clave/cuota de API), no marcar

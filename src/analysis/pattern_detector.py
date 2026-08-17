@@ -195,15 +195,22 @@ class PatternDetector:
         )
 
     def risk_evolution(self) -> pd.DataFrame:
-        """Evolución del score de riesgo promedio por año."""
+        """Evolución del score de riesgo promedio por año.
+
+        Lee de `analisis_sesiones` (salida canónica de la auditoría IA), extrayendo
+        `riesgo_score` del JSON de resultado. Es la fuente que la auditoría rellena
+        de forma fiable (independiente del enlace con la tabla `resoluciones`).
+        """
         return self._query(
             """
-            SELECT a.year, AVG(r.riesgo_score) as riesgo_promedio,
-                   MAX(r.riesgo_score) as riesgo_maximo,
+            SELECT a.year,
+                   AVG(json_extract(s.resultado, '$.riesgo_score')) as riesgo_promedio,
+                   MAX(json_extract(s.resultado, '$.riesgo_score')) as riesgo_maximo,
                    COUNT(*) as resoluciones
-            FROM resoluciones r
-            JOIN actas a ON r.acta_id = a.id
-            WHERE r.riesgo_score IS NOT NULL
+            FROM analisis_sesiones s
+            JOIN actas a ON s.acta_id = a.id
+            WHERE s.tipo_analisis = 'resolucion'
+              AND json_extract(s.resultado, '$.riesgo_score') IS NOT NULL
             GROUP BY a.year
             ORDER BY a.year
             """
