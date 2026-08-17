@@ -1,0 +1,391 @@
+<title>CFP Audit Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --ground:#eef4f6; --surface:#ffffff; --ink:#12303a; --ink-soft:#4a6670;
+    --accent:#0e7490; --accent-deep:#0a3a4a; --line:#d3e1e6; --line-soft:#e5eef1;
+    --sci:#1f7fc0; --pol:#e08a1e; --real:#3a9d54;
+    --v:#2e7d32; --a:#c98a00; --r:#c62828; --crit:#1a1a1a;
+    --shadow:0 1px 2px rgba(18,48,58,.06),0 8px 30px rgba(18,48,58,.08);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#08181e; --surface:#0f2a34; --ink:#e8f1f3; --ink-soft:#9db6be;
+      --accent:#38b6cf; --accent-deep:#7fd3e0; --line:#1d3b44; --line-soft:#143039;
+      --sci:#54a8e6; --pol:#f0a94a; --real:#5cc074;
+      --v:#5bbd62; --a:#e6b23c; --r:#e86a6a; --crit:#c9d6da;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 34px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#08181e; --surface:#0f2a34; --ink:#e8f1f3; --ink-soft:#9db6be;
+    --accent:#38b6cf; --accent-deep:#7fd3e0; --line:#1d3b44; --line-soft:#143039;
+    --sci:#54a8e6; --pol:#f0a94a; --real:#5cc074;
+    --v:#5bbd62; --a:#e6b23c; --r:#e86a6a; --crit:#c9d6da;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 34px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  :root{--serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+        --mono:ui-monospace,"SF Mono","Cascadia Code","Consolas",monospace;}
+
+  .deck{scroll-snap-type:y mandatory; height:100vh; overflow-y:auto}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+  .slide{
+    scroll-snap-align:start; min-height:100vh; display:grid; place-items:center;
+    padding:clamp(28px,6vw,90px) clamp(20px,6vw,96px) 88px;
+    position:relative; border-top:1px solid transparent;
+  }
+  .slide-inner{width:100%; max-width:980px}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:.74rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 18px; display:flex; align-items:center; gap:12px;
+  }
+  .eyebrow::before{content:""; width:26px; height:2px; background:var(--accent); display:inline-block}
+
+  h1{font-family:var(--serif); font-weight:700; line-height:1.04; letter-spacing:-.01em;
+     text-wrap:balance; margin:0}
+  h2{font-family:var(--serif); font-weight:700; line-height:1.08; letter-spacing:-.01em;
+     font-size:clamp(1.7rem,4.2vw,3rem); text-wrap:balance; margin:0 0 22px}
+  p{line-height:1.6; color:var(--ink); max-width:64ch}
+  .lead{font-size:clamp(1.05rem,2vw,1.3rem); color:var(--ink-soft); line-height:1.55; max-width:60ch}
+  strong{color:var(--ink); font-weight:700}
+  em{font-style:italic; color:var(--ink-soft)}
+
+  /* Cover */
+  .cover .kicker{font-family:var(--mono); font-size:.8rem; letter-spacing:.2em;
+     text-transform:uppercase; color:var(--ink-soft); margin-bottom:26px}
+  .cover h1{font-size:clamp(2.6rem,8vw,5.4rem)}
+  .cover .sub{font-size:clamp(1.05rem,2.4vw,1.5rem); color:var(--ink-soft);
+     max-width:38ch; margin:22px 0 0; line-height:1.4}
+  .byline{margin-top:44px; display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+     font-size:.95rem; color:var(--ink-soft)}
+  .byline .who{color:var(--ink); font-weight:600}
+  .url{font-family:var(--mono); font-size:.86rem; color:var(--accent); word-break:break-all}
+
+  /* semáforo motif */
+  .semaforo{display:flex; gap:9px; align-items:center; margin:0}
+  .dot{width:15px; height:15px; border-radius:50%}
+  .dot.v{background:var(--v)} .dot.a{background:var(--a)}
+  .dot.r{background:var(--r)} .dot.c{background:var(--crit); box-shadow:inset 0 0 0 1px var(--line)}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:clamp(20px,4vw,46px); align-items:center}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr; gap:26px}}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px;
+     padding:22px 24px; box-shadow:var(--shadow)}
+  .cards{display:grid; gap:14px}
+
+  /* stat row */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px}
+  @media(max-width:620px){.stats{grid-template-columns:1fr}}
+  .stat .n{font-family:var(--mono); font-weight:700; font-size:clamp(1.8rem,5vw,2.7rem);
+     color:var(--accent); line-height:1; font-variant-numeric:tabular-nums}
+  .stat .l{margin-top:8px; font-size:.9rem; color:var(--ink-soft)}
+
+  /* triángulo diagram */
+  .tri{display:grid; gap:12px; margin-top:8px}
+  .tier{display:grid; grid-template-columns:130px 1fr; align-items:center; gap:16px}
+  .tier .role{font-family:var(--mono); font-size:.78rem; letter-spacing:.12em; text-transform:uppercase;
+     color:var(--ink-soft); text-align:right}
+  .bar{height:46px; border-radius:9px; display:flex; align-items:center; padding:0 16px;
+     color:#fff; font-weight:600; font-size:.95rem; box-shadow:var(--shadow)}
+  .bar.sci{background:var(--sci)} .bar.pol{background:var(--pol)} .bar.real{background:var(--real)}
+  .arrowdown{justify-self:start; margin-left:146px; color:var(--ink-soft); font-size:1.1rem}
+
+  .legend{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:20px; font-size:.85rem;
+     color:var(--ink-soft); font-family:var(--mono)}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+
+  ul.clean{list-style:none; padding:0; margin:0; display:grid; gap:12px}
+  ul.clean li{padding-left:26px; position:relative; line-height:1.5; color:var(--ink)}
+  ul.clean li::before{content:""; position:absolute; left:0; top:.55em; width:9px; height:9px;
+     border-radius:2px; background:var(--accent)}
+  ul.clean li b{color:var(--ink)}
+
+  .chips{display:flex; flex-wrap:wrap; gap:9px; margin-top:6px}
+  .chip{font-family:var(--mono); font-size:.82rem; padding:7px 12px; border-radius:999px;
+     border:1px solid var(--line); background:var(--surface); color:var(--ink-soft)}
+  .chip b{color:var(--accent); font-weight:700}
+
+  .arc{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:10px;
+     font-family:var(--serif); font-size:clamp(1.3rem,3.2vw,2rem); color:var(--ink)}
+  .arc .to{color:var(--accent); font-family:var(--mono); font-size:1rem}
+  .arc .b{padding:8px 16px; border:1.5px solid var(--line); border-radius:10px; background:var(--surface)}
+
+  .quote{font-family:var(--serif); font-size:clamp(1.3rem,3.4vw,2.1rem); line-height:1.3;
+     text-wrap:balance; color:var(--ink); max-width:20ch}
+
+  .links{display:grid; gap:10px; margin-top:8px; font-family:var(--mono); font-size:.95rem}
+  .links a{color:var(--accent); text-decoration:none}
+  .links a:hover{text-decoration:underline}
+  .links .k{color:var(--ink-soft); display:inline-block; width:110px}
+
+  /* progress + counter */
+  .hud{position:fixed; left:0; right:0; bottom:0; height:60px; z-index:20;
+     display:flex; align-items:center; justify-content:space-between;
+     padding:0 clamp(18px,5vw,42px); pointer-events:none;
+     background:linear-gradient(to top,var(--ground),transparent)}
+  .hud .name{font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+     color:var(--ink-soft)}
+  .hud .count{font-family:var(--mono); font-size:.8rem; color:var(--ink); font-variant-numeric:tabular-nums}
+  .progress{position:fixed; top:0; left:0; height:3px; background:var(--accent); z-index:30; width:0;
+     transition:width .25s ease}
+  .hint{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:25;
+     font-family:var(--mono); font-size:.7rem; letter-spacing:.12em; text-transform:uppercase;
+     color:var(--ink-soft); opacity:.8; pointer-events:none; transition:opacity .4s}
+  .flag{font-size:.9rem}
+  a.focusable:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+</style>
+
+<div class="progress" id="prog"></div>
+
+<main class="deck" id="deck">
+
+  <!-- 1 · Portada -->
+  <section class="slide cover">
+    <div class="slide-inner">
+      <div class="kicker">Trabajo Final de Máster · Desarrollo con IA</div>
+      <h1>CFP Audit&nbsp;Intelligence</h1>
+      <p class="sub">Auditoría con IA de las actas del Consejo Federal Pesquero de Argentina — ciencia, política y realidad, contrastadas.</p>
+      <div class="byline">
+        <span class="who">Ariel L. Giamportone</span>
+        <span>Ing. Pesquero · Data Scientist</span>
+        <span class="semaforo"><i class="dot v"></i><i class="dot a"></i><i class="dot r"></i><i class="dot c"></i></span>
+      </div>
+      <div class="byline"><span class="url">cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app</span></div>
+    </div>
+  </section>
+
+  <!-- 2 · El problema -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">El problema</p>
+      <h2>¿Se reparten las cuotas respetando lo que dice la ciencia?</h2>
+      <div class="grid2">
+        <p class="lead">Cada año el <strong>CFP</strong> (política) fija cuánto se puede pescar. El <strong>INIDEP</strong> (ciencia) recomienda un límite seguro —la <strong>CBA</strong>—. Revisar a mano <strong>25+ años</strong> de actas públicas para comprobar si se respeta es inviable.</p>
+        <div class="cards">
+          <div class="card"><strong>CBA</strong> · límite que recomienda la ciencia</div>
+          <div class="card"><strong>CMP</strong> · cuota que aprueba la política</div>
+          <div class="card"><strong>Captura real</strong> · lo que efectivamente se pescó (SIPA)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · La solución -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">La solución</p>
+      <h2>De PDFs públicos a evidencia técnica reproducible</h2>
+      <p class="lead">Una plataforma que <strong>extrae, procesa y analiza con IA</strong> las actas del CFP y las cruza con la recomendación científica y la captura real, marcando con un <strong>semáforo</strong> cuándo se sobrepasan los límites.</p>
+      <div class="stats">
+        <div class="stat"><div class="n">68</div><div class="l">actas 2024-25 auditadas</div></div>
+        <div class="stat"><div class="n">754</div><div class="l">resoluciones parseadas</div></div>
+        <div class="stat"><div class="n">474</div><div class="l">análisis con IA</div></div>
+      </div>
+      <div class="legend"><span>ya poblado y en producción en la app en vivo</span></div>
+    </div>
+  </section>
+
+  <!-- 4 · Arco DS -> DEV -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Encaje con el máster</p>
+      <h2>El salto Data Science → DEV</h2>
+      <p class="lead">Mi perfil viene del <strong>dato</strong>. El máster me da las herramientas de <strong>desarrollo</strong> para convertir un análisis en un producto de software real y mantenible.</p>
+      <div class="arc">
+        <span class="b">Notebooks · análisis</span>
+        <span class="to">──▶</span>
+        <span class="b">Arquitectura · API · tests · CI · IA responsable</span>
+      </div>
+      <p style="margin-top:22px;color:var(--ink-soft)">Proyecto de largo recorrido, iniciado <em>antes</em> del máster y <strong>consolidado</strong> con sus estándares.</p>
+    </div>
+  </section>
+
+  <!-- 5 · Arquitectura -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Arquitectura</p>
+      <h2>Cinco capas, un dominio independiente</h2>
+      <div class="tri" style="margin-bottom:8px">
+        <div class="tier"><span class="role">Ingesta</span><div class="bar" style="background:var(--accent-deep)">Adquisición · scrapers CFP / INIDEP / SIPA / FAO / CONICET</div></div>
+        <div class="tier"><span class="role">Datos</span><div class="bar" style="background:var(--accent)">Procesamiento (PDF·NER) → Knowledge Base (ChromaDB)</div></div>
+        <div class="tier"><span class="role">Inteligencia</span><div class="bar sci">Análisis + IA · comparador · alertas · auditoría LLM</div></div>
+        <div class="tier"><span class="role">Entrega</span><div class="bar real">Dashboard (Streamlit) &nbsp;·&nbsp; API REST (FastAPI)</div></div>
+      </div>
+      <p style="color:var(--ink-soft)"><strong>Hexagonal / Ports &amp; Adapters</strong> (ADR-011/012): el dominio no depende de la UI; el dashboard es un <em>adaptador de entrega</em>. <strong>12 ADRs</strong> documentan cada decisión.</p>
+    </div>
+  </section>
+
+  <!-- 6 · Stack -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Stack tecnológico</p>
+      <h2>Herramientas elegidas, no acumuladas</h2>
+      <div class="chips">
+        <span class="chip"><b>Python</b> 3.11</span>
+        <span class="chip"><b>Streamlit</b> · 18 páginas</span>
+        <span class="chip"><b>FastAPI</b> · OpenAPI</span>
+        <span class="chip"><b>ChromaDB</b> · RAG</span>
+        <span class="chip"><b>spaCy</b> · NER</span>
+        <span class="chip">pdfplumber · PyMuPDF · Tesseract</span>
+        <span class="chip"><b>LLM</b> multi-proveedor</span>
+        <span class="chip">Docker · GitHub Actions</span>
+        <span class="chip"><b>pytest</b> · ruff</span>
+      </div>
+      <p style="margin-top:22px;color:var(--ink-soft)">Capa de IA <strong>agnóstica al proveedor</strong>: Anthropic (Claude) o cualquier API compatible con OpenAI —OpenAI, Groq, Gemini— configurable por entorno.</p>
+    </div>
+  </section>
+
+  <!-- 7 · IA -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Inteligencia artificial</p>
+      <h2>RAG, auditoría con LLM e IA responsable</h2>
+      <ul class="clean">
+        <li><b>RAG</b> — ChromaDB + embeddings multilingües para búsqueda semántica sobre las resoluciones.</li>
+        <li><b>audit_engine</b> — análisis con LLM: score de riesgo 0-100, hallazgos, normativa afectada. <b>Agnóstico al proveedor</b> (DIP, sin <em>vendor lock-in</em>).</li>
+        <li><b>IA responsable</b> — Model Card, Datasheet, <b>groundedness</b> + marcado <code>[BAJA_EVIDENCIA]</code>, marco ético (ADR-007).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 · Triángulo (estrella) -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Funcionalidad estrella</p>
+      <h2>El triángulo de auditoría</h2>
+      <div class="tri">
+        <div class="tier"><span class="role">Ciencia</span><div class="bar sci">CBA — límite biológicamente aceptable (INIDEP)</div></div>
+        <div class="arrowdown">▼</div>
+        <div class="tier"><span class="role">Política</span><div class="bar pol">CMP — cuota aprobada (CFP)</div></div>
+        <div class="arrowdown">▼</div>
+        <div class="tier"><span class="role">Realidad</span><div class="bar real">Captura real desembarcada (SIPA)</div></div>
+      </div>
+      <div class="legend">
+        <span><i class="dot v"></i> Verde ≤100%</span>
+        <span><i class="dot a"></i> Amarillo 101-115%</span>
+        <span><i class="dot r"></i> Rojo 116-130%</span>
+        <span><i class="dot c"></i> Crítico &gt;130%</span>
+      </div>
+      <p style="margin-top:18px;color:var(--ink-soft)">Más el <strong>Informe Ejecutivo</strong>: el hallazgo central en una página, con texto autogenerado desde los datos.</p>
+    </div>
+  </section>
+
+  <!-- 9 · UX -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Experiencia de usuario</p>
+      <h2>Que un no-experto lo entienda en un minuto</h2>
+      <ul class="clean">
+        <li>Navegación <b>por secciones</b> y <b>home vivo</b> con cifras reales del corpus.</li>
+        <li><b>Selector de especie</b> sincronizado entre Comparador, Timeline y Capturas.</li>
+        <li>Sellos de <b>procedencia del dato</b> (verificado · demo · ilustrativo) para dar confianza.</li>
+        <li>Tema marino y componentes reutilizables (DRY); accesible (no solo color).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10 · Ingeniería -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Ingeniería y calidad</p>
+      <h2>No es un prototipo: es software mantenible</h2>
+      <div class="stats">
+        <div class="stat"><div class="n">1003</div><div class="l">tests (pytest)</div></div>
+        <div class="stat"><div class="n">12</div><div class="l">ADRs de arquitectura</div></div>
+        <div class="stat"><div class="n">CI</div><div class="l">ruff + pytest 3.10/3.11 + docker</div></div>
+      </div>
+      <p style="margin-top:22px;color:var(--ink-soft)"><strong>Smoke test</strong> del dashboard (AppTest), <strong>blindaje</strong> de imports (degradación elegante), rutas y configuración centralizadas, Docker multi-stage.</p>
+    </div>
+  </section>
+
+  <!-- 11 · Rigor end-to-end -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Rigor del dato</p>
+      <h2>Lo que aparece al correrlo end-to-end</h2>
+      <p class="lead">Poblar el corpus real destapó <strong>7 bugs de integración</strong> que "compilaban" pero rompían el flujo completo: resoluciones que no llegaban a la base, claves de la KB, banderas del pipeline y compatibilidad entre proveedores de LLM.</p>
+      <p style="margin-top:18px;color:var(--ink-soft)">Todos <strong>corregidos y cubiertos con tests</strong>. Aprendizaje: la distancia entre <em>"compila"</em> y <em>"funciona con datos reales"</em>.</p>
+    </div>
+  </section>
+
+  <!-- 12 · Resultados y ética -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Resultados · límites · ética</p>
+      <h2>Evidencia que señala, no que acusa</h2>
+      <ul class="clean">
+        <li>Análisis <b>descriptivo y reproducible</b>; los hallazgos <b>requieren verificación</b> con los textos originales.</li>
+        <li>Datos <b>públicos</b>; las capturas son nacionales y la CBA por zona → comparación <b>indicativa</b>.</li>
+        <li>Marco <b>ético</b> y de <b>IA responsable</b> explícito (ADR-007, límites y salvaguardas).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 13 · Cierre -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow">Cierre</p>
+      <div class="grid2">
+        <div>
+          <p class="quote">"Convertir un análisis en un producto de software real."</p>
+          <p style="margin-top:18px;color:var(--ink-soft)">🇦🇷 Por la soberanía y sostenibilidad de los recursos pesqueros argentinos.</p>
+        </div>
+        <div class="links">
+          <div><span class="k">Repositorio</span><a class="focusable" href="https://github.com/arielgiamportone/cfp-audit-intelligence" target="_blank" rel="noopener">github.com/arielgiamportone</a></div>
+          <div><span class="k">App en vivo</span><a class="focusable" href="https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app" target="_blank" rel="noopener">Streamlit Cloud ↗</a></div>
+          <div><span class="k">Autor</span> Ariel L. Giamportone</div>
+          <div><span class="k">Máster</span> Desarrollo con IA · 2026</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="hud">
+  <span class="name">CFP Audit Intelligence</span>
+  <span class="count"><span id="cur">01</span> / 13</span>
+</div>
+<div class="hint" id="hint">↓ / → · espacio · para avanzar</div>
+
+<script>
+  const deck=document.getElementById('deck');
+  const slides=[...document.querySelectorAll('.slide')];
+  const prog=document.getElementById('prog');
+  const cur=document.getElementById('cur');
+  const hint=document.getElementById('hint');
+  const pad=n=>String(n).padStart(2,'0');
+
+  function update(){
+    const i=Math.round(deck.scrollTop/window.innerHeight);
+    const idx=Math.min(Math.max(i,0),slides.length-1);
+    cur.textContent=pad(idx+1);
+    prog.style.width=((idx)/(slides.length-1)*100)+'%';
+    if(deck.scrollTop>40){hint.style.opacity='0';}
+  }
+  deck.addEventListener('scroll',update,{passive:true});
+  window.addEventListener('resize',update);
+
+  function go(dir){
+    const i=Math.round(deck.scrollTop/window.innerHeight);
+    const t=Math.min(Math.max(i+dir,0),slides.length-1);
+    slides[t].scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+  }
+  addEventListener('keydown',e=>{
+    if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(1);}
+    else if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(-1);}
+    else if(e.key==='Home'){e.preventDefault();slides[0].scrollIntoView();}
+    else if(e.key==='End'){e.preventDefault();slides[slides.length-1].scrollIntoView();}
+  });
+  update();
+</script>

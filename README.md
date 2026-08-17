@@ -32,8 +32,8 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 | 1 | Código fuente (repo público GitHub) | https://github.com/arielgiamportone/cfp-audit-intelligence |
 | 2 | Documentación (este README + `docs/`) | [`docs/`](docs/) |
 | 3 | Despliegue en funcionamiento (URL) | **[App en vivo ↗](https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app)** |
-| 4 | Slides de presentación | ⏳ _pendiente de publicar_ |
-| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de publicar_ |
+| 4 | Slides de presentación | [Deck HTML navegable](docs/slides.html) · guion en [`docs/TFM_PRESENTACION.md`](docs/TFM_PRESENTACION.md) — _publicar URL pública (GitHub Pages o enlace compartido)_ |
+| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de grabar_ · guion en [`docs/TFM_GUION_VIDEO.md`](docs/TFM_GUION_VIDEO.md) |
 
 **Acceso a la aplicación:** la app es de acceso **público y no requiere login** (no hay usuario/contraseña de prueba). Las funciones de auditoría con IA requieren configurar `ANTHROPIC_API_KEY` como secreto de despliegue (ver [Variables de Entorno](#variables-de-entorno)).
 
