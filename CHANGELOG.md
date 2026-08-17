@@ -71,6 +71,17 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
   (`config_loader`), no `./data` relativo al *cwd*. `--limit` aplica al paso `download`; nuevo
   target `make demo-corpus`. Documentado en `docs/TFM_DEPLOY.md`.
 
+### Añadido — Motor de auditoría multi-proveedor (tanda 11.b)
+- **`CFPAuditEngine` agnóstico al proveedor de LLM (DIP / sin *vendor lock-in*):** además de
+  Anthropic, soporta cualquier API **compatible con OpenAI** (OpenAI, **Groq**, **Google Gemini**,
+  OpenRouter, Together…) vía `base_url`. Se elige por `.env` (`LLM_PROVIDER`, `OPENAI_API_KEY`,
+  `OPENAI_BASE_URL`, `LLM_MODEL`) sin tocar código. El SDK correspondiente se importa de forma
+  perezosa. Refactor: `_call_claude` → `_complete()` (devuelve texto + tokens + modelo), reutilizado
+  por análisis de resoluciones, resúmenes, patrones y sostenibilidad.
+- **Motivación:** permite terminar la auditoría del TFM aunque una cuenta de proveedor esté en
+  revisión — basta un tier gratuito (Groq/Gemini). Documentado en `docs/TFM_DEPLOY.md` y
+  `.env.example`. Nuevos tests del backend OpenAI-compatible. `openai>=1.40` añadido a requirements.
+
 ### Corregido — Infraestructura Docker (tanda 9)
 - **`Dockerfile`**: `streamlit>=1.32.0` → **`>=1.36.0`** (la navegación por secciones usa
   `st.navigation`, que requiere 1.36; con 1.32 el dashboard en contenedor fallaba). Añadidas

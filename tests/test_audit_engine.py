@@ -17,12 +17,9 @@ pytest.importorskip("anthropic")
 from src.analysis.audit_engine import CFPAuditEngine, _extract_json  # noqa: E402
 
 
-def _fake_response(text: str, model: str = "claude-sonnet-4-6", ti: int = 100, to: int = 50):
-    resp = MagicMock()
-    resp.content = [MagicMock(text=text)]
-    resp.model = model
-    resp.usage = MagicMock(input_tokens=ti, output_tokens=to)
-    return resp
+def _fake_complete(text: str, model: str = "claude-sonnet-4-6", ti: int = 100, to: int = 50):
+    """Simula el retorno de `_complete`: (texto, tokens_in, tokens_out, modelo)."""
+    return (text, ti, to, model)
 
 
 class TestExtractJson:
@@ -64,7 +61,7 @@ class TestAnalyzeResolucion:
             '"especies_afectadas": ["merluza"]}'
         )
         # Mockea la llamada al LLM (evita red y el retry de tenacity)
-        eng._call_claude = MagicMock(return_value=_fake_response(payload))
+        eng._complete = MagicMock(return_value=_fake_complete(payload))
 
         texto = (
             "Se aprueba la CMP de merluza común en 350.000 toneladas para 2025, "
@@ -87,7 +84,7 @@ class TestAnalyzeResolucion:
 
     def test_prompt_hash_determinista(self):
         eng = self._engine()
-        eng._call_claude = MagicMock(return_value=_fake_response('{"riesgo_score": 0}'))
+        eng._complete = MagicMock(return_value=_fake_complete('{"riesgo_score": 0}'))
         r1 = eng.analyze_resolucion("id", "mismo texto")
         r2 = eng.analyze_resolucion("id", "mismo texto")
         assert r1.input_hash == r2.input_hash
@@ -95,8 +92,30 @@ class TestAnalyzeResolucion:
 
     def test_error_en_llm_devuelve_categoria_error(self):
         eng = self._engine()
-        eng._call_claude = MagicMock(side_effect=RuntimeError("fallo de red"))
+        eng._complete = MagicMock(side_effect=RuntimeError("fallo de red"))
         res = eng.analyze_resolucion("x", "texto de prueba")
         assert res.categoria_riesgo == "error"
         assert res.riesgo_score == 0
         assert "ERROR" in res.analisis_completo
+
+
+class TestProviderMultibackend:
+    """El motor soporta proveedores compatibles con OpenAI (Groq/Gemini/OpenAI...)."""
+
+    def test_openai_compatible_toma_config_del_entorno(self, monkeypatch):
+        pytest.importorskip("openai")
+        monkeypatch.setenv("LLM_PROVIDER", "openai")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
+        monkeypatch.setenv("LLM_MODEL", "llama-3.3-70b-versatile")
+        eng = CFPAuditEngine()
+        assert eng.provider == "openai"
+        assert eng.model == "llama-3.3-70b-versatile"
+
+    def test_openai_sin_key_lanza(self, monkeypatch):
+        pytest.importorskip("openai")
+        monkeypatch.setenv("LLM_PROVIDER", "openai")
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_API_KEY", raising=False)
+        with pytest.raises(ValueError):
+            CFPAuditEngine()

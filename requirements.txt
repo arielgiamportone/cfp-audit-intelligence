@@ -38,6 +38,7 @@ pyvis>=0.3.2              # Interactive graph visualization
 
 # ── AI / LLM ─────────────────────────────────────────────────────
 anthropic>=0.28.0         # Claude API with prompt caching
+openai>=1.40.0            # Backend alternativo (OpenAI-compatible: Groq/Gemini/OpenAI...)
 
 # ── Visualization ─────────────────────────────────────────────────
 plotly>=5.18.0

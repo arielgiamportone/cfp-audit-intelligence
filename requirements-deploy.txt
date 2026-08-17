@@ -45,6 +45,7 @@ pyvis>=0.3.2
 
 # ── AI / LLM ─────────────────────────────────────────────────────
 anthropic>=0.28.0
+openai>=1.40.0            # Backend alternativo OpenAI-compatible (Groq/Gemini/OpenAI...)
 
 # ── Visualization ─────────────────────────────────────────────────
 plotly>=5.18.0

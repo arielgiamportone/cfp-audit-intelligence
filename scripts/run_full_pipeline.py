@@ -243,7 +243,6 @@ def step_conae(db_path: Path) -> None:
 
 def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
     import json
-    import os
 
     from src.acquisition.catalog_manager import CatalogManager
     from src.analysis.audit_engine import CFPAuditEngine
@@ -251,13 +250,16 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
 
     logger.info(f"=== ETAPA 4: AUDITORÍA IA (límite: {limit or 'sin límite'}) ===")
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        logger.error("ANTHROPIC_API_KEY no configurada. Omitiendo etapa de auditoría.")
-        return
-
     catalog = CatalogManager(db_path)
-    engine = CFPAuditEngine(api_key=api_key)
+    try:
+        engine = CFPAuditEngine()  # proveedor y clave desde .env (LLM_PROVIDER, *_API_KEY)
+    except ValueError as exc:
+        logger.error(
+            f"LLM no configurado: {exc}. Define en .env LLM_PROVIDER + la clave del proveedor "
+            "(ANTHROPIC_API_KEY, o OPENAI_API_KEY + OPENAI_BASE_URL + LLM_MODEL)."
+        )
+        return
+    logger.info(f"Proveedor LLM: {engine.provider} | modelo: {engine.model}")
     vs = CFPVectorStore(kb_dir)
 
     if vs.count() == 0:

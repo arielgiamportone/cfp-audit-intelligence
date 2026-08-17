@@ -16,9 +16,11 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-import anthropic
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
+
+# Los SDKs (anthropic / openai) se importan de forma perezosa en __init__ según el
+# proveedor elegido, para no exigir ambos instalados.
 
 SYSTEM_PROMPT = """Eres un experto en derecho pesquero argentino, biología marina y política de recursos naturales.
 Tu función es auditar las actas del Consejo Federal Pesquero (CFP) de Argentina para:
@@ -74,64 +76,100 @@ class AuditResult:
 
 
 class CFPAuditEngine:
-    """Motor de auditoría que usa Claude API con prompt caching."""
+    """Motor de auditoría **agnóstico al proveedor** de LLM.
+
+    - `provider="anthropic"` (por defecto): Claude API con prompt caching.
+    - `provider="openai"` (compatible): cualquier endpoint OpenAI-compatible —
+      OpenAI, **Groq**, **Google Gemini**, OpenRouter, Together… vía `base_url`.
+
+    Configuración por entorno (`.env`): `LLM_PROVIDER`, y según el caso
+    `ANTHROPIC_API_KEY` **o** `OPENAI_API_KEY` + `OPENAI_BASE_URL` + `LLM_MODEL`.
+    """
 
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-6",
-        audit_model: str = "claude-opus-4-7",
+        model: str | None = None,
+        audit_model: str | None = None,
         max_tokens: int = 4096,
+        provider: str | None = None,
+        base_url: str | None = None,
     ):
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY no configurada")
-
-        self.client = anthropic.Anthropic(api_key=self.api_key)
-        self.model = model
-        self.audit_model = audit_model
+        self.provider = (provider or os.environ.get("LLM_PROVIDER") or "anthropic").lower()
         self.max_tokens = max_tokens
+
+        if self.provider == "anthropic":
+            import anthropic
+
+            self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+            if not self.api_key:
+                raise ValueError("ANTHROPIC_API_KEY no configurada")
+            self.client = anthropic.Anthropic(api_key=self.api_key)
+            self.model = model or "claude-sonnet-4-6"
+            self.audit_model = audit_model or "claude-opus-4-7"
+        else:
+            # Cualquier proveedor compatible con la API de OpenAI (openai/groq/gemini/…)
+            import openai
+
+            self.api_key = (
+                api_key or os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_API_KEY")
+            )
+            if not self.api_key:
+                raise ValueError(
+                    f"OPENAI_API_KEY (o LLM_API_KEY) no configurada para el proveedor '{self.provider}'"
+                )
+            base = base_url or os.environ.get("OPENAI_BASE_URL") or os.environ.get("LLM_BASE_URL")
+            self.client = openai.OpenAI(api_key=self.api_key, base_url=base or None)
+            self.model = model or os.environ.get("LLM_MODEL") or "gpt-4o-mini"
+            self.audit_model = audit_model or os.environ.get("LLM_AUDIT_MODEL") or self.model
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=30),
         reraise=True,
     )
-    def _call_claude(
+    def _complete(
         self,
         prompt: str,
         system: str = SYSTEM_PROMPT,
-        use_cache: bool = True,
         high_stakes: bool = False,
-    ) -> anthropic.types.Message:
-        """Llama a Claude con prompt caching opcional."""
+    ) -> tuple[str, int, int, str]:
+        """Completa un prompt con el proveedor configurado.
+
+        Devuelve `(texto, tokens_entrada, tokens_salida, modelo_usado)`.
+        """
         model = self.audit_model if high_stakes else self.model
 
-        messages = [{"role": "user", "content": prompt}]
-
-        if use_cache:
-            # Usar prompt caching para el system prompt (reducir costos en análisis masivos)
-            response = self.client.messages.create(
+        if self.provider == "anthropic":
+            resp = self.client.messages.create(
                 model=model,
                 max_tokens=self.max_tokens,
-                system=[
-                    {
-                        "type": "text",
-                        "text": system,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-                messages=messages,
+                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": prompt}],
             )
-        else:
-            response = self.client.messages.create(
-                model=model,
-                max_tokens=self.max_tokens,
-                system=system,
-                messages=messages,
+            return (
+                resp.content[0].text,
+                resp.usage.input_tokens,
+                resp.usage.output_tokens,
+                resp.model,
             )
 
-        return response
+        # OpenAI-compatible
+        resp = self.client.chat.completions.create(
+            model=model,
+            max_tokens=self.max_tokens,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        usage = getattr(resp, "usage", None)
+        return (
+            resp.choices[0].message.content or "",
+            getattr(usage, "prompt_tokens", 0) or 0,
+            getattr(usage, "completion_tokens", 0) or 0,
+            getattr(resp, "model", None) or model,
+        )
 
     def analyze_resolucion(
         self,
@@ -194,8 +232,9 @@ Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
         input_hash = _sha16(texto)
 
         try:
-            response = self._call_claude(prompt, high_stakes=high_stakes)
-            content = response.content[0].text
+            content, tokens_in, tokens_out, model_used = self._complete(
+                prompt, high_stakes=high_stakes
+            )
 
             # Extraer JSON del response
             parsed = _extract_json(content)
@@ -220,9 +259,9 @@ Sé preciso y basa tu análisis únicamente en el texto proporcionado."""
                 normativa_afectada=parsed.get("normativa_afectada", []),
                 entidades_beneficiadas=parsed.get("entidades_beneficiadas", []),
                 especies_afectadas=parsed.get("especies_afectadas", []),
-                modelo_usado=response.model,
-                tokens_entrada=response.usage.input_tokens,
-                tokens_salida=response.usage.output_tokens,
+                modelo_usado=model_used,
+                tokens_entrada=tokens_in,
+                tokens_salida=tokens_out,
                 analisis_completo=content,
                 prompt_hash=prompt_hash,
                 input_hash=input_hash,
@@ -279,13 +318,9 @@ Genera un resumen estructurado en JSON:
 }}"""
 
         try:
-            response = self._call_claude(prompt)
-            content = response.content[0].text
+            content, tokens_in, tokens_out, _ = self._complete(prompt)
             parsed = _extract_json(content)
-            parsed["_tokens"] = {
-                "entrada": response.usage.input_tokens,
-                "salida": response.usage.output_tokens,
-            }
+            parsed["_tokens"] = {"entrada": tokens_in, "salida": tokens_out}
             return parsed
         except Exception as exc:
             logger.error(f"Error resumiendo acta {filename}: {exc}")
@@ -330,8 +365,7 @@ Responde en JSON:
 }}"""
 
         try:
-            response = self._call_claude(prompt, high_stakes=True)
-            content = response.content[0].text
+            content, *_ = self._complete(prompt, high_stakes=True)
             return _extract_json(content)
         except Exception as exc:
             logger.error(f"Error detectando patrones: {exc}")
@@ -377,8 +411,8 @@ Responde en JSON:
 }}"""
 
         try:
-            response = self._call_claude(prompt, high_stakes=True)
-            return _extract_json(response.content[0].text)
+            content, *_ = self._complete(prompt, high_stakes=True)
+            return _extract_json(content)
         except Exception as exc:
             logger.error(f"Error analizando sostenibilidad de {especie}: {exc}")
             return {"error": str(exc)}
