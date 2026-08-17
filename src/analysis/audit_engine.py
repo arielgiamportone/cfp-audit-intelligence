@@ -155,14 +155,25 @@ class CFPAuditEngine:
             )
 
         # OpenAI-compatible
-        resp = self.client.chat.completions.create(
-            model=model,
-            max_tokens=self.max_tokens,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
-        )
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+
+        def _create(token_param: str):
+            return self.client.chat.completions.create(
+                model=model, messages=messages, **{token_param: self.max_tokens}
+            )
+
+        try:
+            resp = _create("max_tokens")
+        except Exception as exc:  # noqa: BLE001
+            # Los modelos más nuevos (serie o / GPT-5) rechazan `max_tokens` y
+            # requieren `max_completion_tokens`. Reintentar con el parámetro correcto.
+            if "max_completion_tokens" in str(exc) or "max_tokens" in str(exc):
+                resp = _create("max_completion_tokens")
+            else:
+                raise
         usage = getattr(resp, "usage", None)
         return (
             resp.choices[0].message.content or "",
