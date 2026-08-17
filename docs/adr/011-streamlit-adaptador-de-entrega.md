@@ -47,7 +47,7 @@ Justificación:
 **Positivas**
 - Arquitectura demostrable (hexagonal) y coherente con el temario del máster.
 - Time-to-market bajo; demo pública en funcionamiento.
-- La credibilidad de "desarrollo" se sostiene en backend + API + Docker + 945 tests.
+- La credibilidad de "desarrollo" se sostiene en backend + API + Docker + 1003 tests.
 
 **Limitaciones asumidas**
 - Streamlit re-ejecuta el script en cada interacción; control de UX y estado limitados.

@@ -7,7 +7,7 @@
 [![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 945](https://img.shields.io/badge/tests-945%20passing-brightgreen.svg)](#tests)
+[![Tests: 1003](https://img.shields.io/badge/tests-1003%20passing-brightgreen.svg)](#tests)
 
 ---
 
@@ -15,7 +15,7 @@
 
 Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA_** (campus.thebigschool.com).
 
-> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–012), **buenas prácticas y testing** (945 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
+> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–012), **buenas prácticas y testing** (1003 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
 
 > **Motivación del autor:** mi perfil profesional viene del **Data Analytics y la Data Science**.
 > Este máster en Desarrollo con IA me aporta un gran valor para **ampliar mis capacidades hacia el
@@ -54,14 +54,14 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 | Lenguaje | Python 3.10+ |
 | Interfaz | Streamlit (dashboard 18 páginas, navegación por secciones con `st.navigation`) |
 | API | FastAPI + OpenAPI |
-| IA / LLM | Claude API (Anthropic) con prompt caching |
+| IA / LLM | **Multi-proveedor** (DIP): Anthropic (Claude, con *prompt caching*) o cualquier API compatible con OpenAI — OpenAI, Groq, Gemini — configurable por `.env` |
 | RAG / Vector store | ChromaDB + embeddings `paraphrase-multilingual-MiniLM-L12-v2` |
 | NLP | spaCy (NER pesquero: EntityRuler) |
 | Extracción PDF/OCR | pdfplumber · PyMuPDF · Tesseract |
 | Análisis / grafos | NetworkX · pyvis · pandas · scikit-learn |
 | Reportes | reportlab (PDF ejecutivo) |
 | Persistencia | SQLite (catálogo + modelo de datos) |
-| Infra / calidad | Docker · docker-compose · GitHub Actions (CI) · pytest (945 tests) · ruff |
+| Infra / calidad | Docker · docker-compose · GitHub Actions (CI) · pytest (1003 tests) · ruff |
 
 ---
 
@@ -80,7 +80,7 @@ cfp-audit-intelligence/
 ├── scripts/             # run_full_pipeline.py, scrapers, utilidades
 ├── docs/                # ARCHITECTURE, DATA_PIPELINE, MODEL_CARD, DATASHEET, ADRs 001–012, bibliografía
 ├── notebooks/           # Exploración y análisis
-├── tests/               # 945 tests (pytest)
+├── tests/               # 1003 tests (pytest)
 ├── data/                # Datos del pipeline (SQLite, PDFs, artefactos)
 ├── config/              # Configuración
 ├── Dockerfile · docker-compose.yml · Makefile
@@ -250,7 +250,7 @@ docker-compose up --build
 ## Tests
 
 ```bash
-pytest                    # 945 tests, todos verdes
+pytest                    # 1003 tests, todos verdes
 pytest -k "inidep" -v     # subset INIDEP
 make test                 # via Makefile
 ```
@@ -354,7 +354,7 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 - [x] Publicaciones científicas CONICET/INIDEP por especie
 - [x] Dashboard Streamlit de 18 páginas (navegación por secciones + Informe Ejecutivo)
 - [x] Integración CONAE Geoportal Marino — 4° vértice satelital (GFW AIS + SST + Clorofila, ADR-010)
-- [x] **945 tests pasando**
+- [x] **1003 tests pasando**
 
 ### Pendiente
 

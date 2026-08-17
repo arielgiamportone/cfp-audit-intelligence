@@ -37,7 +37,7 @@ puerto** (DIP) en lugar de la clase concreta.
 
 Se elige `Protocol` (estructural) frente a `ABC` (herencia) porque es **no invasivo**:
 no obliga a modificar clases existentes ni a heredar, encaja con el código actual y con
-los 945 tests sin romper nada.
+los 1003 tests sin romper nada.
 
 ## Consecuencias
 

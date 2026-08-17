@@ -31,7 +31,7 @@
 | ID | Categoría | Requisito | Criterio de verificación | Evidencia |
 |----|-----------|-----------|--------------------------|-----------|
 | RNF01 | Reproducibilidad | Pipeline idempotente (hash SHA256, *provenance chain*) | Re-ejecutar no duplica registros | `docs/DATA_PIPELINE.md` |
-| RNF02 | Calidad | Suite de tests + CI (ruff + pytest 3.10/3.11) | CI en verde; 945 tests pasan | `.github/workflows/ci.yml`, `tests/` |
+| RNF02 | Calidad | Suite de tests + CI (ruff + pytest 3.10/3.11) | CI en verde; 1003 tests pasan | `.github/workflows/ci.yml`, `tests/` |
 | RNF03 | IA responsable | Groundedness + marcado `[BAJA_EVIDENCIA]`; Model Card + Datasheet | Hallazgos sin anclaje quedan marcados | `docs/MODEL_CARD.md`, ADR-007 |
 | RNF04 | Seguridad | Secretos (`ANTHROPIC_API_KEY`) nunca en el repo | No hay claves hardcodeadas | `.env.example`, `.streamlit/secrets` ignorado |
 | RNF05 | Portabilidad / Despliegue | Ejecutable en local, Docker y Streamlit Cloud | `docker-compose up` levanta API+dashboard; URL pública viva | `Dockerfile`, `docs/TFM_DEPLOY.md` |
