@@ -301,6 +301,20 @@ class CatalogManager:
             ).fetchone()
             return int(row["n"])
 
+    def update_resolucion_riesgo(
+        self, acta_id: int, numero: str, riesgo_score: float, categoria: str
+    ) -> None:
+        """Fija el riesgo/categoría de una resolución identificada por (acta_id, numero).
+
+        Lo usa la auditoría IA para que el riesgo sea visible en la tabla `resoluciones`
+        (la leen Reportes y PatternDetector), no solo en `analisis_sesiones`.
+        """
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE resoluciones SET riesgo_score=?, categoria=? WHERE acta_id=? AND numero=?",
+                (riesgo_score, categoria, acta_id, numero),
+            )
+
     def update_resolucion_analisis(
         self, resolucion_id: int, riesgo_score: float, analisis_ia: str
     ) -> None:
