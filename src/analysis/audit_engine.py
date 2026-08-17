@@ -118,8 +118,18 @@ class CFPAuditEngine:
                 raise ValueError(
                     f"OPENAI_API_KEY (o LLM_API_KEY) no configurada para el proveedor '{self.provider}'"
                 )
-            base = base_url or os.environ.get("OPENAI_BASE_URL") or os.environ.get("LLM_BASE_URL")
-            self.client = openai.OpenAI(api_key=self.api_key, base_url=base or None)
+            base = (
+                base_url
+                or os.environ.get("OPENAI_BASE_URL")
+                or os.environ.get("LLM_BASE_URL")
+                or ""
+            ).strip()
+            # Un OPENAI_BASE_URL vacío en el entorno rompe el SDK ("Request URL is
+            # missing an 'http://' or 'https://' protocol"). Forzar el endpoint por
+            # defecto de OpenAI cuando no se especifica uno válido.
+            self.client = openai.OpenAI(
+                api_key=self.api_key, base_url=base or "https://api.openai.com/v1"
+            )
             self.model = model or os.environ.get("LLM_MODEL") or "gpt-4o-mini"
             self.audit_model = audit_model or os.environ.get("LLM_AUDIT_MODEL") or self.model
 
