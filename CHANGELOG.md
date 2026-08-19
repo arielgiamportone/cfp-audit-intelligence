@@ -4,8 +4,7 @@ Todos los cambios notables de este proyecto se documentan aquí.
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 > Contexto: este repositorio es el **Trabajo Final del Máster en Desarrollo con IA**.
-> Las mejoras se aplican **unidad a unidad** del máster (ver `docs/TFM_PLAN_MEJORAS.md`),
-> citando el principio aplicado en cada entrada.
+> Cada entrada cita la buena práctica o el principio de ingeniería aplicado.
 
 ## [Sin publicar]
 

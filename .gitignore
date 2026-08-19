@@ -58,3 +58,14 @@ htmlcov/
 !.streamlit/
 !.streamlit/config.toml
 .streamlit/secrets.toml
+
+# ── Documentos internos del autor (no publicar en el repo — quedan en local) ──
+# Guiones, narración, plan de mejoras, runbook e instrucciones de tooling IA.
+CLAUDE.md
+AGENTS.md
+TODO.md
+docs/TFM_DEPLOY.md
+docs/TFM_PLAN_MEJORAS.md
+docs/TFM_PRESENTACION.md
+docs/TFM_GUION_VIDEO.md
+docs/TFM_NARRACION_VIDEO.md

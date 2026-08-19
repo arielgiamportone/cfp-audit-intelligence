@@ -32,17 +32,17 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 | 1 | Código fuente (repo público GitHub) | https://github.com/arielgiamportone/cfp-audit-intelligence |
 | 2 | Documentación (este README + `docs/`) | [`docs/`](docs/) |
 | 3 | Despliegue en funcionamiento (URL) | **[App en vivo ↗](https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app)** |
-| 4 | Slides de presentación | [Deck HTML navegable](docs/slides.html) · guion en [`docs/TFM_PRESENTACION.md`](docs/TFM_PRESENTACION.md) — _publicar URL pública (GitHub Pages o enlace compartido)_ |
-| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de grabar_ · guion en [`docs/TFM_GUION_VIDEO.md`](docs/TFM_GUION_VIDEO.md) |
+| 4 | Slides de presentación | **[Deck HTML navegable](docs/slides.html)** — _publicar URL pública (GitHub Pages o enlace compartido)_ |
+| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de publicar_ |
 
-**Acceso a la aplicación:** la app es de acceso **público y no requiere login** (no hay usuario/contraseña de prueba). Las funciones de auditoría con IA requieren configurar `ANTHROPIC_API_KEY` como secreto de despliegue (ver [Variables de Entorno](#variables-de-entorno)).
+**Acceso a la aplicación:** la app es de acceso **público y no requiere login** (no hay usuario/contraseña de prueba). Las funciones de auditoría con IA requieren configurar la clave del proveedor de LLM (`ANTHROPIC_API_KEY` u `OPENAI_API_KEY`) como secreto de despliegue (ver [Variables de Entorno](#variables-de-entorno)).
 
 ### Dónde está cada punto de la documentación exigida
 1. **Descripción general** → [Objetivo](#objetivo)
 2. **Stack tecnológico** → [Stack tecnológico](#stack-tecnológico)
 3. **Instalación y ejecución** → [Inicio Rápido](#inicio-rápido)
 4. **Estructura del proyecto** → [Estructura del proyecto](#estructura-del-proyecto)
-5. **Funcionalidades principales** → [Módulos](#módulos) y [Estado del Proyecto](#estado-del-proyecto-v04)
+5. **Funcionalidades principales** → [Módulos](#módulos) y [Estado del Proyecto](#estado-del-proyecto-v05)
 6. **Credenciales de prueba** → no aplica (aplicación sin login, ver arriba)
 
 ---
@@ -122,7 +122,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      CFP AUDIT INTELLIGENCE v0.4                     │
+│                      CFP AUDIT INTELLIGENCE v0.5                     │
 ├────────────┬───────────────┬──────────────┬──────────────────────────┤
 │ ADQUISICIÓN│ PROCESAMIENTO │  KNOWLEDGE   │       ANÁLISIS + IA      │
 │            │               │    BASE      │                          │
@@ -205,7 +205,7 @@ cd cfp-audit-intelligence
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m spacy download es_core_news_sm
-cp .env.example .env   # completar ANTHROPIC_API_KEY
+cp .env.example .env   # elegir proveedor de LLM y su API key
 ```
 
 ### Pipeline
@@ -336,11 +336,13 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 
 ---
 
-## Estado del Proyecto (v0.4)
+## Estado del Proyecto (v0.5)
 
 ### Completado
 
 - [x] Pipeline CFP: scraping, PDF, parsing, embeddings, auditoría IA
+- [x] **Corpus real 2024–25 poblado**: 68 actas · 754 resoluciones · **474 análisis con IA**
+- [x] Motor de auditoría IA **multi-proveedor** (Anthropic / OpenAI-compatible: OpenAI, Groq, Gemini)
 - [x] NER pesquero especializado — 6 categorías de entidades (spaCy)
 - [x] Comparador CBA vs CMP con 4 niveles de alerta
 - [x] Scraping completo 492 ITOs INIDEP Mar Abierto (DSpace 7 API)
@@ -354,13 +356,14 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 - [x] Publicaciones científicas CONICET/INIDEP por especie
 - [x] Dashboard Streamlit de 18 páginas (navegación por secciones + Informe Ejecutivo)
 - [x] Integración CONAE Geoportal Marino — 4° vértice satelital (GFW AIS + SST + Clorofila, ADR-010)
+- [x] Despliegue en Streamlit Community Cloud (URL pública)
 - [x] **1003 tests pasando**
 
-### Pendiente
+### Trabajo futuro
 
-- [x] Capturas SIPA en comparador (seed SAGPyA verificado; pull real de SIPA pendiente cuando el pipeline produzca `cfp_cuotas` con datos reales)
+- [ ] Ampliar el corpus a la serie histórica completa 1998–2025
+- [ ] Gold set anotado por experto para métricas P/R/F1/kappa reales
 - [ ] Mejoras al parser (fecha exacta por resolución, votos disidentes por nombre)
-- [ ] Deployment (Streamlit Cloud / HuggingFace / VPS)
 - [ ] Dataset abierto en HuggingFace / Zenodo
 
 ---
@@ -371,11 +374,11 @@ El proyecto está diseñado para escalar del **modo demo** (entrega TFM) al **mo
 
 | Dimensión | Modo demo (actual, coste ~0) | Modo productivo (futuro) |
 |-----------|------------------------------|--------------------------|
-| **Datos** | Comparador CBA/CMP y contexto (FAO, CONICET, capturas) **auto-sembrados** + subconjunto de actas | Corpus completo 1998–2025 (cientos de actas + 492 ITOs INIDEP) |
-| **Auditoría IA** | Muestra acotada (`--step audit --limit`) para demostrar el flujo | Auditoría masiva con Claude API + *prompt caching* sobre todo el corpus |
+| **Datos** | Corpus real 2024–25 (68 actas · 754 resoluciones) + contexto auto-sembrado (FAO, CONICET, capturas, 492 ITOs INIDEP) | Serie histórica completa 1998–2025 (cientos de actas) |
+| **Auditoría IA** | 474 análisis reales ya ejecutados (LLM multi-proveedor) | Auditoría masiva con *prompt caching* sobre todo el corpus |
 | **Hosting** | Streamlit Community Cloud (gratuito, solo lectura sobre SQLite) | VPS / contenedor dedicado (Docker ya provisto) con más RAM/CPU |
 | **Vector store** | ChromaDB local | ChromaDB persistente / servicio gestionado para RAG a escala |
-| **Coste** | Sin coste de tokens (datos sembrados) | Presupuesto de API dimensionado al volumen del corpus |
+| **Coste** | Mínimo (auditoría de la muestra ≈ céntimos) | Presupuesto de API dimensionado al volumen del corpus |
 
 La arquitectura por capas, los contratos de datos, el pipeline idempotente (hashing SHA256, *provenance chain*) y el `docker-compose` permiten esta transición **sin reescritura**: basta con proveer infraestructura y presupuesto de API. El diseño demo↔producción es deliberado y forma parte de la estrategia del proyecto.
 
@@ -383,10 +386,18 @@ La arquitectura por capas, los contratos de datos, el pipeline idempotente (hash
 
 ## Variables de Entorno
 
+La capa de IA es **agnóstica al proveedor**; se elige por `.env` (ver `.env.example`):
+
 ```env
-ANTHROPIC_API_KEY=sk-ant-...      # Requerida para audit y reportes
-CLAUDE_MODEL=claude-sonnet-4-6    # Análisis masivos
-CLAUDE_AUDIT_MODEL=claude-opus-4-8  # Análisis profundo
+# Opción A — Anthropic (Claude)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Opción B — cualquier API compatible con OpenAI (OpenAI, Groq, Gemini…)
+LLM_PROVIDER=openai
+OPENAI_API_KEY=...
+OPENAI_BASE_URL=              # vacío para OpenAI; p. ej. https://api.groq.com/openai/v1 para Groq
+LLM_MODEL=gpt-4o-mini
 ```
 
 ---

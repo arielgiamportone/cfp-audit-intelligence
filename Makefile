@@ -40,9 +40,6 @@ pipeline:
 dashboard:
 	$(STREAMLIT) run src/dashboard/app.py
 
-scraper-legacy:
-	$(STREAMLIT) run cfp_scraper.py
-
 clean-kb:
 	rm -rf data/knowledge_base/
 	@echo "Knowledge base eliminada. Reconstruir con: make build-kb"
