@@ -280,9 +280,7 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
         # Buscar resoluciones en KB para esta acta (la KB guarda el `acta_filename`
         # como stem, sin extensión → filtrar por el stem del PDF).
         acta_stem = Path(filename).stem
-        results = vs.search(
-            filename, n_results=10, where={"acta_filename": {"$eq": acta_stem}}
-        )
+        results = vs.search(filename, n_results=10, where={"acta_filename": {"$eq": acta_stem}})
 
         if not results:
             catalog.mark_analyzed(acta_id)
@@ -335,9 +333,7 @@ def step_audit(db_path: Path, kb_dir: Path, limit: int = 0) -> None:
 
         catalog.mark_analyzed(acta_id)
         max_risk = max((a["riesgo_score"] for a in analisis_results), default=0)
-        logger.info(
-            f"  {filename}: {n_ok} resoluciones analizadas, riesgo máx: {max_risk:.0f}"
-        )
+        logger.info(f"  {filename}: {n_ok} resoluciones analizadas, riesgo máx: {max_risk:.0f}")
 
     logger.success("Auditoría completada")
 
@@ -346,7 +342,16 @@ def main():
     parser = argparse.ArgumentParser(description="CFP Audit Intelligence Pipeline")
     parser.add_argument(
         "--step",
-        choices=["download", "process", "knowledge_base", "audit", "inidep", "geovisor", "conae", "all"],
+        choices=[
+            "download",
+            "process",
+            "knowledge_base",
+            "audit",
+            "inidep",
+            "geovisor",
+            "conae",
+            "all",
+        ],
         default="all",
         help="Etapa del pipeline a ejecutar",
     )

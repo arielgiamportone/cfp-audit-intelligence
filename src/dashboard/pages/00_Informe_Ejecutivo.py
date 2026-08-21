@@ -23,7 +23,6 @@ page_header_raw(
 )
 data_source("INIDEP (Mar Abierto) + SAGPyA/SIPA — datos semilla verificados", estado="verificado")
 
-import pandas as pd
 import plotly.graph_objects as go
 
 from src.config_loader import get_db_path
@@ -86,14 +85,22 @@ criticos = cap.get("critico", 0)
 pct_excede = (excede / con_dato * 100) if con_dato else 0
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Comparaciones analizadas", con_dato,
-          help="Casos especie/año con captura real y CBA disponibles.")
-k2.metric("Captura sobre el límite (CBA)", excede,
-          help="Casos donde la captura real superó el límite recomendado por la ciencia.")
-k3.metric("% sobre el límite", f"{pct_excede:.0f}%",
-          help="Proporción de casos analizados que superan la CBA.")
-k4.metric("⚫ Casos críticos", criticos,
-          help="Captura real superior al 130% de la CBA.")
+k1.metric(
+    "Comparaciones analizadas",
+    con_dato,
+    help="Casos especie/año con captura real y CBA disponibles.",
+)
+k2.metric(
+    "Captura sobre el límite (CBA)",
+    excede,
+    help="Casos donde la captura real superó el límite recomendado por la ciencia.",
+)
+k3.metric(
+    "% sobre el límite",
+    f"{pct_excede:.0f}%",
+    help="Proporción de casos analizados que superan la CBA.",
+)
+k4.metric("⚫ Casos críticos", criticos, help="Captura real superior al 130% de la CBA.")
 
 st.caption(
     "Comparación **captura real vs. CBA**. Es **indicativa**: las capturas son totales "
@@ -149,23 +156,35 @@ if not foco_ratio.empty:
 
 # Gráfico de la cadena por año (CBA vs captura; CMP si existe)
 fig = go.Figure()
-fig.add_trace(go.Bar(
-    name="CBA INIDEP (límite científico)",
-    x=foco["year"], y=foco["cba_recomendada_tn"],
-    marker_color="#2196F3", opacity=0.85,
-))
+fig.add_trace(
+    go.Bar(
+        name="CBA INIDEP (límite científico)",
+        x=foco["year"],
+        y=foco["cba_recomendada_tn"],
+        marker_color="#2196F3",
+        opacity=0.85,
+    )
+)
 if foco["cmp_aprobada_tn"].notna().any():
-    fig.add_trace(go.Bar(
-        name="CMP CFP (cuota aprobada)",
-        x=foco["year"], y=foco["cmp_aprobada_tn"],
-        marker_color="#FF9800", opacity=0.85,
-    ))
+    fig.add_trace(
+        go.Bar(
+            name="CMP CFP (cuota aprobada)",
+            x=foco["year"],
+            y=foco["cmp_aprobada_tn"],
+            marker_color="#FF9800",
+            opacity=0.85,
+        )
+    )
 if foco["captura_real_tn"].notna().any():
-    fig.add_trace(go.Bar(
-        name="Captura real (SAGPyA)",
-        x=foco["year"], y=foco["captura_real_tn"],
-        marker_color="#4CAF50", opacity=0.85,
-    ))
+    fig.add_trace(
+        go.Bar(
+            name="Captura real (SAGPyA)",
+            x=foco["year"],
+            y=foco["captura_real_tn"],
+            marker_color="#4CAF50",
+            opacity=0.85,
+        )
+    )
 fig.update_layout(
     barmode="group",
     title=f"{nombre} — CBA vs. captura real por año",
@@ -180,22 +199,29 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 # Tabla del foco con formato
-cols = [c for c in ["year", "zona", "cba_recomendada_tn", "captura_real_tn", "ratio_captura_cba"]
-        if c in foco.columns]
+cols = [
+    c
+    for c in ["year", "zona", "cba_recomendada_tn", "captura_real_tn", "ratio_captura_cba"]
+    if c in foco.columns
+]
 tabla(
-    foco[cols].rename(columns={
-        "year": "Año",
-        "zona": "Zona",
-        "cba_recomendada_tn": "CBA (tn)",
-        "captura_real_tn": "Captura real (tn)",
-        "ratio_captura_cba": "Ratio Captura/CBA",
-    }),
+    foco[cols].rename(
+        columns={
+            "year": "Año",
+            "zona": "Zona",
+            "cba_recomendada_tn": "CBA (tn)",
+            "captura_real_tn": "Captura real (tn)",
+            "ratio_captura_cba": "Ratio Captura/CBA",
+        }
+    ),
     column_config={
         "Año": st.column_config.NumberColumn("Año", format="%d"),
         "CBA (tn)": col_tn("CBA (tn)", help="Límite recomendado por la ciencia."),
         "Captura real (tn)": col_tn("Captura real (tn)", help="Desembarque real (SAGPyA/SIPA)."),
         "Ratio Captura/CBA": col_ratio(
-            "Ratio Captura/CBA", help="1.0 = límite científico. >1 = captura por encima.", max_value=3.0,
+            "Ratio Captura/CBA",
+            help="1.0 = límite científico. >1 = captura por encima.",
+            max_value=3.0,
         ),
     },
 )
@@ -213,7 +239,9 @@ st.markdown(
     "- La cuota **CMP** se ingresa manualmente en el Comparador; por eso aquí puede no aparecer."
 )
 
-st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Explorar el análisis completo en el Comparador")
+st.page_link(
+    "pages/05_INIDEP_Comparador.py", label="🔬 Explorar el análisis completo en el Comparador"
+)
 st.caption(
     "🇦🇷 Por la soberanía y sostenibilidad de los recursos pesqueros argentinos · "
     "Fuente: INIDEP · SAGPyA/SIPA · CFP"

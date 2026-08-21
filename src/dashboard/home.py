@@ -118,19 +118,23 @@ try:
     if _con_dato > 0:
         d1, d2, d3, d4 = st.columns(4)
         d1.metric(
-            "Comparaciones analizadas", _con_dato,
+            "Comparaciones analizadas",
+            _con_dato,
             help="Casos especie/año con captura real y CBA disponibles.",
         )
         d2.metric(
-            "Captura sobre el límite (CBA)", _excede,
+            "Captura sobre el límite (CBA)",
+            _excede,
             help="Casos en los que la captura real superó el límite recomendado por la ciencia.",
         )
         d3.metric(
-            "⚫ Casos críticos", _criticos,
+            "⚫ Casos críticos",
+            _criticos,
             help="Captura real superior al 130% de la CBA.",
         )
         d4.metric(
-            "Especie con más presión", _top,
+            "Especie con más presión",
+            _top,
             help="Mayor ratio captura real / CBA en los datos semilla verificados.",
         )
         st.caption(
@@ -162,20 +166,38 @@ st.caption("Estas páginas ya tienen datos cargados y son el corazón del proyec
 
 s1, s2, s3 = st.columns(3)
 with s1:
-    st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Comparador CFP vs INIDEP",
-                 help="El análisis estrella: ciencia vs política, con semáforo de alertas")
-    st.page_link("pages/08_Alertas.py", label="🚨 Sistema de Alertas",
-                 help="Alertas configurables sobre las decisiones del CFP")
+    st.page_link(
+        "pages/05_INIDEP_Comparador.py",
+        label="🔬 Comparador CFP vs INIDEP",
+        help="El análisis estrella: ciencia vs política, con semáforo de alertas",
+    )
+    st.page_link(
+        "pages/08_Alertas.py",
+        label="🚨 Sistema de Alertas",
+        help="Alertas configurables sobre las decisiones del CFP",
+    )
 with s2:
-    st.page_link("pages/12_Capturas.py", label="🐟 Capturas reales (SIPA)",
-                 help="Cuánto se pescó realmente por especie y año")
-    st.page_link("pages/06_Timeline.py", label="📈 Timeline por especie",
-                 help="Evolución histórica de cuotas")
+    st.page_link(
+        "pages/12_Capturas.py",
+        label="🐟 Capturas reales (SIPA)",
+        help="Cuánto se pescó realmente por especie y año",
+    )
+    st.page_link(
+        "pages/06_Timeline.py",
+        label="📈 Timeline por especie",
+        help="Evolución histórica de cuotas",
+    )
 with s3:
-    st.page_link("pages/10_FAO_FIRMS.py", label="🌎 Contexto FAO",
-                 help="Comparativa internacional de capturas y estado de stocks")
-    st.page_link("pages/11_CONICET.py", label="📚 Ciencia CONICET",
-                 help="Publicaciones científicas por especie")
+    st.page_link(
+        "pages/10_FAO_FIRMS.py",
+        label="🌎 Contexto FAO",
+        help="Comparativa internacional de capturas y estado de stocks",
+    )
+    st.page_link(
+        "pages/11_CONICET.py",
+        label="📚 Ciencia CONICET",
+        help="Publicaciones científicas por especie",
+    )
 
 # ── Estado del sistema (métricas del corpus) ───────────────────────────────────
 
@@ -183,6 +205,7 @@ st.markdown("---")
 st.subheader("Estado del corpus de actas")
 
 from src.config_loader import get_db_path
+
 db_path = get_db_path()
 loaded = False
 if db_path.exists():

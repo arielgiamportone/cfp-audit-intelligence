@@ -226,9 +226,7 @@ class GeovisorCrossValidator:
         fuera = [r[0] for r in rows_fuera]
 
         if not dentro and not fuera:
-            return {
-                "error": "Sin datos de esfuerzo GFW. Ejecutar --step conae para muestrear."
-            }
+            return {"error": "Sin datos de esfuerzo GFW. Ejecutar --step conae para muestrear."}
 
         def _mediana(vals: list[float]) -> float | None:
             if not vals:
@@ -258,7 +256,7 @@ class GeovisorCrossValidator:
             interpretacion = "Datos insuficientes para comparar esfuerzo dentro/fuera de veda."
         elif ratio < 0.7:
             interpretacion = (
-                f"El esfuerzo GFW dentro de vedas ({med_dentro:.2f}) es {(1-ratio)*100:.0f}% "
+                f"El esfuerzo GFW dentro de vedas ({med_dentro:.2f}) es {(1 - ratio) * 100:.0f}% "
                 f"menor que fuera de vedas ({med_fuera:.2f}) — consistente con cumplimiento."
             )
         elif ratio > 1.1:

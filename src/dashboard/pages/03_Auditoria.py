@@ -12,7 +12,11 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import page_header_raw
-page_header_raw("🧠 Auditoría con Inteligencia Artificial", "Análisis de resoluciones con Claude API y detección de patrones sistémicos")
+
+page_header_raw(
+    "🧠 Auditoría con Inteligencia Artificial",
+    "Análisis de resoluciones con Claude API y detección de patrones sistémicos",
+)
 
 with st.expander("🔍 IA responsable: cómo garantizamos transparencia", expanded=False):
     st.markdown(
@@ -41,11 +45,12 @@ if not api_key:
 
 from src.analysis.audit_engine import CFPAuditEngine
 from src.analysis.pattern_detector import PatternDetector
+from src.config_loader import get_kb_dir
 from src.knowledge_base.vector_store import CFPVectorStore
 
-from src.config_loader import get_kb_dir
 KB_DIR = get_kb_dir()
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────

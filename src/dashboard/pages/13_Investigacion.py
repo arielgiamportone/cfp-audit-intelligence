@@ -17,8 +17,12 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("🧪 FisheriesAudit ALG — Hub de Investigación", "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
-    "Ariel L. Giamportone · Ing. Pesquero | Data Scientist")
+
+page_header_raw(
+    "🧪 FisheriesAudit ALG — Hub de Investigación",
+    "Serie FisheriesAudit ALG 2026 · Gobernanza Pesquera Argentina · "
+    "Ariel L. Giamportone · Ing. Pesquero | Data Scientist",
+)
 
 with import_guard("El hub de investigación (figuras/exportación)"):
     from src.analysis.inidep_comparator import INIDEPComparator
@@ -32,8 +36,10 @@ st.info(
 )
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 OUT_DIR = Path("outputs/FisheriesAudit_ALG")
+
 
 @st.cache_resource
 def get_comparator():
@@ -41,9 +47,11 @@ def get_comparator():
     comp.compute_comparisons()
     return comp
 
+
 @st.cache_resource
 def get_exporter(_comp):
     return ResearchExporter(_comp, output_dir=OUT_DIR)
+
 
 comp = get_comparator()
 exp = get_exporter(comp)
@@ -219,7 +227,9 @@ with tab_datos:
                         file_name="FisheriesAudit_ALG_datos.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     )
-                st.success("Excel generado: 6 hojas (triángulo, alertas, INIDEP, CFP, SAGPyA, tests)")
+                st.success(
+                    "Excel generado: 6 hojas (triángulo, alertas, INIDEP, CFP, SAGPyA, tests)"
+                )
 
     st.markdown("---")
     st.subheader("Vista previa del dataset")
@@ -239,8 +249,7 @@ with tab_datos:
 with tab_linkedin:
     st.subheader("Serie FisheriesAudit ALG 2026 — Posts LinkedIn")
     st.caption(
-        "Posts estructurados para perfil personal (Ariel Giamportone) "
-        "y comunidad Pesqueros en IA."
+        "Posts estructurados para perfil personal (Ariel Giamportone) y comunidad Pesqueros en IA."
     )
 
     hallazgos = exp.generar_hallazgos()
@@ -250,7 +259,9 @@ with tab_linkedin:
     perfil_sel = st.radio(
         "Perfil destino",
         ["personal", "pesqueros_ia"],
-        format_func=lambda x: "👤 Ariel Giamportone (personal)" if x == "personal" else "🐟 Pesqueros en IA",
+        format_func=lambda x: (
+            "👤 Ariel Giamportone (personal)" if x == "personal" else "🐟 Pesqueros en IA"
+        ),
         horizontal=True,
     )
 

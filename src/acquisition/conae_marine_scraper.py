@@ -138,7 +138,7 @@ def _parse_raster_value(data: dict) -> float | None:
     features = data.get("features", [])
     if not features:
         return None
-    props = (features[0].get("properties") or {})
+    props = features[0].get("properties") or {}
     for key in ("GRAY_INDEX", "gray_index", "value", "Value", "DN", "dn", "band1", "Band1"):
         val = props.get(key)
         if val is not None:
@@ -176,8 +176,7 @@ class CONAEMarineClient:
         self._session.headers.update(
             {
                 "User-Agent": (
-                    "CFP-Audit-Research/1.0 "
-                    "(github.com/arielgiamportone/cfp-audit-intelligence)"
+                    "CFP-Audit-Research/1.0 (github.com/arielgiamportone/cfp-audit-intelligence)"
                 )
             }
         )

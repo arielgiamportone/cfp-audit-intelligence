@@ -1,12 +1,10 @@
 """Página 11 — Publicaciones Científicas CONICET."""
 
-from pathlib import Path
-
 import streamlit as st
 
 from src.acquisition.conicet_scraper import SEARCH_TERMS, CONICETScraper
-
 from src.dashboard._ui import data_source, page_header_raw
+
 page_header_raw("🔬 Publicaciones Científicas CONICET/INIDEP")
 data_source("CONICET Digital / INIDEP (literatura verificada)", estado="verificado")
 st.markdown(
@@ -15,13 +13,16 @@ st.markdown(
 )
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
+
 
 @st.cache_resource(show_spinner="Cargando publicaciones científicas...")
 def get_scraper():
     s = CONICETScraper(db_path=DB_PATH)
     s.seed_data()
     return s
+
 
 scraper = get_scraper()
 df_pubs = scraper.get_publicaciones_df()

@@ -134,9 +134,7 @@ class ResearchExporter:
     # Figuras
     # ------------------------------------------------------------------
 
-    def figura_triangulo_por_especie(
-        self, especie_code: str, save: bool = True
-    ) -> plt.Figure:
+    def figura_triangulo_por_especie(self, especie_code: str, save: bool = True) -> plt.Figure:
         """Gráfico de barras agrupadas CBA / CMP / Captura por año."""
         df = self.comp.get_triangulo_completo(especie_code)
         if df.empty:
@@ -150,10 +148,7 @@ class ResearchExporter:
         fig, ax = plt.subplots(figsize=(10, 5))
 
         def _vals(col: str) -> list[float]:
-            return [
-                df[df["year"] == y][col].mean() if col in df.columns else np.nan
-                for y in years
-            ]
+            return [df[df["year"] == y][col].mean() if col in df.columns else np.nan for y in years]
 
         cba = _vals("cba_recomendada_tn")
         cmp_ = _vals("cmp_aprobada_tn")
@@ -165,7 +160,7 @@ class ResearchExporter:
 
         ax.set_xticks(x)
         ax.set_xticklabels([str(y) for y in years])
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v/1000:.0f}k"))
+        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v / 1000:.0f}k"))
         ax.set_xlabel("Año")
         ax.set_ylabel("Toneladas (miles)")
         ax.set_title(
@@ -221,8 +216,14 @@ class ResearchExporter:
         ax.axhline(1.0, color="gray", lw=0.8, ls="--", label="CBA = 100%")
         ax.axvline(1.0, color="gray", lw=0.8, ls=":")
 
-        ax.fill_between([1.0, ax.get_xlim()[1] if ax.get_xlim()[1] > 1 else 2], 1.0, 2.0,
-                        alpha=0.05, color=COLOR_CRITICO, label="Zona crítica")
+        ax.fill_between(
+            [1.0, ax.get_xlim()[1] if ax.get_xlim()[1] > 1 else 2],
+            1.0,
+            2.0,
+            alpha=0.05,
+            color=COLOR_CRITICO,
+            label="Zona crítica",
+        )
 
         ax.set_xlabel("Ratio CMP/CBA (cuota CFP / recomendación INIDEP)")
         ax.set_ylabel("Ratio Captura/CBA (captura real / recomendación INIDEP)")
@@ -249,9 +250,7 @@ class ResearchExporter:
         nivel_num = {"verde": 0, "amarillo": 1, "rojo": 2, "critico": 3, "sin_datos": -1}
         df["nivel_num"] = df["nivel_alerta"].map(nivel_num).fillna(-1)
 
-        pivot = df.pivot_table(
-            index="especie", columns="year", values="nivel_num", aggfunc="max"
-        )
+        pivot = df.pivot_table(index="especie", columns="year", values="nivel_num", aggfunc="max")
 
         fig, ax = plt.subplots(figsize=(max(8, len(pivot.columns) * 0.8), max(4, len(pivot) * 0.7)))
 
@@ -267,7 +266,9 @@ class ResearchExporter:
         ax.set_xticklabels([str(c) for c in pivot.columns], rotation=45, ha="right")
         ax.set_yticks(range(len(pivot.index)))
         ax.set_yticklabels(pivot.index)
-        ax.set_title("Nivel de alerta por especie y año\n(gris=sin datos, verde, amarillo, rojo, crítico)")
+        ax.set_title(
+            "Nivel de alerta por especie y año\n(gris=sin datos, verde, amarillo, rojo, crítico)"
+        )
 
         cbar = plt.colorbar(im, ax=ax, ticks=[-1, 0, 1, 2, 3])
         cbar.set_ticklabels(["sin datos", "verde", "amarillo", "rojo", "crítico"])
@@ -290,11 +291,12 @@ class ResearchExporter:
         Un p<0.05 indica que el CFP sistemáticamente se aparta de la recomendación.
         """
         raw = self.comp.get_triangulo_completo()
-        df = raw.dropna(subset=["ratio_cmp_cba"]) if "ratio_cmp_cba" in raw.columns else raw.iloc[:0]
+        df = (
+            raw.dropna(subset=["ratio_cmp_cba"]) if "ratio_cmp_cba" in raw.columns else raw.iloc[:0]
+        )
         if len(df) < 3:
             return ResultadoEstadistico(
-                "Wilcoxon CMP/CBA",
-                np.nan, 1.0, "Datos insuficientes (n<3)", len(df)
+                "Wilcoxon CMP/CBA", np.nan, 1.0, "Datos insuficientes (n<3)", len(df)
             )
         stat, p = stats.wilcoxon(df["ratio_cmp_cba"] - 1.0, alternative="two-sided")
         direccion = "sobreasignación" if df["ratio_cmp_cba"].median() > 1 else "subasignación"
@@ -314,7 +316,9 @@ class ResearchExporter:
         df = self.comp.get_triangulo_completo(especie_code).dropna(subset=["ratio_cmp_cba"])
         df = df.sort_values("year")
         if len(df) < 4:
-            return ResultadoEstadistico("Kendall tau tendencia", np.nan, 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico(
+                "Kendall tau tendencia", np.nan, 1.0, "Datos insuficientes", len(df)
+            )
         tau, p = stats.kendalltau(df["year"], df["ratio_cmp_cba"])
         direccion = "creciente" if tau > 0 else "decreciente"
         interp = (
@@ -332,8 +336,21 @@ class ResearchExporter:
         df = self.comp.get_triangulo_completo().dropna(subset=["ratio_cmp_cba"])
         grupos = [g["ratio_cmp_cba"].values for _, g in df.groupby("especie") if len(g) >= 2]
         if len(grupos) < 2:
-            return ResultadoEstadistico("Kruskal-Wallis especies", np.nan, 1.0, "Datos insuficientes", len(df))
-        stat, p = stats.kruskal(*grupos)
+            return ResultadoEstadistico(
+                "Kruskal-Wallis especies", np.nan, 1.0, "Datos insuficientes", len(df)
+            )
+        try:
+            stat, p = stats.kruskal(*grupos)
+        except ValueError:
+            # scipy lanza ValueError si todos los valores son idénticos (sin varianza),
+            # p. ej. con datos semilla degenerados. Se reporta como no significativo.
+            return ResultadoEstadistico(
+                "Kruskal-Wallis entre especies",
+                np.nan,
+                1.0,
+                "Sin varianza entre grupos (datos insuficientes)",
+                len(df),
+            )
         interp = (
             "Diferencias significativas entre especies en ratio CMP/CBA"
             if p < 0.05
@@ -350,12 +367,16 @@ class ResearchExporter:
             subset=["ratio_cmp_cba", "ratio_captura_cba"]
         )
         if len(df) < 4:
-            return ResultadoEstadistico("Spearman CMP-Captura", np.nan, 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico(
+                "Spearman CMP-Captura", np.nan, 1.0, "Datos insuficientes", len(df)
+            )
         with warnings.catch_warnings(), np.errstate(invalid="ignore", divide="ignore"):
             warnings.simplefilter("ignore")
             rho, p = stats.spearmanr(df["ratio_cmp_cba"], df["ratio_captura_cba"])
         if np.isnan(rho):
-            return ResultadoEstadistico("Spearman CMP-Captura", np.nan, 1.0, "Variable constante (datos seed)", len(df))
+            return ResultadoEstadistico(
+                "Spearman CMP-Captura", np.nan, 1.0, "Variable constante (datos seed)", len(df)
+            )
         interp = (
             f"Correlación positiva significativa (ρ={rho:.3f}): cuotas más altas → más captura"
             if (p < 0.05 and rho > 0)
@@ -458,7 +479,7 @@ class ResearchExporter:
             \centering
             \caption{{Triángulo de Auditoría Pesquera — CBA (INIDEP), CMP (CFP) y Captura Real (SAGPyA). Fuente: {SERIES_NAME}.}}
             \label{{tab:triangulo_auditoria}}
-            \begin{{tabular}}{{{'l' + 'r' * (len(df_latex.columns) - 1)}}}
+            \begin{{tabular}}{{{"l" + "r" * (len(df_latex.columns) - 1)}}}
             \hline
             {header}
             \hline
@@ -496,7 +517,7 @@ class ResearchExporter:
                     descripcion=(
                         f"El CFP aprueba cuotas superiores a la CBA recomendada por INIDEP "
                         f"en el {pct_sobre:.0f}% de los casos analizados, con una mediana "
-                        f"de sobreasignación del {(median_r - 1)*100:.0f}%."
+                        f"de sobreasignación del {(median_r - 1) * 100:.0f}%."
                     ),
                     datos_clave={
                         "Mediana ratio CMP/CBA": f"{median_r:.2f}",
@@ -539,7 +560,9 @@ class ResearchExporter:
                 titulo="Tendencia temporal en sobreasignación",
                 descripcion=t_tend.interpretacion,
                 datos_clave={
-                    "Kendall τ": f"{t_tend.estadistico:.3f}" if not np.isnan(t_tend.estadistico) else "N/A",
+                    "Kendall τ": f"{t_tend.estadistico:.3f}"
+                    if not np.isnan(t_tend.estadistico)
+                    else "N/A",
                     "p-valor": f"{t_tend.p_value:.4f}",
                     "N observaciones": t_tend.n,
                 },
@@ -556,7 +579,9 @@ class ResearchExporter:
                 titulo="Correlación entre cuotas CFP y capturas reales",
                 descripcion=t_corr.interpretacion,
                 datos_clave={
-                    "Spearman ρ": f"{t_corr.estadistico:.3f}" if not np.isnan(t_corr.estadistico) else "N/A",
+                    "Spearman ρ": f"{t_corr.estadistico:.3f}"
+                    if not np.isnan(t_corr.estadistico)
+                    else "N/A",
                     "p-valor": f"{t_corr.p_value:.4f}",
                     "N observaciones": t_corr.n,
                 },
@@ -665,15 +690,25 @@ class PatternExporter:
 
         if df.empty:
             fig, ax = plt.subplots(figsize=(10, 4))
-            ax.text(0.5, 0.5, "Sin datos de resoluciones procesadas.\nEjecutá el pipeline primero.",
-                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "Sin datos de resoluciones procesadas.\nEjecutá el pipeline primero.",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
+            )
             ax.set_title("Serie temporal de resoluciones CFP (sin datos)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
             if save:
                 fig.savefig(self.out / "figuras" / "timeline_resoluciones.png")
             return fig
 
-        pivot = df.pivot_table(index="year", columns="tipo", values="cantidad", aggfunc="sum").fillna(0)
+        pivot = df.pivot_table(
+            index="year", columns="tipo", values="cantidad", aggfunc="sum"
+        ).fillna(0)
 
         fig, ax = plt.subplots(figsize=(12, 5))
         colors = plt.cm.Set2(np.linspace(0, 1, len(pivot.columns)))
@@ -685,7 +720,9 @@ class PatternExporter:
 
         ax.set_xlabel("Año")
         ax.set_ylabel("Número de resoluciones")
-        ax.set_title("Resoluciones CFP por año y tipo (1998–2025)\nFuente: Actas Públicas CFP + FisheriesAudit ALG")
+        ax.set_title(
+            "Resoluciones CFP por año y tipo (1998–2025)\nFuente: Actas Públicas CFP + FisheriesAudit ALG"
+        )
         ax.legend(loc="upper left", fontsize=8, ncol=2)
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
         fig.tight_layout()
@@ -701,8 +738,16 @@ class PatternExporter:
 
         if df.empty:
             fig, ax = plt.subplots(figsize=(9, 5))
-            ax.text(0.5, 0.5, "Sin datos de entidades.\nEjecutá el pipeline primero.",
-                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "Sin datos de entidades.\nEjecutá el pipeline primero.",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
+            )
             ax.set_title("Concentración de beneficiarios (sin datos)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
             if save:
@@ -723,18 +768,36 @@ class PatternExporter:
         # Gauge HHI
         theta = np.linspace(0, np.pi, 200)
         ax2.set_aspect("equal")
-        ax2.fill_between(np.cos(theta[:67]), np.sin(theta[:67]) * 0, np.sin(theta[:67]),
-                         color=COLOR_VERDE, alpha=0.3)
-        ax2.fill_between(np.cos(theta[67:134]), np.sin(theta[67:134]) * 0, np.sin(theta[67:134]),
-                         color=COLOR_AMARILLO, alpha=0.3)
-        ax2.fill_between(np.cos(theta[134:]), np.sin(theta[134:]) * 0, np.sin(theta[134:]),
-                         color=COLOR_CRITICO, alpha=0.3)
+        ax2.fill_between(
+            np.cos(theta[:67]),
+            np.sin(theta[:67]) * 0,
+            np.sin(theta[:67]),
+            color=COLOR_VERDE,
+            alpha=0.3,
+        )
+        ax2.fill_between(
+            np.cos(theta[67:134]),
+            np.sin(theta[67:134]) * 0,
+            np.sin(theta[67:134]),
+            color=COLOR_AMARILLO,
+            alpha=0.3,
+        )
+        ax2.fill_between(
+            np.cos(theta[134:]),
+            np.sin(theta[134:]) * 0,
+            np.sin(theta[134:]),
+            color=COLOR_CRITICO,
+            alpha=0.3,
+        )
 
         hhi_norm = min(hhi_val / 10000, 1.0)
         needle_angle = np.pi * (1 - hhi_norm)
-        ax2.annotate("", xy=(np.cos(needle_angle) * 0.7, np.sin(needle_angle) * 0.7),
-                     xytext=(0, 0),
-                     arrowprops=dict(arrowstyle="->", color="black", lw=2.5))
+        ax2.annotate(
+            "",
+            xy=(np.cos(needle_angle) * 0.7, np.sin(needle_angle) * 0.7),
+            xytext=(0, 0),
+            arrowprops=dict(arrowstyle="->", color="black", lw=2.5),
+        )
         ax2.text(0, -0.25, f"HHI = {hhi_val:.0f}", ha="center", fontsize=14, fontweight="bold")
         ax2.text(-1, -0.4, "<1000\nBaja", ha="center", fontsize=8, color=COLOR_VERDE)
         ax2.text(0, -0.5, "1000–2500\nModerada", ha="center", fontsize=8, color=COLOR_AMARILLO)
@@ -758,8 +821,16 @@ class PatternExporter:
 
         if df.empty:
             fig, ax = plt.subplots(figsize=(10, 4))
-            ax.text(0.5, 0.5, "Sin datos de riesgo.\nEjecutá el pipeline + auditoría IA primero.",
-                    ha="center", va="center", transform=ax.transAxes, fontsize=11, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "Sin datos de riesgo.\nEjecutá el pipeline + auditoría IA primero.",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
+            )
             ax.set_title("Riesgo temporal (sin datos)")
             if save:
                 fig.savefig(self.out / "figuras" / "riesgo_temporal.png")
@@ -767,15 +838,31 @@ class PatternExporter:
 
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.fill_between(df["year"], df["riesgo_promedio"], alpha=0.2, color=COLOR_ROJO)
-        ax.plot(df["year"], df["riesgo_promedio"], "o-", color=COLOR_ROJO,
-                lw=2, ms=5, label="Riesgo promedio")
-        ax.plot(df["year"], df["riesgo_maximo"], "--", color=COLOR_CRITICO,
-                lw=1, alpha=0.6, label="Riesgo máximo")
+        ax.plot(
+            df["year"],
+            df["riesgo_promedio"],
+            "o-",
+            color=COLOR_ROJO,
+            lw=2,
+            ms=5,
+            label="Riesgo promedio",
+        )
+        ax.plot(
+            df["year"],
+            df["riesgo_maximo"],
+            "--",
+            color=COLOR_CRITICO,
+            lw=1,
+            alpha=0.6,
+            label="Riesgo máximo",
+        )
 
         ax.axhline(70, color=COLOR_AMARILLO, lw=0.8, ls=":", label="Umbral alto (70)")
         ax.set_xlabel("Año")
         ax.set_ylabel("Score de riesgo (0–100)")
-        ax.set_title("Evolución del riesgo en resoluciones CFP (1998–2025)\nAnálisis IA — FisheriesAudit ALG")
+        ax.set_title(
+            "Evolución del riesgo en resoluciones CFP (1998–2025)\nAnálisis IA — FisheriesAudit ALG"
+        )
         ax.legend()
         ax.set_ylim(0, 105)
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -793,10 +880,17 @@ class PatternExporter:
         fig, ax = plt.subplots(figsize=(10, max(3, len(reversiones) * 0.6 + 2)))
 
         if not reversiones:
-            ax.text(0.5, 0.5,
-                    "Sin reversiones detectadas en los datos disponibles.\n"
-                    "Con el corpus completo (400+ actas) este análisis\nmuestra patrones de veda→cuota.",
-                    ha="center", va="center", transform=ax.transAxes, fontsize=10, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "Sin reversiones detectadas en los datos disponibles.\n"
+                "Con el corpus completo (400+ actas) este análisis\nmuestra patrones de veda→cuota.",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=10,
+                color="gray",
+            )
             ax.set_title("Detección de reversiones de veda (sin datos suficientes)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
             if save:
@@ -809,14 +903,31 @@ class PatternExporter:
         delta = [c - v for v, c in zip(anios_veda, anios_cuota)]
 
         y_pos = range(len(reversiones))
-        ax.barh(y_pos, delta, left=anios_veda, color=COLOR_AMARILLO, alpha=0.7, label="Período veda→cuota")
+        ax.barh(
+            y_pos,
+            delta,
+            left=anios_veda,
+            color=COLOR_AMARILLO,
+            alpha=0.7,
+            label="Período veda→cuota",
+        )
         ax.scatter(anios_veda, y_pos, color=COLOR_ROJO, zorder=3, s=60, label="Año veda")
-        ax.scatter(anios_cuota, y_pos, color=COLOR_VERDE, zorder=3, s=60, marker="D", label="Año cuota posterior")
+        ax.scatter(
+            anios_cuota,
+            y_pos,
+            color=COLOR_VERDE,
+            zorder=3,
+            s=60,
+            marker="D",
+            label="Año cuota posterior",
+        )
 
         ax.set_yticks(list(y_pos))
         ax.set_yticklabels(especies)
         ax.set_xlabel("Año")
-        ax.set_title(f"Reversiones veda → cuota detectadas ({len(reversiones)} casos)\nFisheriesAudit ALG")
+        ax.set_title(
+            f"Reversiones veda → cuota detectadas ({len(reversiones)} casos)\nFisheriesAudit ALG"
+        )
         ax.legend(loc="lower right")
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
         fig.tight_layout()
@@ -851,13 +962,17 @@ class PatternExporter:
             if p < 0.05
             else f"Sin concentración estadísticamente significativa (HHI={hhi:.0f})"
         )
-        return ResultadoEstadistico("Chi-cuadrado concentración beneficiarios", stat, p, interp, len(df))
+        return ResultadoEstadistico(
+            "Chi-cuadrado concentración beneficiarios", stat, p, interp, len(df)
+        )
 
     def test_tendencia_riesgo(self) -> ResultadoEstadistico:
         """Kendall tau: ¿el riesgo de las resoluciones aumenta con el tiempo?"""
         df = self.det.risk_evolution()
         if len(df) < 4:
-            return ResultadoEstadistico("Kendall tau riesgo temporal", float("nan"), 1.0, "Datos insuficientes", len(df))
+            return ResultadoEstadistico(
+                "Kendall tau riesgo temporal", float("nan"), 1.0, "Datos insuficientes", len(df)
+            )
         tau, p = stats.kendalltau(df["year"], df["riesgo_promedio"])
         direccion = "creciente" if tau > 0 else "decreciente"
         interp = (
@@ -923,7 +1038,7 @@ class PatternExporter:
             \centering
             \caption{{Top {top_n} actores más frecuentes en resoluciones CFP (1998–2025). Fuente: {SERIES_NAME}.}}
             \label{{tab:top_beneficiarios}}
-            \begin{{tabular}}{{{'l' + 'r' * (len(df_l.columns) - 1)}}}
+            \begin{{tabular}}{{{"l" + "r" * (len(df_l.columns) - 1)}}}
             \hline
             {header}
             \hline
@@ -957,8 +1072,8 @@ class GraphExporter:
         gexp.figura_hhi_por_especie(builder.compute_stats(G))
     """
 
-    COLOR_ESPECIE = "#2196F3"   # azul
-    COLOR_EMPRESA = "#FF5722"   # naranja
+    COLOR_ESPECIE = "#2196F3"  # azul
+    COLOR_EMPRESA = "#FF5722"  # naranja
 
     def __init__(
         self,
@@ -975,9 +1090,7 @@ class GraphExporter:
     # Figuras
     # ------------------------------------------------------------------
 
-    def figura_grafo_completo(
-        self, G, save: bool = True
-    ) -> plt.Figure:
+    def figura_grafo_completo(self, G, save: bool = True) -> plt.Figure:
         """
         Visualiza el grafo completo especie ↔ empresa con spring layout.
 
@@ -991,11 +1104,15 @@ class GraphExporter:
 
         if G is None or G.number_of_nodes() == 0:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 "Grafo vacío — ejecutá el pipeline primero.\n"
                 "python scripts/run_full_pipeline.py --step process",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=12, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=12,
+                color="gray",
             )
             ax.set_title("Red de relaciones CFP (sin datos)", fontsize=13)
             ax.axis("off")
@@ -1010,10 +1127,7 @@ class GraphExporter:
             self.COLOR_ESPECIE if d.get("tipo") == "especie" else self.COLOR_EMPRESA
             for _, d in G.nodes(data=True)
         ]
-        node_sizes = [
-            400 + G.degree(n) * 60
-            for n in G.nodes()
-        ]
+        node_sizes = [400 + G.degree(n) * 60 for n in G.nodes()]
 
         weights = [G[u][v].get("weight", 1) for u, v in G.edges()]
         max_w = max(weights) if weights else 1
@@ -1023,27 +1137,34 @@ class GraphExporter:
         # Dibujar aristas
         for (u, v), lw, alpha in zip(G.edges(), edge_widths, edge_alphas):
             ax.plot(
-                [pos[u][0], pos[v][0]], [pos[u][1], pos[v][1]],
-                color="#BDBDBD", lw=lw, alpha=alpha, zorder=1,
+                [pos[u][0], pos[v][0]],
+                [pos[u][1], pos[v][1]],
+                color="#BDBDBD",
+                lw=lw,
+                alpha=alpha,
+                zorder=1,
             )
 
         # Dibujar nodos
         nx.draw_networkx_nodes(
-            G, pos, ax=ax,
+            G,
+            pos,
+            ax=ax,
             node_color=node_colors,
             node_size=node_sizes,
             alpha=0.9,
         )
 
         # Etiquetas solo para nodos con grado alto (top 20% o mínimo top 15)
-        degree_threshold = sorted(
-            [G.degree(n) for n in G.nodes()], reverse=True
-        )[min(14, G.number_of_nodes() - 1)]
+        degree_threshold = sorted([G.degree(n) for n in G.nodes()], reverse=True)[
+            min(14, G.number_of_nodes() - 1)
+        ]
         labels = {n: n for n in G.nodes() if G.degree(n) >= degree_threshold}
         nx.draw_networkx_labels(G, pos, labels=labels, ax=ax, font_size=7.5, font_weight="bold")
 
         # Leyenda
         from matplotlib.patches import Patch
+
         legend_elements = [
             Patch(facecolor=self.COLOR_ESPECIE, label="Especie"),
             Patch(facecolor=self.COLOR_EMPRESA, label="Empresa"),
@@ -1069,9 +1190,7 @@ class GraphExporter:
 
         return fig
 
-    def figura_ego_especie(
-        self, G, especie: str, radio: int = 1, save: bool = True
-    ) -> plt.Figure:
+    def figura_ego_especie(self, G, especie: str, radio: int = 1, save: bool = True) -> plt.Figure:
         """
         Ego graph centrado en una especie (radio 1 o 2).
 
@@ -1092,11 +1211,15 @@ class GraphExporter:
 
         if G is None or G.number_of_nodes() == 0 or nodo_especie is None:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 f"Especie '{especie}' no encontrada en el grafo.\n"
                 "Ejecutá el pipeline para poblar el corpus.",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=11, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
             )
             ax.set_title(f"Ego graph — {especie} (sin datos)", fontsize=12)
             ax.axis("off")
@@ -1113,27 +1236,25 @@ class GraphExporter:
             self.COLOR_ESPECIE if d.get("tipo") == "especie" else self.COLOR_EMPRESA
             for _, d in ego.nodes(data=True)
         ]
-        node_sizes = [
-            700 if n == nodo_especie else (300 + ego.degree(n) * 40)
-            for n in ego.nodes()
-        ]
+        node_sizes = [700 if n == nodo_especie else (300 + ego.degree(n) * 40) for n in ego.nodes()]
 
         weights = [ego[u][v].get("weight", 1) for u, v in ego.edges()]
         max_w = max(weights) if weights else 1
         edge_widths = [0.8 + 4.0 * (w / max_w) for w in weights]
 
-        nx.draw_networkx_nodes(ego, pos, ax=ax, node_color=node_colors,
-                               node_size=node_sizes, alpha=0.9)
-        nx.draw_networkx_edges(ego, pos, ax=ax, width=edge_widths,
-                               edge_color="#78909C", alpha=0.7)
-        nx.draw_networkx_labels(ego, pos, ax=ax, font_size=8,
-                                font_weight="bold",
-                                labels={n: n for n in ego.nodes()})
+        nx.draw_networkx_nodes(
+            ego, pos, ax=ax, node_color=node_colors, node_size=node_sizes, alpha=0.9
+        )
+        nx.draw_networkx_edges(ego, pos, ax=ax, width=edge_widths, edge_color="#78909C", alpha=0.7)
+        nx.draw_networkx_labels(
+            ego, pos, ax=ax, font_size=8, font_weight="bold", labels={n: n for n in ego.nodes()}
+        )
 
         # Anotaciones de peso en aristas
         edge_labels = {(u, v): str(ego[u][v].get("weight", "")) for u, v in ego.edges()}
-        nx.draw_networkx_edge_labels(ego, pos, edge_labels=edge_labels, ax=ax,
-                                     font_size=7, label_pos=0.35)
+        nx.draw_networkx_edge_labels(
+            ego, pos, edge_labels=edge_labels, ax=ax, font_size=7, label_pos=0.35
+        )
 
         n_emp = ego.number_of_nodes() - 1
         ax.set_title(
@@ -1144,12 +1265,14 @@ class GraphExporter:
         ax.axis("off")
 
         from matplotlib.patches import Patch
+
         ax.legend(
             handles=[
                 Patch(facecolor=self.COLOR_ESPECIE, label="Especie"),
                 Patch(facecolor=self.COLOR_EMPRESA, label="Empresa"),
             ],
-            loc="upper left", fontsize=9,
+            loc="upper left",
+            fontsize=9,
         )
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
         fig.tight_layout()
@@ -1162,9 +1285,7 @@ class GraphExporter:
 
         return fig
 
-    def figura_hhi_por_especie(
-        self, stats, save: bool = True
-    ) -> plt.Figure:
+    def figura_hhi_por_especie(self, stats, save: bool = True) -> plt.Figure:
         """
         Gráfico de barras del HHI de concentración por especie.
 
@@ -1178,11 +1299,14 @@ class GraphExporter:
 
         if not hhi_data:
             ax.text(
-                0.5, 0.5,
-                "Sin datos de HHI por especie.\n"
-                "Ejecutá el pipeline para poblar el corpus.",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=11, color="gray",
+                0.5,
+                0.5,
+                "Sin datos de HHI por especie.\nEjecutá el pipeline para poblar el corpus.",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
             )
             ax.set_title("HHI de concentración por especie (sin datos)", fontsize=12)
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -1210,7 +1334,10 @@ class GraphExporter:
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height() + 50,
                 f"{val:.0f}",
-                ha="center", va="bottom", fontsize=8.5, fontweight="bold",
+                ha="center",
+                va="bottom",
+                fontsize=8.5,
+                fontweight="bold",
             )
 
         ax.set_xticks(range(len(especies)))
@@ -1253,7 +1380,8 @@ class GraphExporter:
         if G is None or G.number_of_nodes() < 3:
             return ResultadoEstadistico(
                 "Chi-cuadrado centralidad betweenness",
-                float("nan"), 1.0,
+                float("nan"),
+                1.0,
                 "Grafo insuficiente (n<3 nodos) — ejecutá el pipeline primero.",
                 0,
             )
@@ -1265,7 +1393,8 @@ class GraphExporter:
         if valores.sum() == 0:
             return ResultadoEstadistico(
                 "Chi-cuadrado centralidad betweenness",
-                float("nan"), 1.0,
+                float("nan"),
+                1.0,
                 "Centralidad uniforme: todos los nodos tienen betweenness = 0 (grafo sin intermediación).",
                 n,
             )
@@ -1284,17 +1413,12 @@ class GraphExporter:
             stat, p = float("nan"), 1.0
 
         concentrada = gini > 0.5 or (not np.isnan(p) and p < 0.05)
-        nivel = (
-            "alta" if gini > 0.7 else
-            "moderada" if gini > 0.4 else
-            "baja"
-        )
+        nivel = "alta" if gini > 0.7 else "moderada" if gini > 0.4 else "baja"
 
-        interp = (
-            f"Concentración {nivel} de intermediación (Gini={gini:.3f}): "
-            + ("pocos nodos actúan como puentes críticos entre especies y empresas"
-               if concentrada else
-               "la intermediación está distribuida sin actores dominantes")
+        interp = f"Concentración {nivel} de intermediación (Gini={gini:.3f}): " + (
+            "pocos nodos actúan como puentes críticos entre especies y empresas"
+            if concentrada
+            else "la intermediación está distribuida sin actores dominantes"
         )
 
         return ResultadoEstadistico(
@@ -1331,9 +1455,7 @@ class GraphExporter:
         logger.info(f"CSV grafo exportado: {out_path} ({len(df)} aristas)")
         return out_path
 
-    def exportar_latex_top_empresas(
-        self, stats, top_n: int = 10
-    ) -> str:
+    def exportar_latex_top_empresas(self, stats, top_n: int = 10) -> str:
         """
         Genera tabla LaTeX de las top empresas por grado/conexiones en el grafo.
 
@@ -1364,9 +1486,7 @@ class GraphExporter:
 
         latex_rows = []
         for _, row in df_l.iterrows():
-            latex_rows.append(
-                f"{row['Especie']} & {row['HHI Concentración']:.0f}" + r" \\"
-            )
+            latex_rows.append(f"{row['Especie']} & {row['HHI Concentración']:.0f}" + r" \\")
 
         header = r"Especie & HHI Concentración \\"
         latex = textwrap.dedent(
@@ -1398,11 +1518,11 @@ class GraphExporter:
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Colores estándar FAO para estado de stocks
-COLOR_FULLY_EXPLOITED = "#4CAF50"   # verde — plena explotación (dentro de límites)
-COLOR_MODERATELY = "#FFC107"        # amarillo — explotación moderada
-COLOR_OVER_EXPLOITED = "#E53935"    # rojo — sobrexplotado
-COLOR_DEPLETED = "#B71C1C"          # rojo oscuro — agotado
-COLOR_UNKNOWN = "#9E9E9E"           # gris — sin evaluación
+COLOR_FULLY_EXPLOITED = "#4CAF50"  # verde — plena explotación (dentro de límites)
+COLOR_MODERATELY = "#FFC107"  # amarillo — explotación moderada
+COLOR_OVER_EXPLOITED = "#E53935"  # rojo — sobrexplotado
+COLOR_DEPLETED = "#B71C1C"  # rojo oscuro — agotado
+COLOR_UNKNOWN = "#9E9E9E"  # gris — sin evaluación
 
 
 def _fao_status_color(codigo: str) -> str:
@@ -1468,11 +1588,15 @@ class FAOExporter:
 
         if df.empty or especie_fao_code not in df.get("especie_fao_code", pd.Series()).values:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 f"Sin datos de capturas para especie {especie_fao_code}.\n"
                 "Ejecutá scraper.seed_data() para cargar datos FAO.",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=11, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
             )
             ax.set_title(f"Capturas FAO — {especie_fao_code} (sin datos)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -1482,7 +1606,9 @@ class FAOExporter:
             return fig
 
         df_esp = df[df["especie_fao_code"] == especie_fao_code].copy()
-        especie_nombre = df_esp["especie"].iloc[0] if "especie" in df_esp.columns else especie_fao_code
+        especie_nombre = (
+            df_esp["especie"].iloc[0] if "especie" in df_esp.columns else especie_fao_code
+        )
 
         df_arg = df_esp[df_esp["pais"] == "Argentina"].sort_values("year")
         df_total = df_esp[df_esp["pais"] == "Total"].sort_values("year")
@@ -1492,23 +1618,40 @@ class FAOExporter:
 
         if not df_arg.empty:
             ax.plot(
-                df_arg["year"], df_arg["captura_tn"] / 1000,
-                "o-", color=COLOR_CBA, lw=2.2, ms=6, label="Argentina", zorder=4,
+                df_arg["year"],
+                df_arg["captura_tn"] / 1000,
+                "o-",
+                color=COLOR_CBA,
+                lw=2.2,
+                ms=6,
+                label="Argentina",
+                zorder=4,
             )
 
         if not df_total.empty:
             ax.plot(
-                df_total["year"], df_total["captura_tn"] / 1000,
-                "s--", color=COLOR_CRITICO, lw=1.8, ms=5, alpha=0.8,
-                label="Total Área FAO 41", zorder=3,
+                df_total["year"],
+                df_total["captura_tn"] / 1000,
+                "s--",
+                color=COLOR_CRITICO,
+                lw=1.8,
+                ms=5,
+                alpha=0.8,
+                label="Total Área FAO 41",
+                zorder=3,
             )
 
         for pais in otros_paises[:4]:
             df_pais = df_esp[df_esp["pais"] == pais].sort_values("year")
             if not df_pais.empty:
                 ax.plot(
-                    df_pais["year"], df_pais["captura_tn"] / 1000,
-                    "^:", lw=1.5, ms=4, alpha=0.7, label=pais,
+                    df_pais["year"],
+                    df_pais["captura_tn"] / 1000,
+                    "^:",
+                    lw=1.5,
+                    ms=4,
+                    alpha=0.7,
+                    label=pais,
                 )
 
         ax.set_xlabel("Año")
@@ -1518,9 +1661,7 @@ class FAOExporter:
             "Argentina vs Total Área FAO 41 (Atlántico Sudoccidental)"
         )
         ax.legend(loc="best", fontsize=9)
-        ax.yaxis.set_major_formatter(
-            mticker.FuncFormatter(lambda v, _: f"{v:.0f}k t")
-        )
+        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:.0f}k t"))
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
         fig.tight_layout()
 
@@ -1542,10 +1683,11 @@ class FAOExporter:
         try:
             from src.acquisition.fao_firms_scraper import calcular_share_argentina
         except ImportError:
+
             def calcular_share_argentina(df_cap):
-                total = df_cap[df_cap["pais"] == "Total"].set_index(
-                    ["especie_fao_code", "year"]
-                )["captura_tn"]
+                total = df_cap[df_cap["pais"] == "Total"].set_index(["especie_fao_code", "year"])[
+                    "captura_tn"
+                ]
                 arg = df_cap[df_cap["pais"] == "Argentina"].copy()
 
                 def _sh(row):
@@ -1563,10 +1705,14 @@ class FAOExporter:
 
         if df_cap.empty:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 "Sin datos de capturas FAO.\nEjecutá scraper.seed_data() primero.",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=11, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
             )
             ax.set_title("Share Argentina en capturas mundiales (sin datos)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -1577,10 +1723,15 @@ class FAOExporter:
         df_arg = calcular_share_argentina(df_cap)
         if df_arg.empty or "share_arg_pct" not in df_arg.columns:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 "No se pudo calcular share% de Argentina.\n"
                 "Verificá que haya datos de Total Área 41.",
-                ha="center", va="center", transform=ax.transAxes, fontsize=10, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=10,
+                color="gray",
             )
             ax.set_title("Share Argentina — datos insuficientes")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -1604,8 +1755,7 @@ class FAOExporter:
                 status_map[row["especie_fao_code"]] = row.get("estado_stock", "")
 
         colores = [
-            _fao_status_color(status_map.get(code, ""))
-            for code in df_latest["especie_fao_code"]
+            _fao_status_color(status_map.get(code, "")) for code in df_latest["especie_fao_code"]
         ]
 
         especie_labels = np.array(
@@ -1626,8 +1776,11 @@ class FAOExporter:
 
         for bar, val in zip(bars, shares):
             ax.text(
-                val + 0.5, bar.get_y() + bar.get_height() / 2,
-                f"{val:.1f}%", va="center", fontsize=9,
+                val + 0.5,
+                bar.get_y() + bar.get_height() / 2,
+                f"{val:.1f}%",
+                va="center",
+                fontsize=9,
             )
 
         ax.set_yticks(y_pos)
@@ -1641,6 +1794,7 @@ class FAOExporter:
 
         # Leyenda estado de stock
         from matplotlib.patches import Patch
+
         leyenda = [
             Patch(facecolor=COLOR_FULLY_EXPLOITED, label="Plena explotación (F)"),
             Patch(facecolor=COLOR_MODERATELY, label="Moderada / Recuperación (U/R)"),
@@ -1673,11 +1827,15 @@ class FAOExporter:
 
         if df_status.empty:
             ax.text(
-                0.5, 0.5,
+                0.5,
+                0.5,
                 "Sin datos de estado de stocks FAO FIRMS.\n"
                 "Ejecutá scraper.seed_data() para cargar datos.",
-                ha="center", va="center", transform=ax.transAxes,
-                fontsize=11, color="gray",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=11,
+                color="gray",
             )
             ax.set_title("Estado de stocks FAO FIRMS (sin datos)")
             fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -1704,10 +1862,14 @@ class FAOExporter:
         try:
             from src.acquisition.fao_firms_scraper import estado_stock_label
         except ImportError:
+
             def estado_stock_label(c):
                 labels = {
-                    "F": "Plena explotación", "O": "Sobrexplotado",
-                    "U": "Subexplotado", "R": "En recuperación", "D": "Agotado",
+                    "F": "Plena explotación",
+                    "O": "Sobrexplotado",
+                    "U": "Subexplotado",
+                    "R": "En recuperación",
+                    "D": "Agotado",
                 }
                 return labels.get(str(c).upper(), str(c))
 
@@ -1716,16 +1878,17 @@ class FAOExporter:
         ax.scatter(riesgo_vals, y_pos, color=colores, s=140, zorder=4, edgecolors="white", lw=1.5)
 
         tendencias = (
-            df_plot["tendencia"].values
-            if "tendencia" in df_plot.columns
-            else [""] * len(df_plot)
+            df_plot["tendencia"].values if "tendencia" in df_plot.columns else [""] * len(df_plot)
         )
         for i, (estado, tendencia) in enumerate(zip(df_plot["estado_stock"], tendencias)):
             lbl = estado_stock_label(str(estado))
             tend_str = f" ({tendencia})" if pd.notna(tendencia) and str(tendencia) != "" else ""
             ax.text(
-                riesgo_vals[i] + 0.08, y_pos[i],
-                f"{lbl}{tend_str}", va="center", fontsize=9,
+                riesgo_vals[i] + 0.08,
+                y_pos[i],
+                f"{lbl}{tend_str}",
+                va="center",
+                fontsize=9,
             )
 
         ax.set_yticks(y_pos)
@@ -1773,18 +1936,24 @@ class FAOExporter:
         if df.empty:
             return ResultadoEstadistico(
                 f"Kendall tau capturas Argentina — {especie_fao_code}",
-                np.nan, 1.0, "Sin datos de capturas FAO disponibles.", 0,
+                np.nan,
+                1.0,
+                "Sin datos de capturas FAO disponibles.",
+                0,
             )
 
-        df_esp = df[
-            (df["especie_fao_code"] == especie_fao_code) & (df["pais"] == "Argentina")
-        ].dropna(subset=["captura_tn"]).sort_values("year")
+        df_esp = (
+            df[(df["especie_fao_code"] == especie_fao_code) & (df["pais"] == "Argentina")]
+            .dropna(subset=["captura_tn"])
+            .sort_values("year")
+        )
 
         n = len(df_esp)
         if n < 3:
             return ResultadoEstadistico(
                 f"Kendall tau capturas Argentina — {especie_fao_code}",
-                np.nan, 1.0,
+                np.nan,
+                1.0,
                 f"Datos insuficientes (n={n}, se requieren ≥3 años).",
                 n,
             )
@@ -1807,7 +1976,10 @@ class FAOExporter:
 
         return ResultadoEstadistico(
             f"Kendall tau capturas Argentina — {especie_fao_code}",
-            tau, p, interp, n,
+            tau,
+            p,
+            interp,
+            n,
         )
 
     def test_sobrexplotacion_global(self) -> ResultadoEstadistico:
@@ -1827,7 +1999,8 @@ class FAOExporter:
         if n == 0:
             return ResultadoEstadistico(
                 "Test proporciones sobrexplotación — Argentina vs FAO global",
-                np.nan, 1.0,
+                np.nan,
+                1.0,
                 "Sin datos de estado de stocks FAO disponibles.",
                 0,
             )
@@ -1845,15 +2018,15 @@ class FAOExporter:
         if p < 0.05:
             interp = (
                 f"La proporción de stocks sobrexplotados/agotados en Argentina "
-                f"({prop_arg*100:.1f}%, n_sobre={n_sobre}/{n}) es significativamente "
-                f"mayor que el promedio global FAO ({FAO_GLOBAL_PROP*100:.1f}%). "
+                f"({prop_arg * 100:.1f}%, n_sobre={n_sobre}/{n}) es significativamente "
+                f"mayor que el promedio global FAO ({FAO_GLOBAL_PROP * 100:.1f}%). "
                 f"(p={p:.4f}, test binomial exacto, H₁: prop_arg > {FAO_GLOBAL_PROP:.3f})"
             )
         else:
             interp = (
                 f"No hay evidencia suficiente de que Argentina supere el promedio global FAO "
-                f"de sobrexplotación ({FAO_GLOBAL_PROP*100:.1f}%). "
-                f"Argentina: {prop_arg*100:.1f}% ({n_sobre}/{n} stocks). "
+                f"de sobrexplotación ({FAO_GLOBAL_PROP * 100:.1f}%). "
+                f"Argentina: {prop_arg * 100:.1f}% ({n_sobre}/{n} stocks). "
                 f"(p={p:.4f}, test binomial exacto)"
             )
 
@@ -1896,7 +2069,9 @@ class FAOExporter:
         if not df_status.empty:
             status_path = self.out / "datos" / "fao_stock_status.csv"
             df_status.to_csv(status_path, index=False, encoding="utf-8-sig")
-            logger.info(f"FAO stock status CSV exportado: {status_path} ({len(df_status)} registros)")
+            logger.info(
+                f"FAO stock status CSV exportado: {status_path} ({len(df_status)} registros)"
+            )
 
         return out_path
 
@@ -1922,6 +2097,7 @@ class FAOExporter:
         if not df_cap.empty and "pais" in df_cap.columns:
             try:
                 from src.acquisition.fao_firms_scraper import calcular_share_argentina
+
                 df_arg = calcular_share_argentina(df_cap)
                 if not df_arg.empty and "share_arg_pct" in df_arg.columns:
                     latest = (
@@ -1939,10 +2115,14 @@ class FAOExporter:
         try:
             from src.acquisition.fao_firms_scraper import estado_stock_label
         except ImportError:
+
             def estado_stock_label(c):
                 labels = {
-                    "F": "Plena explotación", "O": "Sobrexplotado",
-                    "U": "Subexplotado", "R": "En recuperación", "D": "Agotado",
+                    "F": "Plena explotación",
+                    "O": "Sobrexplotado",
+                    "U": "Subexplotado",
+                    "R": "En recuperación",
+                    "D": "Agotado",
                 }
                 return labels.get(str(c).upper(), str(c))
 
@@ -1953,9 +2133,7 @@ class FAOExporter:
             estado = estado_stock_label(str(row.get("estado_stock", "")))
             tendencia = row.get("tendencia", "---")
             year_eval = (
-                str(int(row["year_evaluacion"]))
-                if pd.notna(row.get("year_evaluacion"))
-                else "---"
+                str(int(row["year_evaluacion"])) if pd.notna(row.get("year_evaluacion")) else "---"
             )
             share = share_map.get(fao_code, "---")
 
@@ -2001,12 +2179,12 @@ class FAOExporter:
 
 # Mapeo ordinal estado de stock → valor numérico
 _ESTADO_STOCK_ORDINAL = {
-    "U": 0,   # sub-explotado
-    "R": 1,   # en recuperación
-    "F": 2,   # plena explotación
-    "M": 2,   # moderadamente explotado
-    "O": 3,   # sobrexplotado
-    "D": 4,   # agotado
+    "U": 0,  # sub-explotado
+    "R": 1,  # en recuperación
+    "F": 2,  # plena explotación
+    "M": 2,  # moderadamente explotado
+    "O": 3,  # sobrexplotado
+    "D": 4,  # agotado
     "": -1,
 }
 
@@ -2018,10 +2196,10 @@ FEATURES_CORPUS_COMPLETO = [
     "estado_stock_ord",
     "ratio_captura_previo",
     "cba_alternativa_ratio",
-    "quorum_sesion",        # disponible con pipeline completo
-    "unanimidad",           # disponible con pipeline completo
-    "hhi_especie",          # disponible con pipeline completo
-    "n_empresas_red",       # disponible con pipeline completo
+    "quorum_sesion",  # disponible con pipeline completo
+    "unanimidad",  # disponible con pipeline completo
+    "hhi_especie",  # disponible con pipeline completo
+    "n_empresas_red",  # disponible con pipeline completo
 ]
 
 
@@ -2042,7 +2220,9 @@ class ModelExporter:
         mexp.figura_shap_summary(result, X)
     """
 
-    def __init__(self, comparator, fao_scraper=None, output_dir: str | Path = "outputs/FisheriesAudit_ALG") -> None:
+    def __init__(
+        self, comparator, fao_scraper=None, output_dir: str | Path = "outputs/FisheriesAudit_ALG"
+    ) -> None:
         self.comp = comparator
         self.fao = fao_scraper
         self.out = Path(output_dir)
@@ -2051,7 +2231,9 @@ class ModelExporter:
         (self.out / "tablas_latex").mkdir(exist_ok=True)
         (self.out / "modelos").mkdir(exist_ok=True)
 
-    def build_feature_matrix(self, synthetic_seed: int = 42) -> tuple[pd.DataFrame, pd.Series, list[str]]:
+    def build_feature_matrix(
+        self, synthetic_seed: int = 42
+    ) -> tuple[pd.DataFrame, pd.Series, list[str]]:
         """
         Construye la matriz de features X y el target y.
 
@@ -2082,13 +2264,15 @@ class ModelExporter:
         # Construir tabla base desde evaluaciones INIDEP
         df = df_inidep[df_inidep["cba_recomendada_tn"].notna()].copy()
         if df.empty:
-            df = pd.DataFrame({
-                "especie_code": ["merluza_comun"] * 5,
-                "year": [2020, 2021, 2022, 2023, 2024],
-                "cba_recomendada_tn": [250000.0, 260000.0, 245000.0, 255000.0, 240000.0],
-                "cba_alternativa_tn": [220000.0, 230000.0, 215000.0, 225000.0, 210000.0],
-                "estado_stock": ["O", "O", "O", "O", "O"],
-            })
+            df = pd.DataFrame(
+                {
+                    "especie_code": ["merluza_comun"] * 5,
+                    "year": [2020, 2021, 2022, 2023, 2024],
+                    "cba_recomendada_tn": [250000.0, 260000.0, 245000.0, 255000.0, 240000.0],
+                    "cba_alternativa_tn": [220000.0, 230000.0, 215000.0, 225000.0, 210000.0],
+                    "estado_stock": ["O", "O", "O", "O", "O"],
+                }
+            )
 
         # Encode especie
         especies_unicas = sorted(df["especie_code"].unique())
@@ -2109,8 +2293,8 @@ class ModelExporter:
 
         # Ratio CBA alternativa / CBA principal
         df["cba_alternativa_ratio"] = (
-            df["cba_alternativa_tn"] / df["cba_recomendada_tn"]
-        ).fillna(0.8).clip(0, 1)
+            (df["cba_alternativa_tn"] / df["cba_recomendada_tn"]).fillna(0.8).clip(0, 1)
+        )
 
         # Captura previa (ratio captura_real_tn / cba, lag 1 año)
         df_cap_map: dict[tuple, float] = {}
@@ -2140,15 +2324,21 @@ class ModelExporter:
         p_adj = (
             p_base
             + 0.10 * (df["estado_stock_ord"] > 2).astype(float)  # sobrexplotado → más presión
-            - 0.05 * df["cba_alternativa_ratio"]                  # CBA alternativa baja → más cautela
-            + 0.05 * (df["year"] > 2010).astype(float)           # post-2010 → más presión
+            - 0.05 * df["cba_alternativa_ratio"]  # CBA alternativa baja → más cautela
+            + 0.05 * (df["year"] > 2010).astype(float)  # post-2010 → más presión
         ).clip(0.2, 0.9)
 
         y_synthetic = rng.binomial(1, p_adj.values).astype(int)
         y = pd.Series(y_synthetic, index=df.index, name="sobreasignacion")
 
-        feature_cols = ["cba_recomendada_tn", "year", "especie_enc",
-                        "estado_stock_ord", "ratio_captura_previo", "cba_alternativa_ratio"]
+        feature_cols = [
+            "cba_recomendada_tn",
+            "year",
+            "especie_enc",
+            "estado_stock_ord",
+            "ratio_captura_previo",
+            "cba_alternativa_ratio",
+        ]
 
         X = df[feature_cols].copy()
 
@@ -2170,9 +2360,7 @@ class ModelExporter:
         )
         return X, y, feature_names
 
-    def train_and_evaluate(
-        self, X: pd.DataFrame, y: pd.Series, feature_names: list[str]
-    ) -> dict:
+    def train_and_evaluate(self, X: pd.DataFrame, y: pd.Series, feature_names: list[str]) -> dict:
         """
         Entrena Random Forest + Logistic Regression, evalúa con CV estratificada.
 
@@ -2196,8 +2384,9 @@ class ModelExporter:
         cv = StratifiedKFold(n_splits=min(5, y.value_counts().min()), shuffle=True, random_state=42)
 
         # ── Random Forest ──────────────────────────────────────────────────
-        rf = RandomForestClassifier(n_estimators=200, max_depth=4, random_state=42,
-                                    class_weight="balanced")
+        rf = RandomForestClassifier(
+            n_estimators=200, max_depth=4, random_state=42, class_weight="balanced"
+        )
         rf_scores = cross_val_score(rf, X_clean, y, cv=cv, scoring="roc_auc")
         rf.fit(X_clean, y)
         rf_proba = rf.predict_proba(X_clean)[:, 1]
@@ -2205,10 +2394,12 @@ class ModelExporter:
         rf_fpr, rf_tpr, _ = roc_curve(y, rf_proba)
 
         # ── Logistic Regression ────────────────────────────────────────────
-        lr_pipe = Pipeline([
-            ("scaler", StandardScaler()),
-            ("lr", LogisticRegression(random_state=42, class_weight="balanced", max_iter=500))
-        ])
+        lr_pipe = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("lr", LogisticRegression(random_state=42, class_weight="balanced", max_iter=500)),
+            ]
+        )
         lr_scores = cross_val_score(lr_pipe, X_clean, y, cv=cv, scoring="roc_auc")
         lr_pipe.fit(X_clean, y)
         lr_proba = lr_pipe.predict_proba(X_clean)[:, 1]
@@ -2231,8 +2422,10 @@ class ModelExporter:
             "lr_scores": lr_scores,
             "rf_proba": rf_proba,
             "lr_proba": lr_proba,
-            "rf_fpr": rf_fpr, "rf_tpr": rf_tpr,
-            "lr_fpr": lr_fpr, "lr_tpr": lr_tpr,
+            "rf_fpr": rf_fpr,
+            "rf_tpr": rf_tpr,
+            "lr_fpr": lr_fpr,
+            "lr_tpr": lr_tpr,
             "confusion_matrix": cm,
             "classification_report": report,
             "rf_auc_cv": rf_scores.mean(),
@@ -2280,10 +2473,21 @@ class ModelExporter:
         rf_auc = auc_score(result["rf_fpr"], result["rf_tpr"])
         lr_auc = auc_score(result["lr_fpr"], result["lr_tpr"])
 
-        ax.plot(result["rf_fpr"], result["rf_tpr"],
-                color=COLOR_CMP, lw=2, label=f"Random Forest (AUC={rf_auc:.3f})")
-        ax.plot(result["lr_fpr"], result["lr_tpr"],
-                color=COLOR_CBA, lw=2, ls="--", label=f"Regresión Logística (AUC={lr_auc:.3f})")
+        ax.plot(
+            result["rf_fpr"],
+            result["rf_tpr"],
+            color=COLOR_CMP,
+            lw=2,
+            label=f"Random Forest (AUC={rf_auc:.3f})",
+        )
+        ax.plot(
+            result["lr_fpr"],
+            result["lr_tpr"],
+            color=COLOR_CBA,
+            lw=2,
+            ls="--",
+            label=f"Regresión Logística (AUC={lr_auc:.3f})",
+        )
         ax.plot([0, 1], [0, 1], color="gray", lw=1, ls=":", label="Aleatorio (AUC=0.5)")
 
         ax.set_xlabel("Tasa de Falsos Positivos")
@@ -2316,10 +2520,15 @@ class ModelExporter:
         total = cm.sum()
         for i in range(2):
             for j in range(2):
-                ax.text(j, i, f"{cm[i,j]}\n({cm[i,j]/total:.0%})",
-                        ha="center", va="center",
-                        color="white" if cm[i, j] > cm.max() / 2 else "black",
-                        fontsize=10)
+                ax.text(
+                    j,
+                    i,
+                    f"{cm[i, j]}\n({cm[i, j] / total:.0%})",
+                    ha="center",
+                    va="center",
+                    color="white" if cm[i, j] > cm.max() / 2 else "black",
+                    fontsize=10,
+                )
 
         plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
@@ -2335,7 +2544,14 @@ class ModelExporter:
             import shap as shap_lib
         except ImportError:
             fig, ax = plt.subplots(figsize=(8, 4))
-            ax.text(0.5, 0.5, "shap no instalado. pip install shap", ha="center", va="center", transform=ax.transAxes)
+            ax.text(
+                0.5,
+                0.5,
+                "shap no instalado. pip install shap",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+            )
             return fig
 
         rf = result["rf"]
@@ -2347,9 +2563,9 @@ class ModelExporter:
 
         # Para clasificación binaria, usar clase positiva (array de shape n×features)
         if isinstance(shap_values, list):
-            sv = shap_values[1]          # lista [clase0, clase1]
+            sv = shap_values[1]  # lista [clase0, clase1]
         elif hasattr(shap_values, "values"):
-            raw = shap_values.values     # Explanation object (shap ≥0.42)
+            raw = shap_values.values  # Explanation object (shap ≥0.42)
             sv = raw[:, :, 1] if raw.ndim == 3 else raw
         else:
             sv = shap_values
@@ -2364,16 +2580,23 @@ class ModelExporter:
             sv_col = sv_col[:n_samples]  # alinear tamaños si difieren
             jitter = np.random.default_rng(i).uniform(-0.3, 0.3, size=len(sv_col))
             scatter = ax.scatter(
-                sv_col, i + jitter,
-                c=col_vals[:len(sv_col)], cmap="coolwarm", s=20, alpha=0.7,
-                vmin=col_vals.min(), vmax=col_vals.max()
+                sv_col,
+                i + jitter,
+                c=col_vals[: len(sv_col)],
+                cmap="coolwarm",
+                s=20,
+                alpha=0.7,
+                vmin=col_vals.min(),
+                vmax=col_vals.max(),
             )
 
         ax.set_yticks(range(len(feature_names)))
         ax.set_yticklabels(feature_names)
         ax.axvline(0, color="gray", lw=0.8, ls="--")
         ax.set_xlabel("SHAP value (impacto en log-odds de sobreasignación)")
-        ax.set_title("Valores SHAP — impacto de cada variable en la predicción\n(rojo = valor alto de la feature, azul = valor bajo)")
+        ax.set_title(
+            "Valores SHAP — impacto de cada variable en la predicción\n(rojo = valor alto de la feature, azul = valor bajo)"
+        )
         plt.colorbar(scatter, ax=ax, label="Valor de la feature (normalizado)")
         fig.text(0.99, 0.01, SERIES_BRAND, ha="right", va="bottom", fontsize=7, color="gray")
         fig.tight_layout()

@@ -1,7 +1,5 @@
 """Página 10 — Contexto Internacional FAO FIRMS."""
 
-from pathlib import Path
-
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -11,8 +9,8 @@ from src.acquisition.fao_firms_scraper import (
     FAOFIRMSScraper,
     estado_stock_color,
 )
-
 from src.dashboard._ui import data_source, page_header_raw
+
 page_header_raw("🌎 Contexto Internacional FAO FIRMS")
 data_source("FAO FIRMS — Área de pesca 41 (Atlántico SO)", estado="verificado")
 st.markdown(
@@ -21,15 +19,18 @@ st.markdown(
 )
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 # ── Inicializar datos ─────────────────────────────────────────────────────────
+
 
 @st.cache_resource(show_spinner="Cargando datos FAO FIRMS...")
 def get_scraper():
     s = FAOFIRMSScraper(db_path=DB_PATH)
     s.seed_data()
     return s
+
 
 scraper = get_scraper()
 df_capturas = scraper.get_capturas_df()
@@ -41,11 +42,13 @@ if df_capturas.empty:
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3 = st.tabs([
-    "📊 Capturas — Argentina vs. Mundo",
-    "🚦 Estado de Stocks",
-    "📋 Datos completos",
-])
+tab1, tab2, tab3 = st.tabs(
+    [
+        "📊 Capturas — Argentina vs. Mundo",
+        "🚦 Estado de Stocks",
+        "📋 Datos completos",
+    ]
+)
 
 # ── Tab 1: Capturas ───────────────────────────────────────────────────────────
 
@@ -70,28 +73,34 @@ with tab1:
             on="especie",
             suffixes=("_arg", "_total"),
         )
-        df_merge["share_pct"] = (df_merge["captura_tn_arg"] / df_merge["captura_tn_total"] * 100).round(1)
+        df_merge["share_pct"] = (
+            df_merge["captura_tn_arg"] / df_merge["captura_tn_total"] * 100
+        ).round(1)
 
         # Gráfico de barras stacked: Argentina vs Resto del mundo
         df_merge["resto_tn"] = df_merge["captura_tn_total"] - df_merge["captura_tn_arg"]
 
         fig = go.Figure()
-        fig.add_trace(go.Bar(
-            name="Argentina",
-            x=df_merge["especie"],
-            y=df_merge["captura_tn_arg"],
-            marker_color="#1565C0",
-            text=df_merge["captura_tn_arg"].apply(lambda x: f"{x:,.0f} tn"),
-            textposition="inside",
-        ))
-        fig.add_trace(go.Bar(
-            name="Resto del Área 41",
-            x=df_merge["especie"],
-            y=df_merge["resto_tn"],
-            marker_color="#90CAF9",
-            text=df_merge["resto_tn"].apply(lambda x: f"{x:,.0f} tn"),
-            textposition="inside",
-        ))
+        fig.add_trace(
+            go.Bar(
+                name="Argentina",
+                x=df_merge["especie"],
+                y=df_merge["captura_tn_arg"],
+                marker_color="#1565C0",
+                text=df_merge["captura_tn_arg"].apply(lambda x: f"{x:,.0f} tn"),
+                textposition="inside",
+            )
+        )
+        fig.add_trace(
+            go.Bar(
+                name="Resto del Área 41",
+                x=df_merge["especie"],
+                y=df_merge["resto_tn"],
+                marker_color="#90CAF9",
+                text=df_merge["resto_tn"].apply(lambda x: f"{x:,.0f} tn"),
+                textposition="inside",
+            )
+        )
         fig.update_layout(
             barmode="stack",
             title="Captura Total Área FAO 41 — Último año disponible",
@@ -127,28 +136,36 @@ with tab1:
 
         fig2 = go.Figure()
         if not df_esp_total.empty:
-            fig2.add_trace(go.Bar(
-                name="Total Área 41",
-                x=df_esp_total["year"],
-                y=df_esp_total["captura_tn"],
-                marker_color="#E3F2FD",
-                marker_line_color="#1565C0",
-                marker_line_width=1,
-            ))
-        fig2.add_trace(go.Bar(
-            name="Argentina",
-            x=df_esp_arg["year"],
-            y=df_esp_arg["captura_tn"],
-            marker_color="#1565C0",
-        ))
+            fig2.add_trace(
+                go.Bar(
+                    name="Total Área 41",
+                    x=df_esp_total["year"],
+                    y=df_esp_total["captura_tn"],
+                    marker_color="#E3F2FD",
+                    marker_line_color="#1565C0",
+                    marker_line_width=1,
+                )
+            )
+        fig2.add_trace(
+            go.Bar(
+                name="Argentina",
+                x=df_esp_arg["year"],
+                y=df_esp_arg["captura_tn"],
+                marker_color="#1565C0",
+            )
+        )
 
         # Overlay: línea de cuota CFP si hay datos
         if DB_PATH.exists():
             try:
                 import sqlite3
+
                 fao_code = next(
-                    (v["fao_code"] for k, v in ESPECIE_FAO_CODES.items()
-                     if especie_sel in k or k in especie_sel.lower().replace(" ", "_")),
+                    (
+                        v["fao_code"]
+                        for k, v in ESPECIE_FAO_CODES.items()
+                        if especie_sel in k or k in especie_sel.lower().replace(" ", "_")
+                    ),
                     None,
                 )
                 if fao_code:
@@ -160,13 +177,15 @@ with tab1:
                     )
                     conn.close()
                     if not df_cfp.empty:
-                        fig2.add_trace(go.Scatter(
-                            name="CMP aprobada CFP",
-                            x=df_cfp["year"],
-                            y=df_cfp["cmp_aprobada_tn"],
-                            mode="lines+markers",
-                            line={"color": "#E65100", "width": 2, "dash": "dot"},
-                        ))
+                        fig2.add_trace(
+                            go.Scatter(
+                                name="CMP aprobada CFP",
+                                x=df_cfp["year"],
+                                y=df_cfp["cmp_aprobada_tn"],
+                                mode="lines+markers",
+                                line={"color": "#E65100", "width": 2, "dash": "dot"},
+                            )
+                        )
             except Exception:
                 pass
 
@@ -216,10 +235,10 @@ with tab2:
                 st.markdown(
                     f"""<div style="background:{bg};border-left:4px solid {border};
                     padding:10px;border-radius:4px;margin-bottom:8px">
-                    <b>{row['especie'].title()}</b> ({row['especie_fao_code']})<br>
-                    <span style="font-size:1.2em"><b>{row['estado_stock_desc']}</b></span>
-                    {f"<br>📈 Tendencia: {row['tendencia']}" if row.get('tendencia') else ""}
-                    {f"<br><small>Evaluación: {row['year_evaluacion']}</small>" if row.get('year_evaluacion') else ""}
+                    <b>{row["especie"].title()}</b> ({row["especie_fao_code"]})<br>
+                    <span style="font-size:1.2em"><b>{row["estado_stock_desc"]}</b></span>
+                    {f"<br>📈 Tendencia: {row['tendencia']}" if row.get("tendencia") else ""}
+                    {f"<br><small>Evaluación: {row['year_evaluacion']}</small>" if row.get("year_evaluacion") else ""}
                     </div>""",
                     unsafe_allow_html=True,
                 )
@@ -229,8 +248,16 @@ with tab2:
         # Tabla detallada
         st.markdown("**Detalle de evaluaciones:**")
         cols_show = [
-            c for c in ["especie", "estado_stock", "estado_stock_desc", "tendencia",
-                        "year_evaluacion", "fuente", "notas"]
+            c
+            for c in [
+                "especie",
+                "estado_stock",
+                "estado_stock_desc",
+                "tendencia",
+                "year_evaluacion",
+                "fuente",
+                "notas",
+            ]
             if c in df_status.columns
         ]
         st.dataframe(df_status[cols_show], width="stretch", hide_index=True)

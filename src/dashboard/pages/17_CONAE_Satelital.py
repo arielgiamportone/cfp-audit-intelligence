@@ -13,22 +13,29 @@ Esfuerzo: Global Fishing Watch AIS (Kroodsma et al. 2018, Science).
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("🛰️ CONAE — Esfuerzo Pesquero Satelital", "Datos satelitales del geoportal marino de la CONAE. "
+
+page_header_raw(
+    "🛰️ CONAE — Esfuerzo Pesquero Satelital",
+    "Datos satelitales del geoportal marino de la CONAE. "
     "Verifica si el esfuerzo pesquero real (GFW AIS) disminuye durante períodos de veda "
-    "— evidencia independiente del corpus de actas CFP (ADR-010).")
+    "— evidencia independiente del corpus de actas CFP (ADR-010).",
+)
 
 with import_guard("El módulo satelital CONAE"):
-    from src.acquisition.conae_marine_scraper import ZONAS_MUESTRA, CONAEMarineClient, get_esfuerzo_df
+    from src.acquisition.conae_marine_scraper import (
+        ZONAS_MUESTRA,
+        CONAEMarineClient,
+        get_esfuerzo_df,
+    )
     from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -36,9 +43,7 @@ with import_guard("El módulo satelital CONAE"):
 with st.sidebar:
     st.header("Configuración")
     if st.button("📡 Muestrear datos CONAE (hoy)"):
-        with st.spinner(
-            "Consultando WMS geoservicios2.conae.gov.ar — puede tardar ~2 min..."
-        ):
+        with st.spinner("Consultando WMS geoservicios2.conae.gov.ar — puede tardar ~2 min..."):
             try:
                 client = CONAEMarineClient(delay=0.5)
                 n = client.scrape_and_save(DB_PATH)
@@ -64,10 +69,12 @@ with st.sidebar:
 
 # ── Carga de datos ────────────────────────────────────────────────────────────
 
+
 @st.cache_data(ttl=120)
 def _cargar_datos() -> pd.DataFrame:
     df = get_esfuerzo_df(DB_PATH)
     return df if df is not None else pd.DataFrame()
+
 
 df = _cargar_datos()
 
@@ -189,8 +196,14 @@ with tab_clorofila:
         try:
             import plotly.express as px
 
-            col_usar = "clorofila_8d" if df_chla["clorofila_8d"].notna().sum() >= df_chla["clorofila"].notna().sum() else "clorofila"
-            label_chla = "Chl-a 8d (mg/m³)" if col_usar == "clorofila_8d" else "Chl-a diaria (mg/m³)"
+            col_usar = (
+                "clorofila_8d"
+                if df_chla["clorofila_8d"].notna().sum() >= df_chla["clorofila"].notna().sum()
+                else "clorofila"
+            )
+            label_chla = (
+                "Chl-a 8d (mg/m³)" if col_usar == "clorofila_8d" else "Chl-a diaria (mg/m³)"
+            )
 
             fig = px.line(
                 df_chla[df_chla[col_usar].notna()].sort_values("fecha"),

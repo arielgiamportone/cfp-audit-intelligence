@@ -19,9 +19,11 @@ import pandas as pd
 import streamlit as st
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 from src.dashboard._ui import page_header_raw
+
 page_header_raw("🔬 Evaluación y Validación del Sistema de Auditoría")
 
 st.info(
@@ -46,23 +48,28 @@ except ImportError as e:
     st.error(f"Error importando módulos de evaluación: {e}")
     st.stop()
 
+
 @st.cache_resource
 def get_evaluator():
     return GroundTruthEvaluator(DB_PATH)
+
 
 @st.cache_resource
 def get_sensitivity():
     return SensitivityAnalyzer(DB_PATH)
 
+
 evaluator = get_evaluator()
 sensitivity = get_sensitivity()
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📝 Anotar Resoluciones",
-    "📊 Métricas del Sistema",
-    "⬆️ Export / Import",
-    "🎚️ Sensibilidad de Umbrales",
-])
+tab1, tab2, tab3, tab4 = st.tabs(
+    [
+        "📝 Anotar Resoluciones",
+        "📊 Métricas del Sistema",
+        "⬆️ Export / Import",
+        "🎚️ Sensibilidad de Umbrales",
+    ]
+)
 
 # ─── Tab 1: Anotar ───────────────────────────────────────────────────────────
 with tab1:
@@ -106,7 +113,9 @@ with tab1:
     if df_res.empty:
         gold_df = evaluator.get_gold_set()
         if not gold_df.empty:
-            st.success("✅ No hay resoluciones del pipeline pendientes. Mostrando gold set sintético.")
+            st.success(
+                "✅ No hay resoluciones del pipeline pendientes. Mostrando gold set sintético."
+            )
             df_res = gold_df[["resolucion_id", "categoria_humana", "texto_completo"]].head(5).copy()
             df_res.columns = ["id", "categoria_ia", "texto_preview"]
             df_res["tipo"] = "gold_set"
@@ -143,6 +152,7 @@ with tab1:
     if st.button("💾 Guardar anotación", type="primary"):
         try:
             from src.acquisition.catalog_manager import CatalogManager
+
             cm = CatalogManager(DB_PATH)
             cm.upsert_anotacion(
                 resolucion_id=int(row["id"]),
@@ -228,6 +238,7 @@ with tab3:
         if st.button("📥 Generar CSV de anotación"):
             try:
                 import io as io_mod
+
                 buf = io_mod.BytesIO()
                 n = evaluator.export_for_expert(
                     Path("data/reports/muestra_anotacion.csv"), n=n_export
@@ -241,7 +252,9 @@ with tab3:
                     mime="text/csv",
                 )
             except Exception as exc:
-                st.warning(f"No se pudo exportar: {exc}. Asegúrese de ejecutar --step audit primero.")
+                st.warning(
+                    f"No se pudo exportar: {exc}. Asegúrese de ejecutar --step audit primero."
+                )
 
     with col_imp:
         st.subheader("⬆️ Importar anotaciones del experto")
@@ -324,21 +337,27 @@ with tab4:
 
         estable = stability["hallazgos_estables"]
         if estable:
-            st.success("✅ Hallazgos estables: la variación ±5% de umbrales cambia ≤2 alertas críticas")
+            st.success(
+                "✅ Hallazgos estables: la variación ±5% de umbrales cambia ≤2 alertas críticas"
+            )
         else:
-            st.warning("⚠️ Hallazgos sensibles a los umbrales: documentar en la sección de limitaciones")
+            st.warning(
+                "⚠️ Hallazgos sensibles a los umbrales: documentar en la sección de limitaciones"
+            )
 
         # Tabla de resultados por delta
         st.subheader("Variación de críticos según ±5% en umbrales")
         rows = []
         for k, v in stability["resultados_por_delta"].items():
-            rows.append({
-                "Delta": k,
-                "Umbral amarillo": f"{v['amarillo_min']:.3f}",
-                "Umbral rojo": f"{v['rojo_min']:.3f}",
-                "Críticos": v.get("n_critico", 0),
-                "Rojos": v.get("n_rojo", 0),
-            })
+            rows.append(
+                {
+                    "Delta": k,
+                    "Umbral amarillo": f"{v['amarillo_min']:.3f}",
+                    "Umbral rojo": f"{v['rojo_min']:.3f}",
+                    "Críticos": v.get("n_critico", 0),
+                    "Rojos": v.get("n_rojo", 0),
+                }
+            )
         st.dataframe(pd.DataFrame(rows), width="stretch")
 
     # Grilla completa de sensibilidad

@@ -10,18 +10,21 @@ Los datos marcados como 'seed_demo' son demostrativos; deben ser verificados.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import streamlit as st
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("🕵️ Red de Conflictos de Interés — CFP vs. Industria Pesquera", "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
+
+page_header_raw(
+    "🕵️ Red de Conflictos de Interés — CFP vs. Industria Pesquera",
+    "Cruce entre cargos directivos en empresas pesqueras (Boletín Oficial) "
     "y apariciones en actas del CFP. "
-    "⚠️ Datos demo hasta verificación por experto legal.")
+    "⚠️ Datos demo hasta verificación por experto legal.",
+)
 
 with import_guard("La red de conflictos de interés"):
     import networkx as nx
@@ -56,6 +59,7 @@ with st.sidebar:
 
 # ── Carga de datos ────────────────────────────────────────────────────────────
 
+
 @st.cache_data(ttl=120)
 def cargar_conflictos(db: str, solo_alta: bool, min_res: int) -> tuple[pd.DataFrame, dict]:
     cd = ConflictDetector(db)
@@ -68,6 +72,7 @@ def cargar_conflictos(db: str, solo_alta: bool, min_res: int) -> tuple[pd.DataFr
         df = df[df["n_resoluciones"] >= min_res]
     summary = cd.conflict_summary(df)
     return df, summary
+
 
 df_conf, resumen = cargar_conflictos(str(DB_PATH), mostrar_solo_alta, min_resoluciones)
 
@@ -84,6 +89,7 @@ st.divider()
 tab1, tab2, tab3, tab4 = st.tabs(
     ["🕸️ Grafo interactivo", "📋 Tabla de conflictos", "🏢 Directores por empresa", "📖 Metodología"]
 )
+
 
 def _build_plotly_graph(G: nx.Graph) -> go.Figure:
     """Construye figura Plotly del grafo de conflictos."""
@@ -145,6 +151,7 @@ def _build_plotly_graph(G: nx.Graph) -> go.Figure:
     )
     return go.Figure(data=edge_traces + [node_trace], layout=layout)
 
+
 # ── Tab 1: Grafo ──────────────────────────────────────────────────────────────
 
 with tab1:
@@ -171,7 +178,9 @@ with tab2:
     else:
         sev_cols = {"alta": "🔴", "media": "🟡", "baja": "🟢"}
         df_display = df_conf.copy()
-        df_display["Severidad"] = df_display["severidad"].map(sev_cols) + " " + df_display["severidad"]
+        df_display["Severidad"] = (
+            df_display["severidad"].map(sev_cols) + " " + df_display["severidad"]
+        )
         df_display = df_display.rename(
             columns={
                 "persona_nombre": "Persona",
@@ -204,7 +213,9 @@ with tab3:
         empresa_sel = st.selectbox("Seleccionar empresa", empresas)
         df_emp = df_cargos[df_cargos["empresa_nombre"] == empresa_sel]
         st.dataframe(
-            df_emp[["persona_nombre", "cargo", "desde_year", "hasta_year", "fuente", "verificado"]].rename(
+            df_emp[
+                ["persona_nombre", "cargo", "desde_year", "hasta_year", "fuente", "verificado"]
+            ].rename(
                 columns={
                     "persona_nombre": "Persona",
                     "cargo": "Cargo",

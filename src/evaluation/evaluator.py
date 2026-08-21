@@ -49,19 +49,13 @@ def _cohen_kappa(labels_a: list[str], labels_b: list[str]) -> float:
     return round((observed_agree - expected) / (1 - expected), 4)
 
 
-def _precision_recall_f1(
-    y_true: list[str], y_pred: list[str], categoria: str
-) -> dict[str, float]:
+def _precision_recall_f1(y_true: list[str], y_pred: list[str], categoria: str) -> dict[str, float]:
     tp = sum(t == categoria and p == categoria for t, p in zip(y_true, y_pred, strict=False))
     fp = sum(t != categoria and p == categoria for t, p in zip(y_true, y_pred, strict=False))
     fn = sum(t == categoria and p != categoria for t, p in zip(y_true, y_pred, strict=False))
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = (
-        2 * precision * recall / (precision + recall)
-        if (precision + recall) > 0
-        else 0.0
-    )
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     return {
         "precision": round(precision, 4),
         "recall": round(recall, 4),
@@ -144,9 +138,7 @@ class GroundTruthEvaluator:
         kappa = _cohen_kappa(y_ia, y_hum)
         accuracy = sum(a == b for a, b in zip(y_ia, y_hum, strict=False)) / len(y_ia)
 
-        metricas_por_cat = {
-            cat: _precision_recall_f1(y_hum, y_ia, cat) for cat in CATEGORIAS
-        }
+        metricas_por_cat = {cat: _precision_recall_f1(y_hum, y_ia, cat) for cat in CATEGORIAS}
 
         macro_f1 = sum(m["f1"] for m in metricas_por_cat.values()) / len(CATEGORIAS)
 
@@ -194,9 +186,18 @@ class GroundTruthEvaluator:
         if df.empty:
             df = pd.DataFrame(
                 columns=[
-                    "resolucion_id", "numero", "tipo", "fecha", "riesgo_score",
-                    "categoria", "texto_preview", "acta_year",
-                    "categoria_humana", "riesgo_score_humano", "notas", "confianza_pct",
+                    "resolucion_id",
+                    "numero",
+                    "tipo",
+                    "fecha",
+                    "riesgo_score",
+                    "categoria",
+                    "texto_preview",
+                    "acta_year",
+                    "categoria_humana",
+                    "riesgo_score_humano",
+                    "notas",
+                    "confianza_pct",
                 ]
             )
 
@@ -263,7 +264,9 @@ class GroundTruthEvaluator:
                             row.get("categoria"),
                             row["categoria_humana"].lower().strip(),
                             float(row["riesgo_score"]) if row.get("riesgo_score") else None,
-                            int(row["riesgo_score_humano"]) if row.get("riesgo_score_humano") else None,
+                            int(row["riesgo_score_humano"])
+                            if row.get("riesgo_score_humano")
+                            else None,
                             row.get("notas"),
                             int(row["confianza_pct"]) if row.get("confianza_pct") else None,
                         ),

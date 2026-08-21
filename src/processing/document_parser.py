@@ -300,7 +300,9 @@ class Decision:
         None  # inicio de vigencia ISO parcial: "YYYY", "YYYY-MM", "YYYY-MM-DD"
     )
     periodo_vigencia_fin: str | None = None  # fin de vigencia ISO parcial
-    asignaciones: list[AsignacionCuota] = field(default_factory=list)  # empresa → tn en distribuciones CITC
+    asignaciones: list[AsignacionCuota] = field(
+        default_factory=list
+    )  # empresa → tn en distribuciones CITC
 
 
 @dataclass

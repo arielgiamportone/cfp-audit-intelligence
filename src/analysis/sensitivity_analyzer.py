@@ -71,7 +71,9 @@ class SensitivityAnalyzer:
                 )
                 return df
             except Exception:
-                return pd.DataFrame(columns=["especie_code", "zona", "year", "ratio_sobreasignacion"])
+                return pd.DataFrame(
+                    columns=["especie_code", "zona", "year", "ratio_sobreasignacion"]
+                )
 
     @staticmethod
     def _classify(ratio: float, amarillo_min: float, rojo_min: float, critico_min: float) -> str:
@@ -247,9 +249,7 @@ class SensitivityAnalyzer:
             am = 1.15 + delta
             ro = 1.30 + delta
             cr = ro + 0.15
-            labels = df_comp["ratio_sobreasignacion"].apply(
-                lambda r: self._classify(r, am, ro, cr)
-            )
+            labels = df_comp["ratio_sobreasignacion"].apply(lambda r: self._classify(r, am, ro, cr))
             counts = labels.value_counts().to_dict()
             resultados[f"delta_{delta:+.3f}"] = {
                 "amarillo_min": round(am, 4),
@@ -260,8 +260,7 @@ class SensitivityAnalyzer:
         base = resultados["delta_+0.000"]
         n_critico_base = base.get("n_critico", 0)
         max_variacion = max(
-            abs(v.get("n_critico", 0) - n_critico_base)
-            for v in resultados.values()
+            abs(v.get("n_critico", 0) - n_critico_base) for v in resultados.values()
         )
         return {
             "configuracion_actual": {"amarillo_min": 1.15, "rojo_min": 1.30, "critico_min": 1.45},

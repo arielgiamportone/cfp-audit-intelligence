@@ -15,11 +15,16 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import data_source, especie_selector, page_header_raw
-page_header_raw("📈 Timeline Histórico por Especie", "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
-    "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados.")
+
+page_header_raw(
+    "📈 Timeline Histórico por Especie",
+    "Evolución de las evaluaciones INIDEP y cuotas CFP desde 1992 hasta la actualidad. "
+    "Fuente: marabierto.inidep.edu.ar — 492 ITOs scrapeados.",
+)
 data_source("INIDEP Mar Abierto (492 ITOs)", estado="verificado")
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 if not DB_PATH.exists():
@@ -31,6 +36,7 @@ if not DB_PATH.exists():
     )
     st.page_link("pages/05_INIDEP_Comparador.py", label="🔬 Ir al Comparador INIDEP")
     st.stop()
+
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -56,6 +62,7 @@ def load_data():
     )
     conn.close()
     return df_inidep, df_cfp
+
 
 df_inidep, df_cfp = load_data()
 

@@ -11,7 +11,10 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("📥 Adquisición de Actas", "Scraping y descarga masiva de PDFs del Consejo Federal Pesquero")
+
+page_header_raw(
+    "📥 Adquisición de Actas", "Scraping y descarga masiva de PDFs del Consejo Federal Pesquero"
+)
 
 st.info(
     "📥 **Modo demo:** la descarga masiva (scraping) está diseñada para ejecutarse en "
@@ -29,6 +32,7 @@ with import_guard("La adquisición de actas"):
 
 RAW_DIR = ROOT / "data" / "raw"
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 catalog = CatalogManager(DB_PATH)

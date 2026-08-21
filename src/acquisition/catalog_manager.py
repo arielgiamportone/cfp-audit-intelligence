@@ -379,8 +379,16 @@ class CatalogManager:
                      prompt_hash, input_hash, temperatura)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados,
-                 prompt_hash, input_hash, temperatura),
+                (
+                    acta_id,
+                    tipo_analisis,
+                    resultado,
+                    modelo_ia,
+                    tokens_usados,
+                    prompt_hash,
+                    input_hash,
+                    temperatura,
+                ),
             )
 
     def upsert_anotacion(
@@ -398,11 +406,7 @@ class CatalogManager:
         is_gold_set: bool = False,
     ) -> int:
         """Inserta o actualiza una anotación humana. Retorna id."""
-        coincide = (
-            categoria_ia == categoria_humana
-            if (categoria_ia and categoria_humana)
-            else None
-        )
+        coincide = categoria_ia == categoria_humana if (categoria_ia and categoria_humana) else None
         with self._conn() as conn:
             cur = conn.execute(
                 """
@@ -426,9 +430,20 @@ class CatalogManager:
                     timestamp=datetime('now')
                 RETURNING id
                 """,
-                (resolucion_id, anotador, categoria_ia, categoria_humana,
-                 hallazgos_ia, hallazgos_humanos, riesgo_score_ia,
-                 riesgo_score_humano, coincide, notas, confianza_pct, is_gold_set),
+                (
+                    resolucion_id,
+                    anotador,
+                    categoria_ia,
+                    categoria_humana,
+                    hallazgos_ia,
+                    hallazgos_humanos,
+                    riesgo_score_ia,
+                    riesgo_score_humano,
+                    coincide,
+                    notas,
+                    confianza_pct,
+                    is_gold_set,
+                ),
             )
             return cur.fetchone()[0]
 
@@ -489,8 +504,17 @@ class CatalogManager:
                     notas=excluded.notas
                 RETURNING id
                 """,
-                (nombre, version, modelo, system_hash, user_template, user_hash,
-                 temperatura, tokens_max, notas),
+                (
+                    nombre,
+                    version,
+                    modelo,
+                    system_hash,
+                    user_template,
+                    user_hash,
+                    temperatura,
+                    tokens_max,
+                    notas,
+                ),
             )
             return cur.fetchone()[0]
 

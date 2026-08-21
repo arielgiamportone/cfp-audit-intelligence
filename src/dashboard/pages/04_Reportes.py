@@ -11,7 +11,10 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("📊 Reportes y Visualizaciones", "Análisis estadístico y exportación de resultados de auditoría")
+
+page_header_raw(
+    "📊 Reportes y Visualizaciones", "Análisis estadístico y exportación de resultados de auditoría"
+)
 
 st.info(
     "📊 **Modo demo:** los reportes reflejan el corpus de actas cargado. En esta demo pública "
@@ -25,10 +28,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 if not DB_PATH.exists():
-    st.warning("Base de datos aún no inicializada (modo demo). Visita el Comparador o ejecuta el pipeline.")
+    st.warning(
+        "Base de datos aún no inicializada (modo demo). Visita el Comparador o ejecuta el pipeline."
+    )
     st.stop()
 
 with import_guard("Los reportes avanzados"):

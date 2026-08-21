@@ -11,19 +11,24 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import page_header_raw
-page_header_raw("🔍 Knowledge Base Semántica", "Búsqueda inteligente sobre el corpus completo de actas del CFP")
 
-from src.knowledge_base.vector_store import CFPVectorStore
+page_header_raw(
+    "🔍 Knowledge Base Semántica", "Búsqueda inteligente sobre el corpus completo de actas del CFP"
+)
 
 from src.config_loader import get_kb_dir
+from src.knowledge_base.vector_store import CFPVectorStore
+
 KB_DIR = get_kb_dir()
 PROCESSED_DIR = ROOT / "data" / "processed"
 
 # ── Estado de la KB ───────────────────────────────────────────────────────────
 
+
 @st.cache_resource
 def get_vector_store():
     return CFPVectorStore(persist_dir=KB_DIR)
+
 
 try:
     vs = get_vector_store()

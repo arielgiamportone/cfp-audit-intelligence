@@ -20,8 +20,8 @@ DEFAULT_SETTINGS_PATH = Path("config/settings.yaml")
 # Justificación bibliográfica: ver config/settings.yaml y SensitivityAnalyzer.
 DEFAULT_UMBRALES_CMP_CBA = {
     "amarillo_min": 1.00,  # Ley 24.922 Art. 9
-    "rojo_min": 1.15,      # Bertolotti et al. 2001
-    "critico_min": 1.30,   # FAO Code of Conduct 1995 Art. 7.2.1
+    "rojo_min": 1.15,  # Bertolotti et al. 2001
+    "critico_min": 1.30,  # FAO Code of Conduct 1995 Art. 7.2.1
 }
 
 
@@ -54,7 +54,9 @@ def get_umbrales_cmp_cba(path: str | Path = DEFAULT_SETTINGS_PATH) -> dict[str, 
         else {}
     )
     return {
-        "amarillo_min": float(umbrales.get("amarillo_min", DEFAULT_UMBRALES_CMP_CBA["amarillo_min"])),
+        "amarillo_min": float(
+            umbrales.get("amarillo_min", DEFAULT_UMBRALES_CMP_CBA["amarillo_min"])
+        ),
         "rojo_min": float(umbrales.get("rojo_min", DEFAULT_UMBRALES_CMP_CBA["rojo_min"])),
         "critico_min": float(umbrales.get("critico_min", DEFAULT_UMBRALES_CMP_CBA["critico_min"])),
     }
@@ -85,9 +87,7 @@ def get_db_path(path: str | Path = DEFAULT_SETTINGS_PATH) -> Path:
     Override opcional vía settings.yaml → `paths.db_path`.
     """
     settings = load_settings(path)
-    override = (
-        settings.get("paths", {}).get("db_path") if isinstance(settings, dict) else None
-    )
+    override = settings.get("paths", {}).get("db_path") if isinstance(settings, dict) else None
     return _resolve_path(override, "data/processed/catalog.db")
 
 
@@ -97,7 +97,5 @@ def get_kb_dir(path: str | Path = DEFAULT_SETTINGS_PATH) -> Path:
     Override opcional vía settings.yaml → `paths.kb_dir`.
     """
     settings = load_settings(path)
-    override = (
-        settings.get("paths", {}).get("kb_dir") if isinstance(settings, dict) else None
-    )
+    override = settings.get("paths", {}).get("kb_dir") if isinstance(settings, dict) else None
     return _resolve_path(override, "data/knowledge_base")

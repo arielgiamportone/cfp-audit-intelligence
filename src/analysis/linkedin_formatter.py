@@ -94,10 +94,7 @@ class LinkedInPost:
         """Versión corta para comentarios o stories."""
         datos = " | ".join(self.datos_principales[:3])
         return (
-            f"{self.hook}\n\n"
-            f"{datos}\n\n"
-            f"{self.reflexion[:200]}...\n\n"
-            f"{' '.join(self.hashtags[:5])}"
+            f"{self.hook}\n\n{datos}\n\n{self.reflexion[:200]}...\n\n{' '.join(self.hashtags[:5])}"
         )[:max_chars]
 
 
@@ -116,9 +113,7 @@ class LinkedInFormatter:
         self.hallazgos = hallazgos
         self.base_numero = numero_entrega_inicial
 
-    def post_triangulo_auditoria(
-        self, datos_clave: dict, perfil: str = "personal"
-    ) -> LinkedInPost:
+    def post_triangulo_auditoria(self, datos_clave: dict, perfil: str = "personal") -> LinkedInPost:
         """Post sobre la metodología del Triángulo de Auditoría."""
         hashtags = HASHTAGS_PERSONAL if perfil == "personal" else HASHTAGS_PESQUEROS_IA
 
@@ -162,7 +157,11 @@ class LinkedInFormatter:
             ),
             hashtags=hashtags,
             perfil=perfil,
-            fuentes=["INIDEP Mar Abierto (marabierto.inidep.edu.ar)", "CFP Actas Públicas", "SAGPyA/SIPA"],
+            fuentes=[
+                "INIDEP Mar Abierto (marabierto.inidep.edu.ar)",
+                "CFP Actas Públicas",
+                "SAGPyA/SIPA",
+            ],
         )
 
     def post_sobreasignacion(
@@ -199,7 +198,9 @@ class LinkedInFormatter:
             datos_principales=[
                 f"Casos con CMP > CBA INIDEP: {pct_sobre}",
                 f"Mediana de sobreasignación: {median_r}x la recomendación científica",
-                f"Test estadístico (Wilcoxon): {sig_text}" if sig_text else "Análisis sobre datos seed 2022–2025",
+                f"Test estadístico (Wilcoxon): {sig_text}"
+                if sig_text
+                else "Análisis sobre datos seed 2022–2025",
                 "Especies: merluza, centolla, abadejo, polaca, langostino",
             ],
             reflexion=(
@@ -217,9 +218,7 @@ class LinkedInFormatter:
             fuentes=["INIDEP ITOs 2022–2025", "CFP Actas Públicas 1998–2025"],
         )
 
-    def post_sub_utilizacion(
-        self, datos_clave: dict, perfil: str = "personal"
-    ) -> LinkedInPost:
+    def post_sub_utilizacion(self, datos_clave: dict, perfil: str = "personal") -> LinkedInPost:
         """Post sobre sub-utilización de cuotas."""
         hashtags = HASHTAGS_PERSONAL if perfil == "personal" else HASHTAGS_PESQUEROS_IA
         n_sub = datos_clave.get("Casos sub-utilización (<70% CMP)", "N/A")
@@ -299,7 +298,11 @@ class LinkedInFormatter:
             ),
             hashtags=hashtags,
             perfil=perfil,
-            fuentes=["GitHub: arielgiamportone/cfp-audit-intelligence", "Claude API (Anthropic)", "spaCy NLP"],
+            fuentes=[
+                "GitHub: arielgiamportone/cfp-audit-intelligence",
+                "Claude API (Anthropic)",
+                "spaCy NLP",
+            ],
         )
 
     def generar_todos(self, hallazgos: list | None = None) -> dict[str, list[LinkedInPost]]:

@@ -29,11 +29,11 @@ DOC_FILES = ["README.md", "CLAUDE.md", "AGENTS.md", "TODO.md"]
 # NO incluir `\d+ tests en` (conteos granulares por archivo en TODO.md).
 TOTAL_PATTERNS: list[re.Pattern] = [
     re.compile(r"(?<=tests-)(\d+)(?=%20passing)"),  # badge shields.io
-    re.compile(r"(?<=Tests: )(\d+)"),               # label del badge [![Tests: N]
-    re.compile(r"(\d+)(?= tests, todos verdes)"),   # "N tests, todos verdes"
-    re.compile(r"(\d+)(?= tests totales)"),         # "N tests totales"
-    re.compile(r"(\d+)(?= tests pasando)"),         # "N tests pasando"
-    re.compile(r"(\d+)(?= tests y ~50 módulos)"),   # AGENTS.md frase específica
+    re.compile(r"(?<=Tests: )(\d+)"),  # label del badge [![Tests: N]
+    re.compile(r"(\d+)(?= tests, todos verdes)"),  # "N tests, todos verdes"
+    re.compile(r"(\d+)(?= tests totales)"),  # "N tests totales"
+    re.compile(r"(\d+)(?= tests pasando)"),  # "N tests pasando"
+    re.compile(r"(\d+)(?= tests y ~50 módulos)"),  # AGENTS.md frase específica
     re.compile(r"(?<=\()(\d+)(?= actualmente\))"),  # "(N actualmente)"
 ]
 

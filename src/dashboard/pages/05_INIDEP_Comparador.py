@@ -16,8 +16,12 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.dashboard._ui import page_header_raw
-page_header_raw("🔬 Comparador CFP vs. INIDEP", "Cuotas aprobadas por el CFP vs. Captura Biológicamente Aceptable (CBA) "
-    "recomendada por el INIDEP — Ley 24.922, Art. 9")
+
+page_header_raw(
+    "🔬 Comparador CFP vs. INIDEP",
+    "Cuotas aprobadas por el CFP vs. Captura Biológicamente Aceptable (CBA) "
+    "recomendada por el INIDEP — Ley 24.922, Art. 9",
+)
 
 with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
     st.markdown(
@@ -43,11 +47,13 @@ data_source("INIDEP (Mar Abierto, 492+ ITOs) + SAGPyA/SIPA", estado="verificado"
 
 # ── Inicializar comparador ─────────────────────────────────────────────────────
 
+
 @st.cache_resource(show_spinner="Inicializando base de datos INIDEP...")
 def get_comparator():
     from src.analysis.inidep_comparator import INIDEPComparator
 
     return INIDEPComparator(DB_PATH)
+
 
 try:
     comp = get_comparator()
@@ -138,18 +144,20 @@ verdes = sum(1 for a in alertas if a.nivel == "verde")
 sub_utilizacion = sum(1 for a in alertas if a.alerta_captura == "sub_utilizacion")
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total comparaciones", total,
-            help="Número de cruces especie/año/zona evaluados.")
-col2.metric("🚨 Crítico (>130%)", criticos,
-            help="Cuota CFP (CMP) supera en más del 30% el límite científico (CBA).")
-col3.metric("⚠️ Rojo (116–130%)", rojos,
-            help="CMP entre 16% y 30% por encima de la CBA.")
-col4.metric("🟡 Amarillo (101–115%)", amarillos,
-            help="CMP entre 1% y 15% por encima de la CBA.")
-col5.metric("✅ Verde (≤100%)", verdes,
-            help="CMP dentro del límite recomendado por la ciencia.")
-col6.metric("📉 Sub-utilización", sub_utilizacion,
-            help="Captura real muy por debajo (<70%) de la cuota aprobada.")
+col1.metric("Total comparaciones", total, help="Número de cruces especie/año/zona evaluados.")
+col2.metric(
+    "🚨 Crítico (>130%)",
+    criticos,
+    help="Cuota CFP (CMP) supera en más del 30% el límite científico (CBA).",
+)
+col3.metric("⚠️ Rojo (116–130%)", rojos, help="CMP entre 16% y 30% por encima de la CBA.")
+col4.metric("🟡 Amarillo (101–115%)", amarillos, help="CMP entre 1% y 15% por encima de la CBA.")
+col5.metric("✅ Verde (≤100%)", verdes, help="CMP dentro del límite recomendado por la ciencia.")
+col6.metric(
+    "📉 Sub-utilización",
+    sub_utilizacion,
+    help="Captura real muy por debajo (<70%) de la cuota aprobada.",
+)
 
 st.divider()
 
@@ -297,18 +305,13 @@ with tab_triangulo:
         else:
             df_tri_filtrado = df_tri.copy()
 
-        df_tri_plot = df_tri_filtrado[
-            df_tri_filtrado["cba_recomendada_tn"].notna()
-        ].copy()
+        df_tri_plot = df_tri_filtrado[df_tri_filtrado["cba_recomendada_tn"].notna()].copy()
 
         if df_tri_plot.empty:
             st.info("No hay datos con CBA disponible para graficar.")
         else:
             df_tri_plot["Especie/Año"] = (
-                df_tri_plot["especie"].str.title()
-                + " ("
-                + df_tri_plot["year"].astype(str)
-                + ")"
+                df_tri_plot["especie"].str.title() + " (" + df_tri_plot["year"].astype(str) + ")"
             )
 
             fig_tri = go.Figure()
@@ -374,28 +377,48 @@ with tab_triangulo:
 
         # Tabla completa
         st.subheader("Tabla — Triángulo completo")
-        cols_show = [c for c in [
-            "especie", "zona", "year", "cba_recomendada_tn",
-            "cmp_aprobada_tn", "captura_real_tn", "ratio_cmp_cba", "ratio_captura_cba",
-        ] if c in df_tri_filtrado.columns]
+        cols_show = [
+            c
+            for c in [
+                "especie",
+                "zona",
+                "year",
+                "cba_recomendada_tn",
+                "cmp_aprobada_tn",
+                "captura_real_tn",
+                "ratio_cmp_cba",
+                "ratio_captura_cba",
+            ]
+            if c in df_tri_filtrado.columns
+        ]
         tabla(
-            df_tri_filtrado[cols_show].rename(columns={
-                "especie": "Especie",
-                "zona": "Zona",
-                "year": "Año",
-                "cba_recomendada_tn": "CBA (tn)",
-                "cmp_aprobada_tn": "CMP (tn)",
-                "captura_real_tn": "Captura Real (tn)",
-                "ratio_cmp_cba": "Ratio CMP/CBA",
-                "ratio_captura_cba": "Ratio Captura/CBA",
-            }),
+            df_tri_filtrado[cols_show].rename(
+                columns={
+                    "especie": "Especie",
+                    "zona": "Zona",
+                    "year": "Año",
+                    "cba_recomendada_tn": "CBA (tn)",
+                    "cmp_aprobada_tn": "CMP (tn)",
+                    "captura_real_tn": "Captura Real (tn)",
+                    "ratio_cmp_cba": "Ratio CMP/CBA",
+                    "ratio_captura_cba": "Ratio Captura/CBA",
+                }
+            ),
             column_config={
                 "Año": st.column_config.NumberColumn("Año", format="%d"),
                 "CBA (tn)": col_tn("CBA (tn)", help="Límite recomendado por la ciencia (INIDEP)."),
                 "CMP (tn)": col_tn("CMP (tn)", help="Cuota aprobada por el CFP."),
-                "Captura Real (tn)": col_tn("Captura Real (tn)", help="Desembarque real (SAGPyA/SIPA)."),
-                "Ratio CMP/CBA": col_ratio("Ratio CMP/CBA", help="1.0 = límite científico. >1 = sobreasignación."),
-                "Ratio Captura/CBA": col_ratio("Ratio Captura/CBA", help="1.0 = límite científico. >1 = captura por encima.", max_value=3.0),
+                "Captura Real (tn)": col_tn(
+                    "Captura Real (tn)", help="Desembarque real (SAGPyA/SIPA)."
+                ),
+                "Ratio CMP/CBA": col_ratio(
+                    "Ratio CMP/CBA", help="1.0 = límite científico. >1 = sobreasignación."
+                ),
+                "Ratio Captura/CBA": col_ratio(
+                    "Ratio Captura/CBA",
+                    help="1.0 = límite científico. >1 = captura por encima.",
+                    max_value=3.0,
+                ),
             },
         )
 

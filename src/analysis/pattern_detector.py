@@ -120,9 +120,7 @@ class PatternDetector:
 
         mean_count = sum(counts) / n
         with scipy_stats.chisquare.__module__ and True:
-            chi2_stat, p_valor = scipy_stats.chisquare(
-                f_obs=counts, f_exp=[mean_count] * n
-            )
+            chi2_stat, p_valor = scipy_stats.chisquare(f_obs=counts, f_exp=[mean_count] * n)
 
         base.pop("_counts", None)
         base.update(
@@ -133,8 +131,7 @@ class PatternDetector:
                 "p_valor_uniformidad": round(float(p_valor), 4),
                 "significativo_alpha_05": bool(p_valor < 0.05),
                 "universo_comparacion": (
-                    "top-100 empresas por frecuencia de mención "
-                    "en resoluciones CFP 1998-2025"
+                    "top-100 empresas por frecuencia de mención en resoluciones CFP 1998-2025"
                 ),
                 "interpretacion_contrafactual": (
                     f"HHI observado ({hhi_obs:.0f}) supera en {delta_hhi:.0f} puntos "

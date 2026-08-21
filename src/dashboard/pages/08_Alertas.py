@@ -5,8 +5,6 @@ Permite configurar reglas de alerta, evaluar el estado actual
 y consultar el historial de alertas detectadas.
 """
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
@@ -25,10 +23,13 @@ from src.analysis.alert_engine import (
     AlertaRegla,
     AlertEngine,
 )
-
 from src.dashboard._ui import data_source, page_header_raw
-page_header_raw("🚨 Sistema de Alertas Configurables", "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
-    "científicas del INIDEP y otros indicadores de riesgo pesquero.")
+
+page_header_raw(
+    "🚨 Sistema de Alertas Configurables",
+    "Monitorea el cumplimiento de las decisiones del CFP respecto a las recomendaciones "
+    "científicas del INIDEP y otros indicadores de riesgo pesquero.",
+)
 data_source("Motor de reglas sobre el corpus de actas CFP", estado="demo")
 
 with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
@@ -42,6 +43,7 @@ with st.expander("❓ ¿Cómo leer esta página?", expanded=False):
     )
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 TIPO_LABELS = {
@@ -57,9 +59,11 @@ SEV_LABELS = {
     SEV_CRITICAL: "🔴 Crítica",
 }
 
+
 @st.cache_resource(show_spinner=False)
 def get_engine():
     return AlertEngine(db_path=DB_PATH)
+
 
 if not DB_PATH.exists():
     st.info(

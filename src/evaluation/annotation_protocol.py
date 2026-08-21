@@ -27,8 +27,8 @@ GOLD_SET = [
     # ── bajo (12) ────────────────────────────────────────────────────────
     {
         "texto": "El CFP aprueba por unanimidad el plan de manejo de langostino patagónico "
-                 "para el período 2023-2024, ajustando las cuotas de acuerdo con las "
-                 "recomendaciones del INIDEP (ITO 42/2023). Votos a favor: 7. En contra: 0.",
+        "para el período 2023-2024, ajustando las cuotas de acuerdo con las "
+        "recomendaciones del INIDEP (ITO 42/2023). Votos a favor: 7. En contra: 0.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": ["Cuota ajustada conforme CBA INIDEP"],
         "riesgo_score_humano": 10,
@@ -36,7 +36,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la habilitación del buque pesquero 'Antarés' para operar en "
-                 "la Zona Económica Exclusiva Argentina. Se verifica documentación en regla.",
+        "la Zona Económica Exclusiva Argentina. Se verifica documentación en regla.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 5,
@@ -44,7 +44,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba el presupuesto de actividades de investigación pesquera del INIDEP "
-                 "para el ejercicio 2024. El monto asignado es de $450 millones.",
+        "para el ejercicio 2024. El monto asignado es de $450 millones.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 8,
@@ -52,7 +52,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP toma conocimiento del informe de inspección de flotas pesqueras. "
-                 "Se detectaron 3 infracciones menores que serán sancionadas.",
+        "Se detectaron 3 infracciones menores que serán sancionadas.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": ["Infracciones registradas y en proceso de sanción"],
         "riesgo_score_humano": 15,
@@ -60,8 +60,8 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la renovación del permiso de pesca de corvina rubia para la "
-                 "empresa Pesquera del Sur SA. La cuota asignada es de 800 toneladas, "
-                 "dentro del límite de 950 toneladas recomendado por INIDEP.",
+        "empresa Pesquera del Sur SA. La cuota asignada es de 800 toneladas, "
+        "dentro del límite de 950 toneladas recomendado por INIDEP.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": ["Cuota dentro del límite INIDEP"],
         "riesgo_score_humano": 12,
@@ -69,7 +69,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba el calendario de vedas para el período de reproducción "
-                 "de la merluza común. La veda rige del 1 de agosto al 30 de septiembre.",
+        "de la merluza común. La veda rige del 1 de agosto al 30 de septiembre.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 5,
@@ -77,7 +77,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba el plan de monitoreo satelital de buques pesqueros. "
-                 "Obligatorio para embarcaciones mayores de 28 metros.",
+        "Obligatorio para embarcaciones mayores de 28 metros.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 3,
@@ -85,7 +85,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba un convenio de cooperación técnica con el INIDEP para "
-                 "el monitoreo de stocks de centolla del Canal Beagle. Período 2024-2026.",
+        "el monitoreo de stocks de centolla del Canal Beagle. Período 2024-2026.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 7,
@@ -93,7 +93,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la transferencia de cuota de merluza hubbsi entre Pesquera "
-                 "Norte SA y Pesquera Sur SA. El total de cuota no se modifica.",
+        "Norte SA y Pesquera Sur SA. El total de cuota no se modifica.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": ["Transferencia sin modificación del total de cuota"],
         "riesgo_score_humano": 18,
@@ -101,7 +101,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP toma nota del informe anual de capturas 2023. Las capturas totales "
-                 "fueron de 780.000 toneladas, dentro de los límites establecidos.",
+        "fueron de 780.000 toneladas, dentro de los límites establecidos.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 10,
@@ -109,7 +109,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba el reglamento de pesca artesanal para comunidades costeras "
-                 "de la provincia de Buenos Aires. Límite: 500 kg por embarcación por viaje.",
+        "de la provincia de Buenos Aires. Límite: 500 kg por embarcación por viaje.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": [],
         "riesgo_score_humano": 8,
@@ -117,7 +117,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba el informe de estado de stocks de calamar illex para 2024. "
-                 "El stock se encuentra en estado de plena explotación según INIDEP.",
+        "El stock se encuentra en estado de plena explotación según INIDEP.",
         "categoria_humana": "bajo",
         "hallazgos_humanos": ["Stock en plena explotación — monitoreo continuo requerido"],
         "riesgo_score_humano": 22,
@@ -126,8 +126,8 @@ GOLD_SET = [
     # ── medio (10) ───────────────────────────────────────────────────────
     {
         "texto": "El CFP aprueba por 5 votos a favor y 2 en contra la cuota de merluza "
-                 "común para 2024: 280.000 toneladas. La CBA recomendada por INIDEP fue "
-                 "de 250.000 toneladas (ITO 36/2024).",
+        "común para 2024: 280.000 toneladas. La CBA recomendada por INIDEP fue "
+        "de 250.000 toneladas (ITO 36/2024).",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Cuota aprobada supera CBA INIDEP en 12% (280.000 vs 250.000 tn)",
@@ -138,8 +138,8 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la ampliación de la zona de pesca de langostino patagónico "
-                 "hacia el área sur del paralelo 48°S. El INIDEP no presentó objeción "
-                 "formal pero recomendó estudios adicionales antes de la apertura.",
+        "hacia el área sur del paralelo 48°S. El INIDEP no presentó objeción "
+        "formal pero recomendó estudios adicionales antes de la apertura.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Ampliación sin evaluación completa de INIDEP",
@@ -150,8 +150,8 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP ratifica con quórum mínimo (4 votos) la habilitación de Pesquera "
-                 "Atlántica SA para operar en el área protegida del Banco Namuncurá. "
-                 "La empresa es beneficiaria recurrente en los últimos 5 años.",
+        "Atlántica SA para operar en el área protegida del Banco Namuncurá. "
+        "La empresa es beneficiaria recurrente en los últimos 5 años.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Aprobación con quórum mínimo (4 votos)",
@@ -163,8 +163,8 @@ GOLD_SET = [
     },
     {
         "texto": "Se otorga cuota de polaca de 45.000 toneladas para 2024. INIDEP recomendó "
-                 "40.000 toneladas como CBA. La empresa Pesquera del Norte SA recibe el 60% "
-                 "del total asignado.",
+        "40.000 toneladas como CBA. La empresa Pesquera del Norte SA recibe el 60% "
+        "del total asignado.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Cuota supera CBA en 12.5% (45.000 vs 40.000 tn)",
@@ -175,7 +175,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba modificar el período de veda de abadejo, reduciéndolo de "
-                 "90 días a 60 días. El INIDEP había recomendado mantener los 90 días.",
+        "90 días a 60 días. El INIDEP había recomendado mantener los 90 días.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Reducción de veda contra recomendación INIDEP",
@@ -186,7 +186,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba el traspaso de permiso de pesca de merluza negra entre empresas. "
-                 "La empresa receptora tiene antecedentes de multas por pesca ilegal en 2019.",
+        "La empresa receptora tiene antecedentes de multas por pesca ilegal en 2019.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Antecedentes de infracciones en empresa receptora",
@@ -197,7 +197,7 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba cuota de anchoíta de 150.000 toneladas. INIDEP recomendó "
-                 "135.000 toneladas. La votación fue unánime (7-0) sin debate registrado.",
+        "135.000 toneladas. La votación fue unánime (7-0) sin debate registrado.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Cuota supera CBA en 11% (150.000 vs 135.000 tn)",
@@ -208,8 +208,8 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la instalación de jaulas de cultivo de salmón en la Patagonia "
-                 "Austral. El estudio de impacto ambiental fue presentado por la empresa, "
-                 "no por organismo público.",
+        "Austral. El estudio de impacto ambiental fue presentado por la empresa, "
+        "no por organismo público.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "EIA presentado por parte interesada sin revisión independiente",
@@ -220,8 +220,8 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP establece un cupo especial de 5.000 toneladas de centolla para "
-                 "exportación urgente. La medida no pasó por el proceso de consulta habitual "
-                 "con las provincias costeras.",
+        "exportación urgente. La medida no pasó por el proceso de consulta habitual "
+        "con las provincias costeras.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Cupo extraordinario sin proceso de consulta provincial",
@@ -232,7 +232,7 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la pesca de corvina rubia en zona de exclusión temporal. "
-                 "El período de exclusión fue establecido hace 18 meses por el mismo CFP.",
+        "El período de exclusión fue establecido hace 18 meses por el mismo CFP.",
         "categoria_humana": "medio",
         "hallazgos_humanos": [
             "Reversión parcial de exclusión establecida por el propio CFP",
@@ -244,9 +244,9 @@ GOLD_SET = [
     # ── alto (5) ─────────────────────────────────────────────────────────
     {
         "texto": "El CFP aprueba cuota de merluza hubbsi de 420.000 toneladas para 2024. "
-                 "La CBA recomendada por INIDEP fue de 319.000 toneladas (ITO 36/2024). "
-                 "Votos a favor: 6. En contra: 1. La empresa Pesquera del Plata SA "
-                 "recibirá el 35% del total.",
+        "La CBA recomendada por INIDEP fue de 319.000 toneladas (ITO 36/2024). "
+        "Votos a favor: 6. En contra: 1. La empresa Pesquera del Plata SA "
+        "recibirá el 35% del total.",
         "categoria_humana": "alto",
         "hallazgos_humanos": [
             "Cuota supera CBA en 31.7% (420.000 vs 319.000 tn) — nivel crítico",
@@ -258,9 +258,9 @@ GOLD_SET = [
     },
     {
         "texto": "Se levanta la veda de merluza negra en el área Malvinas Norte, vigente "
-                 "desde 2021. El INIDEP advirtió que el stock aún no se ha recuperado "
-                 "al nivel de explotación sostenible. La resolución fue aprobada con "
-                 "4 votos a favor y 3 en contra.",
+        "desde 2021. El INIDEP advirtió que el stock aún no se ha recuperado "
+        "al nivel de explotación sostenible. La resolución fue aprobada con "
+        "4 votos a favor y 3 en contra.",
         "categoria_humana": "alto",
         "hallazgos_humanos": [
             "Reversion de veda activa contra recomendación INIDEP explícita",
@@ -272,8 +272,8 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP otorga cuota de polaca de 80.000 toneladas. INIDEP recomendó "
-                 "55.000 toneladas. La diferencia del 45% supera ampliamente el umbral "
-                 "de alerta. Votación: 5-2.",
+        "55.000 toneladas. La diferencia del 45% supera ampliamente el umbral "
+        "de alerta. Votación: 5-2.",
         "categoria_humana": "alto",
         "hallazgos_humanos": [
             "Cuota supera CBA en 45% — muy por encima del límite precautorio FAO",
@@ -284,9 +284,9 @@ GOLD_SET = [
     },
     {
         "texto": "Se aprueba la pesca de fondo en áreas de alta sensibilidad ecológica "
-                 "en el Atlántico Sur. El mismo CFP había declarado esas áreas como "
-                 "zonas de protección especial en 2020. No se presentó nueva evidencia "
-                 "científica que justifique el cambio.",
+        "en el Atlántico Sur. El mismo CFP había declarado esas áreas como "
+        "zonas de protección especial en 2020. No se presentó nueva evidencia "
+        "científica que justifique el cambio.",
         "categoria_humana": "alto",
         "hallazgos_humanos": [
             "Reversión de área de protección especial sin nueva evidencia científica",
@@ -298,8 +298,8 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba cuota de langostino patagónico de 120.000 toneladas. "
-                 "La CBA del INIDEP fue de 88.000 toneladas. Una sola empresa (Pesquera "
-                 "del Sur SA) recibe el 45% del total. Votación: 7-0 en sesión de 12 minutos.",
+        "La CBA del INIDEP fue de 88.000 toneladas. Una sola empresa (Pesquera "
+        "del Sur SA) recibe el 45% del total. Votación: 7-0 en sesión de 12 minutos.",
         "categoria_humana": "alto",
         "hallazgos_humanos": [
             "Cuota supera CBA en 36.4% — nivel crítico FAO",
@@ -312,10 +312,10 @@ GOLD_SET = [
     # ── crítico (3) ──────────────────────────────────────────────────────
     {
         "texto": "El CFP aprueba cuota de merluza hubbsi de 550.000 toneladas para 2022. "
-                 "La CBA recomendada por INIDEP fue de 290.000 toneladas. Incremento del "
-                 "89.7%. Las tres empresas beneficiarias — Pesquera del Plata SA, "
-                 "Atlántica Pesca SA y Pesquera Sur SA — son las principales contribuyentes "
-                 "del fondo sectorial. El representante del INIDEP votó en contra.",
+        "La CBA recomendada por INIDEP fue de 290.000 toneladas. Incremento del "
+        "89.7%. Las tres empresas beneficiarias — Pesquera del Plata SA, "
+        "Atlántica Pesca SA y Pesquera Sur SA — son las principales contribuyentes "
+        "del fondo sectorial. El representante del INIDEP votó en contra.",
         "categoria_humana": "critico",
         "hallazgos_humanos": [
             "Cuota supera CBA en 89.7% — riesgo crítico de colapso de stock",
@@ -328,9 +328,9 @@ GOLD_SET = [
     },
     {
         "texto": "Se levanta la veda de merluza negra del Canal Beagle, establecida en 2018 "
-                 "por recomendación de INIDEP debido a colapso del stock. El INIDEP advirtió "
-                 "en 2024 que el stock sigue en estado crítico. La empresa Austral Pesca SA, "
-                 "que solicitó el levantamiento, recibe permiso exclusivo por 3 años.",
+        "por recomendación de INIDEP debido a colapso del stock. El INIDEP advirtió "
+        "en 2024 que el stock sigue en estado crítico. La empresa Austral Pesca SA, "
+        "que solicitó el levantamiento, recibe permiso exclusivo por 3 años.",
         "categoria_humana": "critico",
         "hallazgos_humanos": [
             "Levantamiento de veda con stock en estado de colapso documentado",
@@ -343,9 +343,9 @@ GOLD_SET = [
     },
     {
         "texto": "El CFP aprueba cuota de calamar illex de 400.000 toneladas. INIDEP "
-                 "recomendó 180.000 toneladas. El incremento del 122% se aprueba en sesión "
-                 "extraordinaria de 8 minutos. Votación: 6-1. El miembro disidente declaró "
-                 "que la medida 'compromete la disponibilidad futura del recurso'.",
+        "recomendó 180.000 toneladas. El incremento del 122% se aprueba en sesión "
+        "extraordinaria de 8 minutos. Votación: 6-1. El miembro disidente declaró "
+        "que la medida 'compromete la disponibilidad futura del recurso'.",
         "categoria_humana": "critico",
         "hallazgos_humanos": [
             "Cuota supera CBA en 122% — sin precedente histórico",

@@ -22,8 +22,10 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # Scripts manipulate sys.path before imports — E402 is intentional
 "scripts/*.py" = ["E402"]
-# Streamlit pages do conditional imports after st.stop() guards — E402 is intentional
+# Streamlit exige st.set_page_config()/cabecera antes de imports — E402 es intencional
 "src/dashboard/pages/*.py" = ["E402"]
+"src/dashboard/app.py" = ["E402"]
+"src/dashboard/home.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

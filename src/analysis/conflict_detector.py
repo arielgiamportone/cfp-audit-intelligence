@@ -23,9 +23,9 @@ from loguru import logger
 
 # Severidad del conflicto por tipo
 _SEVERIDAD = {
-    "voto_directo": "alta",         # votó cuotas de empresa que dirige
+    "voto_directo": "alta",  # votó cuotas de empresa que dirige
     "participacion_decisiones": "media",  # aparece en actas con empresa vinculada
-    "potencial": "baja",            # comparte empresa pero sin actas cruzadas
+    "potencial": "baja",  # comparte empresa pero sin actas cruzadas
 }
 
 NODE_PERSONA = "persona"
@@ -65,9 +65,16 @@ class ConflictDetector:
             except Exception:
                 return pd.DataFrame(
                     columns=[
-                        "id", "persona_nombre", "persona_norm", "empresa_nombre",
-                        "empresa_norm", "cargo", "desde_year", "hasta_year",
-                        "fuente", "verificado",
+                        "id",
+                        "persona_nombre",
+                        "persona_norm",
+                        "empresa_nombre",
+                        "empresa_norm",
+                        "cargo",
+                        "desde_year",
+                        "hasta_year",
+                        "fuente",
+                        "verificado",
                     ]
                 )
 
@@ -99,7 +106,12 @@ class ConflictDetector:
                 )
             except Exception:
                 return pd.DataFrame(
-                    columns=["persona_nombre", "persona_norm", "n_resoluciones", "n_empresas_coaparecen"]
+                    columns=[
+                        "persona_nombre",
+                        "persona_norm",
+                        "n_resoluciones",
+                        "n_empresas_coaparecen",
+                    ]
                 )
 
     def get_empresas_cfp(self) -> pd.DataFrame:
@@ -121,9 +133,7 @@ class ConflictDetector:
                     conn,
                 )
             except Exception:
-                return pd.DataFrame(
-                    columns=["empresa_nombre", "empresa_norm", "n_resoluciones"]
-                )
+                return pd.DataFrame(columns=["empresa_nombre", "empresa_norm", "n_resoluciones"])
 
     # ── Detección de conflictos ───────────────────────────────────────────────
 
@@ -298,9 +308,7 @@ class ConflictDetector:
                 weight={"alta": 3, "media": 2, "baja": 1}.get(row["severidad"], 1),
             )
 
-        logger.info(
-            f"Grafo conflictos: {G.number_of_nodes()} nodos, {G.number_of_edges()} aristas"
-        )
+        logger.info(f"Grafo conflictos: {G.number_of_nodes()} nodos, {G.number_of_edges()} aristas")
         return G
 
     # ── Reporte ───────────────────────────────────────────────────────────────
@@ -368,6 +376,7 @@ class ConflictDetector:
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _count_coapariciones(persona: str, empresa: str, db_path: Path) -> int:
     """Cuenta resoluciones donde persona y empresa co-aparecen."""

@@ -1,11 +1,11 @@
 """Página 9 — Reporte PDF Ejecutivo."""
 
 from datetime import datetime
-from pathlib import Path
 
 import streamlit as st
 
 from src.dashboard._ui import import_guard, page_header_raw
+
 page_header_raw("📄 Reporte PDF Ejecutivo")
 st.markdown("Genera un informe ejecutivo en PDF con todos los hallazgos de auditoría.")
 
@@ -20,6 +20,7 @@ with import_guard("La generación de PDF"):
     from src.analysis.report_generator import CFPReportGenerator
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 # ── Configuración del reporte ─────────────────────────────────────────────────

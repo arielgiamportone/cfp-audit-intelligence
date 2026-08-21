@@ -11,8 +11,12 @@ from pathlib import Path
 import streamlit as st
 
 from src.dashboard._ui import import_guard, page_header_raw
-page_header_raw("🕸️ Grafo de Relaciones CFP", "Red bipartita de co-menciones entre especies pesqueras y empresas "
-    "en las decisiones del Consejo Federal Pesquero.")
+
+page_header_raw(
+    "🕸️ Grafo de Relaciones CFP",
+    "Red bipartita de co-menciones entre especies pesqueras y empresas "
+    "en las decisiones del Consejo Federal Pesquero.",
+)
 
 with import_guard("El grafo de relaciones"):
     import networkx as nx
@@ -22,11 +26,14 @@ with import_guard("El grafo de relaciones"):
     from src.analysis.graph_builder import NODE_COLORS, NODE_EMPRESA, NODE_ESPECIE, CFPGraphBuilder
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
+
 
 @st.cache_resource(show_spinner="Cargando grafo...")
 def get_builder():
     return CFPGraphBuilder(db_path=DB_PATH)
+
 
 @st.cache_data(show_spinner="Construyendo grafo...")
 def build_cached_graph(min_coocurrencias: int):
@@ -34,6 +41,7 @@ def build_cached_graph(min_coocurrencias: int):
     G = builder.build_graph(min_coocurrencias=min_coocurrencias)
     stats = builder.compute_stats(G)
     return G, stats
+
 
 def render_pyvis(G: nx.Graph, height: int = 700) -> str:
     """Renderiza el grafo NetworkX con pyvis y retorna HTML."""
@@ -93,10 +101,12 @@ def render_pyvis(G: nx.Graph, height: int = 700) -> str:
         net.save_graph(f.name)
         return Path(f.name).read_text(encoding="utf-8")
 
+
 def render_ego_pyvis(G: nx.Graph, nodo: str, radio: int) -> str:
     builder = CFPGraphBuilder(db_path=DB_PATH)
     ego = builder.get_ego_graph(G, nodo, radio=radio)
     return render_pyvis(ego, height=500)
+
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 

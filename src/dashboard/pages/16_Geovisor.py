@@ -11,22 +11,24 @@ Fuente: servicio público WFS/GeoServer del INIDEP, sin autenticación.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
 from src.acquisition.inidep_geovisor_scraper import SEREGeovisorClient
 from src.analysis.geovisor_cross_validator import GeovisorCrossValidator
-
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 from src.dashboard._ui import page_header_raw
-page_header_raw("🗺️ Geovisor SERE (INIDEP) — Vedas Geoespaciales", "Cada zona de veda publicada por el geovisor cita directamente el número de "
+
+page_header_raw(
+    "🗺️ Geovisor SERE (INIDEP) — Vedas Geoespaciales",
+    "Cada zona de veda publicada por el geovisor cita directamente el número de "
     "resolución, el organismo emisor (CFP/CTMFM) y un link al PDF oficial — una "
-    "fuente externa verificable para auditar la cobertura del parser de actas CFP.")
+    "fuente externa verificable para auditar la cobertura del parser de actas CFP.",
+)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +55,7 @@ with st.sidebar:
 
 # ── Carga de datos ────────────────────────────────────────────────────────────
 
+
 @st.cache_data(ttl=120)
 def cargar_vedas(db: str) -> pd.DataFrame:
     import sqlite3
@@ -62,6 +65,7 @@ def cargar_vedas(db: str) -> pd.DataFrame:
             return pd.read_sql_query("SELECT * FROM vedas_geoespaciales", conn)
     except Exception:  # noqa: BLE001
         return pd.DataFrame()
+
 
 @st.cache_data(ttl=120)
 def cargar_cobertura(db: str) -> tuple[pd.DataFrame, dict]:
@@ -81,6 +85,7 @@ def cargar_cobertura(db: str) -> tuple[pd.DataFrame, dict]:
         ]
     )
     return df, resumen
+
 
 df_vedas = cargar_vedas(str(DB_PATH))
 df_cobertura, resumen_cobertura = cargar_cobertura(str(DB_PATH))

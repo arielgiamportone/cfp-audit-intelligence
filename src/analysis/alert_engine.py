@@ -82,7 +82,7 @@ SEVERITY_ICONS = {
 # Umbrales CMP/CBA externalizados a config/settings.yaml (sensibilidad y
 # justificación bibliográfica; ver ADR-005 y SensitivityAnalyzer).
 _UMBRALES = get_umbrales_cmp_cba()
-_UMBRAL_ROJO_PCT = round(_UMBRALES["rojo_min"] * 100, 1)       # 1.15 → 115.0
+_UMBRAL_ROJO_PCT = round(_UMBRALES["rojo_min"] * 100, 1)  # 1.15 → 115.0
 _UMBRAL_CRITICO_PCT = round(_UMBRALES["critico_min"] * 100, 1)  # 1.30 → 130.0
 
 # Reglas por defecto instaladas en la primera ejecución

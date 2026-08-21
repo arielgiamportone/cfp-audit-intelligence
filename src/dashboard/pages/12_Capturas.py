@@ -1,14 +1,12 @@
 """Página 12 — Capturas Reales SIPA/SAGPyA."""
 
-from pathlib import Path
-
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 from src.acquisition.sipa_scraper import SIPAScraper
-
 from src.dashboard._ui import data_source, especie_selector, page_header_raw
+
 page_header_raw("🐟 Capturas Reales — SIPA / SAGPyA")
 data_source("SAGPyA / SIPA — desembarques (semilla verificada)", estado="verificado")
 st.markdown(
@@ -18,6 +16,7 @@ st.markdown(
 )
 
 from src.config_loader import get_db_path
+
 DB_PATH = get_db_path()
 
 ALERTA_COLORS = {
@@ -47,11 +46,13 @@ ALERTA_LABELS = {
     "sin_datos": "⬜ Sin datos",
 }
 
+
 @st.cache_resource(show_spinner="Cargando datos de capturas...")
 def get_scraper():
     s = SIPAScraper(db_path=DB_PATH)
     s.seed_data()
     return s
+
 
 scraper = get_scraper()
 df_capturas = scraper.get_capturas_df()
