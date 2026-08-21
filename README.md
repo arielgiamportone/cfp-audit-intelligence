@@ -33,7 +33,7 @@ Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA
 | 2 | Documentación (este README + `docs/`) | [`docs/`](docs/) |
 | 3 | Despliegue en funcionamiento (URL) | **[App en vivo ↗](https://cfp-audit-intelligence-um5xi4fkkiyq2gtuownvuz.streamlit.app)** |
 | 4 | Slides de presentación | **[Ver deck ↗](https://arielgiamportone.github.io/cfp-audit-intelligence/slides.html)** · [fuente](docs/slides.html) |
-| 5 | Vídeo explicativo (captura de pantalla) | ⏳ _pendiente de publicar_ |
+| 5 | Vídeo explicativo (captura de pantalla) | **[Ver vídeo ↗](https://youtu.be/Vfm4etySz3E)** |
 
 **Acceso a la aplicación:** la app es de acceso **público y no requiere login** (no hay usuario/contraseña de prueba). Las funciones de auditoría con IA requieren configurar la clave del proveedor de LLM (`ANTHROPIC_API_KEY` u `OPENAI_API_KEY`) como secreto de despliegue (ver [Variables de Entorno](#variables-de-entorno)).
 
