@@ -4,7 +4,7 @@
 
 > Extrae, procesa y analiza con IA 25+ años de actas públicas del CFP para auditar decisiones sobre los recursos pesqueros argentinos y contrastarlas con las recomendaciones científicas del INIDEP.
 
-[![Tests](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions)
+[![CI](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml/badge.svg)](https://github.com/arielgiamportone/cfp-audit-intelligence/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Tests: 1003](https://img.shields.io/badge/tests-1003%20passing-brightgreen.svg)](#tests)
