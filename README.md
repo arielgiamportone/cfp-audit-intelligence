@@ -15,7 +15,7 @@
 
 Este proyecto se presenta como **Trabajo Final del _Máster en Desarrollo con IA_** (campus.thebigschool.com).
 
-> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–012), **buenas prácticas y testing** (1003 tests, CI/CD), **IA generativa y RAG** (Claude API + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
+> **Proyecto de largo recorrido:** `cfp-audit-intelligence` es una iniciativa personal iniciada **antes** del máster y que ha ido **evolucionando durante el mismo**, aplicando de forma directa lo aprendido: **arquitectura de software** (capas + ADRs 001–012), **buenas prácticas y testing** (1003 tests, CI/CD), **IA generativa y RAG** (LLM multi-proveedor + ChromaDB), **MLOps** e **IA responsable** (Model Card, Datasheet, límites éticos). El TFM es, por tanto, la consolidación de ese recorrido con los estándares del máster.
 
 > **Motivación del autor:** mi perfil profesional viene del **Data Analytics y la Data Science**.
 > Este máster en Desarrollo con IA me aporta un gran valor para **ampliar mis capacidades hacia el
@@ -178,7 +178,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 
 | Módulo | Descripción |
 |--------|-------------|
-| `src/analysis/audit_engine.py` | Claude API con prompt caching para análisis masivo |
+| `src/analysis/audit_engine.py` | Auditoría con LLM multi-proveedor (Anthropic/OpenAI); *prompt caching* con Claude |
 | `src/analysis/pattern_detector.py` | HHI concentración, votaciones, reversiones estadísticas |
 | `src/analysis/inidep_comparator.py` | CBA (INIDEP) vs CMP (CFP): 4 niveles de alerta |
 | `src/analysis/geovisor_cross_validator.py` | Cruce de vedas del geovisor SERE vs. citas en el corpus (ADR-009) + verificación satelital de cumplimiento vía CONAE GFW AIS (ADR-010) |
@@ -359,7 +359,7 @@ esfuerzo_satelital(id, zona, especie_code, fecha, lon, lat,
 - [x] Despliegue en Streamlit Community Cloud (URL pública)
 - [x] **1003 tests pasando**
 
-### Trabajo futuro
+### Pendiente / roadmap
 
 - [ ] Ampliar el corpus a la serie histórica completa 1998–2025
 - [ ] Gold set anotado por experto para métricas P/R/F1/kappa reales
