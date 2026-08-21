@@ -126,7 +126,7 @@ Construir una **knowledge base** completa del CFP (1998–presente) y aplicar an
 ├────────────┬───────────────┬──────────────┬──────────────────────────┤
 │ ADQUISICIÓN│ PROCESAMIENTO │  KNOWLEDGE   │       ANÁLISIS + IA      │
 │            │               │    BASE      │                          │
-│ • CFP PDFs │ • pdfplumber  │ • ChromaDB   │ • Claude API             │
+│ • CFP PDFs │ • pdfplumber  │ • ChromaDB   │ • LLM (Claude/OpenAI)    │
 │ • INIDEP   │ • PyMuPDF     │ • SQLite     │ • Comparador CBA vs CMP  │
 │   492 ITOs │ • OCR Tess.   │ • Embeddings │ • Alertas (4 niveles)    │
 │ • SIPA     │ • NER spaCy   │   multilíng. │ • Grafo de relaciones    │
@@ -305,18 +305,20 @@ resoluciones(id, acta_id, numero, tipo, fecha, texto_completo, texto_resumen,
 
 entidades(id, tipo, nombre, nombre_norm)
 menciones(id, resolucion_id, entidad_id, contexto, sentimiento)
-analisis_sesiones(id, acta_id, tipo_analisis, resultado_json, modelo_ia, tokens_usados)
+analisis_sesiones(id, acta_id, tipo_analisis, resultado, modelo_ia, tokens_usados,
+                  prompt_hash, input_hash, temperatura, created_at)
 
 -- Triángulo de auditoría
 inidep_evaluaciones(id, especie, especie_code, zona, year,
                     cba_recomendada_tn, cba_alternativa_tn,
                     estado_stock, numero_ito, fuente_url, notas, created_at)
 
-cfp_cuotas(id, especie_code, zona, year, cmp_tn, resolucion_cfp, fecha_resolucion)
+cfp_cuotas(id, especie, especie_code, zona, year, cmp_aprobada_tn,
+           tipo_decision, acta_referencia, resolucion_cfp)
 
 comparacion_cfp_inidep(id, especie_code, zona, year,
-                       cba_tn, cmp_tn, diferencia_tn, diferencia_pct,
-                       nivel_alerta, created_at)
+                       cba_inidep_tn, cmp_cfp_tn, captura_real_tn, diferencia_tn,
+                       ratio_sobreasignacion, nivel_alerta, created_at)
 
 -- Fuentes externas
 fao_capturas(id, especie_code, year, pais, captura_tn, fuente, created_at)
