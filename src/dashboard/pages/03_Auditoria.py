@@ -1,5 +1,5 @@
 """
-Página de Auditoría IA: análisis con Claude API y detección de patrones.
+Página de Auditoría IA: análisis con LLM (Claude u OpenAI) y detección de patrones.
 """
 
 import sys
@@ -14,7 +14,7 @@ from src.dashboard._ui import page_header_raw
 
 page_header_raw(
     "🧠 Auditoría con Inteligencia Artificial",
-    "Análisis de resoluciones con Claude API y detección de patrones sistémicos",
+    "Análisis de resoluciones con IA (Claude u OpenAI) y detección de patrones sistémicos",
 )
 
 with st.expander("🔍 IA responsable: cómo garantizamos transparencia", expanded=False):
@@ -39,7 +39,7 @@ from src.knowledge_base.vector_store import CFPVectorStore
 try:
     # Valida que hay un proveedor configurado en .env (LLM_PROVIDER + su API key:
     # ANTHROPIC_API_KEY, o OPENAI_API_KEY/OPENAI_BASE_URL/LLM_MODEL). Agnóstico al proveedor.
-    CFPAuditEngine()
+    engine = CFPAuditEngine()
 except ValueError:
     st.info(
         "🧠 **Modo demo:** la Auditoría con IA requiere un proveedor de LLM configurado "
@@ -49,6 +49,14 @@ except ValueError:
         icon="ℹ️",
     )
     st.stop()
+
+# Etiquetas legibles del proveedor/modelo activo (agnóstico: Anthropic u OpenAI-compatible).
+PROVIDER_LABEL = {"anthropic": "Claude", "openai": "OpenAI"}.get(
+    engine.provider, engine.provider.capitalize()
+)
+# El "análisis profundo" solo tiene sentido si el proveedor define un modelo distinto para
+# alto riesgo (p. ej. Opus vs Sonnet en Anthropic). Con OpenAI/gpt-4o-mini suelen coincidir.
+HAS_DEEP_MODEL = engine.audit_model != engine.model
 
 KB_DIR = get_kb_dir()
 from src.config_loader import get_db_path
@@ -90,15 +98,18 @@ with tab_analisis:
         )
 
     with col_config:
-        high_stakes = st.checkbox(
-            "Análisis profundo (Opus)",
-            help="Usa Claude Opus para análisis más detallado (mayor costo)",
-        )
-        st.caption("El análisis estándar usa Claude Sonnet.")
+        if HAS_DEEP_MODEL:
+            high_stakes = st.checkbox(
+                f"Análisis profundo ({engine.audit_model})",
+                help=f"Usa {engine.audit_model} para un análisis más detallado (mayor costo)",
+            )
+            st.caption(f"El análisis estándar usa `{engine.model}`.")
+        else:
+            high_stakes = False
+            st.caption(f"Proveedor: **{PROVIDER_LABEL}** · modelo `{engine.model}`.")
 
     if st.button("Analizar con IA", type="primary", disabled=not texto_resolucion):
-        engine = CFPAuditEngine()
-        with st.spinner("Analizando resolución con Claude..."):
+        with st.spinner(f"Analizando resolución con {PROVIDER_LABEL}..."):
             result = engine.analyze_resolucion(
                 resolucion_id=resolucion_id,
                 texto=texto_resolucion,
@@ -224,15 +235,14 @@ with tab_patrones:
         # Análisis de patrones con IA
         st.markdown("---")
         with st.expander("Analizar patrones con IA (requiere resoluciones en KB)"):
-            if st.button("Detectar patrones con Claude"):
+            if st.button(f"Detectar patrones con {PROVIDER_LABEL}"):
                 vs = CFPVectorStore(KB_DIR)
                 if vs.count() == 0:
                     st.error("Knowledge Base vacía.")
                 else:
                     sample = vs.search("cuota captura sostenibilidad especie", n_results=20)
                     texts = [r["texto"] for r in sample]
-                    engine = CFPAuditEngine()
-                    with st.spinner("Analizando patrones con Claude Opus..."):
+                    with st.spinner(f"Analizando patrones con {PROVIDER_LABEL}..."):
                         patterns = engine.detect_patterns(texts)
                     st.json(patterns)
 
@@ -283,8 +293,7 @@ with tab_sostenibilidad:
                 st.info(
                     f"Analizando {sum(len(v) for v in resoluciones_por_anio.values())} resoluciones sobre {especie_sel}..."
                 )
-                engine = CFPAuditEngine()
-                with st.spinner("Analizando con Claude Opus..."):
+                with st.spinner(f"Analizando con {PROVIDER_LABEL}..."):
                     result = engine.analyze_sustainability(especie_sel, resoluciones_por_anio)
 
                 risk_sust = result.get("riesgo_sostenibilidad", 0)
@@ -330,7 +339,6 @@ with tab_busqueda_auditada:
             with st.spinner("Buscando resoluciones relevantes..."):
                 results = vs.search(query_audit, n_results=n_audit)
 
-            engine = CFPAuditEngine()
             st.markdown(f"**{len(results)} resoluciones encontradas. Auditando...**")
 
             for i, r in enumerate(results, 1):
