@@ -35,13 +35,13 @@ class PatternDetector:
         """Evolución de cuotas (toneladas) por año para una especie."""
         df = self._query(
             """
-            SELECT r.year AS anio, r.numero, r.tipo,
+            SELECT a.year AS anio, r.numero, r.tipo,
                    json_extract(r.texto_completo, '$') as texto
             FROM resoluciones r
             JOIN actas a ON r.acta_id = a.id
             WHERE r.tipo = 'cuota_captura'
               AND r.texto_completo LIKE ?
-            ORDER BY r.year
+            ORDER BY a.year
             """,
             (f"%{especie}%",),
         )
@@ -150,9 +150,8 @@ class PatternDetector:
         """Analiza patrones de votación: unanimidad, quórum mínimo, abstenciones."""
         df = self._query(
             """
-            SELECT r.year, r.tipo, r.votos_favor, r.votos_contra,
-                   r.abstenciones, r.quorum,
-                   a.year as acta_year
+            SELECT a.year, r.tipo, r.votos_favor, r.votos_contra,
+                   r.abstenciones, r.quorum
             FROM resoluciones r
             JOIN actas a ON r.acta_id = a.id
             WHERE r.votos_favor IS NOT NULL

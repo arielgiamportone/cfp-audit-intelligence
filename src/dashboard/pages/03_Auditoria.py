@@ -2,7 +2,6 @@
 Página de Auditoría IA: análisis con Claude API y detección de patrones.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -30,23 +29,26 @@ with st.expander("🔍 IA responsable: cómo garantizamos transparencia", expand
         "y en el marco ético (ADR-007)."
     )
 
-# ── Verificar API Key ─────────────────────────────────────────────────────────
-
-api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-if not api_key:
-    st.info(
-        "🧠 **Modo demo:** la Auditoría con IA usa la API de Claude y requiere una "
-        "`ANTHROPIC_API_KEY`, no habilitada en esta demo pública. Esta función se muestra en "
-        "el vídeo del proyecto y puede ejecutarse en local (ver `docs/TFM_DEPLOY.md`). "
-        "Para ver resultados sin IA, visita **🔬 Comparador CFP vs INIDEP** y **🚨 Alertas**.",
-        icon="ℹ️",
-    )
-    st.stop()
+# ── Verificar proveedor de LLM ─────────────────────────────────────────────────
 
 from src.analysis.audit_engine import CFPAuditEngine
 from src.analysis.pattern_detector import PatternDetector
 from src.config_loader import get_kb_dir
 from src.knowledge_base.vector_store import CFPVectorStore
+
+try:
+    # Valida que hay un proveedor configurado en .env (LLM_PROVIDER + su API key:
+    # ANTHROPIC_API_KEY, o OPENAI_API_KEY/OPENAI_BASE_URL/LLM_MODEL). Agnóstico al proveedor.
+    CFPAuditEngine()
+except ValueError:
+    st.info(
+        "🧠 **Modo demo:** la Auditoría con IA requiere un proveedor de LLM configurado "
+        "(`LLM_PROVIDER` + `ANTHROPIC_API_KEY` u `OPENAI_API_KEY`), no habilitado en esta demo "
+        "pública. Esta función se muestra en el vídeo del proyecto y puede ejecutarse en local. "
+        "Para ver resultados sin IA en vivo, visita **📊 Reportes**, **🔬 Comparador** y **🚨 Alertas**.",
+        icon="ℹ️",
+    )
+    st.stop()
 
 KB_DIR = get_kb_dir()
 from src.config_loader import get_db_path
@@ -95,7 +97,7 @@ with tab_analisis:
         st.caption("El análisis estándar usa Claude Sonnet.")
 
     if st.button("Analizar con IA", type="primary", disabled=not texto_resolucion):
-        engine = CFPAuditEngine(api_key=api_key)
+        engine = CFPAuditEngine()
         with st.spinner("Analizando resolución con Claude..."):
             result = engine.analyze_resolucion(
                 resolucion_id=resolucion_id,
@@ -229,7 +231,7 @@ with tab_patrones:
                 else:
                     sample = vs.search("cuota captura sostenibilidad especie", n_results=20)
                     texts = [r["texto"] for r in sample]
-                    engine = CFPAuditEngine(api_key=api_key)
+                    engine = CFPAuditEngine()
                     with st.spinner("Analizando patrones con Claude Opus..."):
                         patterns = engine.detect_patterns(texts)
                     st.json(patterns)
@@ -281,7 +283,7 @@ with tab_sostenibilidad:
                 st.info(
                     f"Analizando {sum(len(v) for v in resoluciones_por_anio.values())} resoluciones sobre {especie_sel}..."
                 )
-                engine = CFPAuditEngine(api_key=api_key)
+                engine = CFPAuditEngine()
                 with st.spinner("Analizando con Claude Opus..."):
                     result = engine.analyze_sustainability(especie_sel, resoluciones_por_anio)
 
@@ -328,7 +330,7 @@ with tab_busqueda_auditada:
             with st.spinner("Buscando resoluciones relevantes..."):
                 results = vs.search(query_audit, n_results=n_audit)
 
-            engine = CFPAuditEngine(api_key=api_key)
+            engine = CFPAuditEngine()
             st.markdown(f"**{len(results)} resoluciones encontradas. Auditando...**")
 
             for i, r in enumerate(results, 1):

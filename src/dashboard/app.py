@@ -15,6 +15,16 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
+# Cargar variables de entorno del .env local (proveedor de LLM, claves) para que la
+# auditoría en vivo funcione con `streamlit run`. En Streamlit Cloud se usan los secrets;
+# si no hay .env, es un no-op.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
 st.set_page_config(
     page_title="CFP Audit Intelligence",
     page_icon="🐟",
